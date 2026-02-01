@@ -1,0 +1,4 @@
+Generated App Store screenshots (JA):
+- 01_memo.png: 708x1536
+- 02_add_store.png: 708x1536
+- 03_location_heading.png: 708x1536
