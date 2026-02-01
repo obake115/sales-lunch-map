@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# duplicated project folder (accidental)
+geo-memo-reminder-app/
+
 # Native
 .kotlin/
 *.orig.*
@@ -31,6 +34,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
