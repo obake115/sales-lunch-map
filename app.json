@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "近づいたら買い物メモ",
-    "slug": "geo-memo-reminder-app",
+    "name": "営業ランチマップ",
+    "slug": "sales-lunch-map",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "geomemoreminderapp",
+    "scheme": "saleslunchmap",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "jp.kawashun.geomemoreminder",
+      "bundleIdentifier": "jp.kawashun.saleslunchmap",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "店舗の近くで買い物メモをリマインドするために位置情報を使用します。",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "バックグラウンドでも店舗の近くで買い物メモをリマインドするために位置情報を使用します。",
@@ -26,7 +26,7 @@
       }
     },
     "android": {
-      "package": "jp.kawashun.geomemoreminder",
+      "package": "jp.kawashun.saleslunchmap",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",

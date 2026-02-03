@@ -6,15 +6,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
 import { AppProviders } from '@/src/AppProviders';
+import { ThemeProvider as ThemeModeProvider, useThemeMode } from '@/src/state/ThemeContext';
 
 // Register background geofencing task (side-effect import).
 import '@/src/tasks/geofenceTask';
 
 export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+    // Catch any errors thrown by the Layout component.
+    ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -45,26 +45,29 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <ThemeModeProvider>
+      <RootLayoutNav />
+    </ThemeModeProvider>
+  );
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { themeMode } = useThemeMode();
   const theme =
-    colorScheme === 'dark'
+    themeMode === 'navy'
       ? {
           ...DarkTheme,
           colors: {
             ...DarkTheme.colors,
-            background: '#0B0F17',
-            card: '#0B0F17',
+            background: '#0F172A',
+            card: '#0F172A',
           },
         }
       : {
           ...DefaultTheme,
           colors: {
             ...DefaultTheme.colors,
-            // Match app icon warm beige/yellow tone
             background: '#FFF4D6',
             card: '#FFF4D6',
           },
@@ -74,10 +77,14 @@ function RootLayoutNav() {
     <ThemeProvider value={theme}>
       <AppProviders>
         <Stack screenOptions={{ contentStyle: { backgroundColor: theme.colors.background } }}>
-          <Stack.Screen name="index" options={{ title: '店舗一覧' }} />
+          <Stack.Screen name="index" options={{ title: 'ホーム' }} />
+          <Stack.Screen name="profile" options={{ title: 'プロフィール' }} />
+          <Stack.Screen name="map" options={{ title: 'マップ' }} />
+          <Stack.Screen name="shared" options={{ title: '共同マップ' }} />
+          <Stack.Screen name="shared/[id]" options={{ title: '共同マップ' }} />
           <Stack.Screen name="reminders" options={{ title: 'リマインド一覧' }} />
-          <Stack.Screen name="store/new" options={{ title: '店舗追加' }} />
-          <Stack.Screen name="store/[id]" options={{ title: '買い物メモ' }} />
+          <Stack.Screen name="store/new" options={{ title: '候補を登録' }} />
+          <Stack.Screen name="store/[id]" options={{ title: 'ランチ候補' }} />
         </Stack>
       </AppProviders>
     </ThemeProvider>

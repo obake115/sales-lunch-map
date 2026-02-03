@@ -1,11 +1,16 @@
+import Constants from 'expo-constants';
 import { PropsWithChildren, useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
 
+import { LoginBonusModal } from './components/LoginBonusModal';
 import { configureNotifications, ensureAndroidDefaultChannel } from './notifications';
+import { AuthProvider } from './state/AuthContext';
 import { StoresProvider } from './state/StoresContext';
+import { useAppBootstrap } from './state/useAppBootstrap';
 
 export function AppProviders({ children }: PropsWithChildren) {
+  const { loginBonus, dismissLoginBonus } = useAppBootstrap();
+
   useEffect(() => {
     configureNotifications();
     ensureAndroidDefaultChannel();
@@ -27,7 +32,17 @@ export function AppProviders({ children }: PropsWithChildren) {
 
   return (
     <SafeAreaProvider>
-      <StoresProvider>{children}</StoresProvider>
+      <AuthProvider>
+        <StoresProvider>
+          {children}
+          <LoginBonusModal
+            visible={!!loginBonus?.awarded}
+            streak={loginBonus?.state.streak ?? 0}
+            totalDays={loginBonus?.state.totalDays ?? 0}
+            onClose={dismissLoginBonus}
+          />
+        </StoresProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

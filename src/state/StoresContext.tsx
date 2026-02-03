@@ -1,15 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { syncGeofencing } from '../geofencing';
 import type { Store } from '../models';
 import * as storage from '../storage';
-import { syncGeofencing } from '../geofencing';
 
 type StoresContextValue = {
   loading: boolean;
   stores: Store[];
   refresh: () => Promise<void>;
-  addStore: (input: { name: string; latitude: number; longitude: number }) => Promise<Store>;
+  addStore: (input: { name: string; placeId?: string; latitude: number; longitude: number }) => Promise<Store>;
+  updateStore: (storeId: string, patch: Partial<Omit<Store, 'id' | 'createdAt'>>) => Promise<Store | null>;
   setStoreEnabled: (storeId: string, enabled: boolean) => Promise<void>;
   deleteStore: (storeId: string) => Promise<void>;
 };
@@ -37,15 +38,35 @@ export function StoresProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (loading) return;
+    if (stores.length > 0) return;
+    (async () => {
+      const created = await storage.ensureSampleStore();
+      if (created) {
+        await refresh();
+      }
+    })();
+  }, [loading, stores.length, refresh]);
+
+  useEffect(() => {
+    if (loading) return;
     // keep geofencing regions in sync with enabled stores
     syncGeofencing(stores);
   }, [stores, loading]);
 
   const addStore = useCallback(
-    async (input: { name: string; latitude: number; longitude: number }) => {
+    async (input: { name: string; placeId?: string; latitude: number; longitude: number }) => {
       const created = await storage.addStore(input);
       await refresh();
       return created;
+    },
+    [refresh]
+  );
+
+  const updateStore = useCallback(
+    async (storeId: string, patch: Partial<Omit<Store, 'id' | 'createdAt'>>) => {
+      const updated = await storage.updateStore(storeId, patch);
+      await refresh();
+      return updated;
     },
     [refresh]
   );
@@ -72,10 +93,11 @@ export function StoresProvider({ children }: PropsWithChildren) {
       stores,
       refresh,
       addStore,
+      updateStore,
       setStoreEnabled,
       deleteStore,
     }),
-    [loading, stores, refresh, addStore, setStoreEnabled, deleteStore]
+    [loading, stores, refresh, addStore, updateStore, setStoreEnabled, deleteStore]
   );
 
   return <StoresContext value={value}>{children}</StoresContext>;
