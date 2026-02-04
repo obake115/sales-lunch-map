@@ -44,4 +44,18 @@ export async function runMigrations(db: SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_places_lat_lng ON places (lat, lng);
     CREATE INDEX IF NOT EXISTS idx_memos_storeId ON memos (storeId);
   `);
+
+  const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(places)');
+  const hasPhotoUri = columns.some((col) => col.name === 'photoUri');
+  if (!hasPhotoUri) {
+    await db.execAsync('ALTER TABLE places ADD COLUMN photoUri TEXT');
+  }
+  const hasMoodTags = columns.some((col) => col.name === 'moodTags');
+  if (!hasMoodTags) {
+    await db.execAsync('ALTER TABLE places ADD COLUMN moodTags TEXT');
+  }
+  const hasSceneTags = columns.some((col) => col.name === 'sceneTags');
+  if (!hasSceneTags) {
+    await db.execAsync('ALTER TABLE places ADD COLUMN sceneTags TEXT');
+  }
 }

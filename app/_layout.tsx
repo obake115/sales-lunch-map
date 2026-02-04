@@ -68,8 +68,8 @@ function RootLayoutNav() {
           ...DefaultTheme,
           colors: {
             ...DefaultTheme.colors,
-            background: '#FFF4D6',
-            card: '#FFF4D6',
+            background: '#FFF8EB',
+            card: '#FFF8EB',
           },
         };
 
@@ -79,6 +79,7 @@ function RootLayoutNav() {
         <Stack screenOptions={{ contentStyle: { backgroundColor: theme.colors.background } }}>
           <Stack.Screen name="index" options={{ title: 'ホーム' }} />
           <Stack.Screen name="profile" options={{ title: 'プロフィール' }} />
+          <Stack.Screen name="list" options={{ title: 'リスト検索' }} />
           <Stack.Screen name="map" options={{ title: 'マップ' }} />
           <Stack.Screen name="shared" options={{ title: '共同マップ' }} />
           <Stack.Screen name="shared/[id]" options={{ title: '共同マップ' }} />

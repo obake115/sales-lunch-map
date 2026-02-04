@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Linking, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, Linking, Modal, Pressable, Text, TextInput, View } from 'react-native';
 
 import { searchPlaces, type PlaceSearchResult } from '@/src/places';
 import { addMapStore, deleteMapStore, listenMap, listenMapStores, type SharedMap, type SharedStore } from '@/src/sharedMaps';
@@ -64,7 +64,7 @@ async function openGoogleMaps(store: { name: string; latitude: number; longitude
 
 export default function SharedMapDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, showInvite } = useLocalSearchParams<{ id: string; showInvite?: string }>();
   const mapId = id ?? '';
   const { user } = useAuth();
 
@@ -82,12 +82,19 @@ export default function SharedMapDetailScreen() {
   const [placeResults, setPlaceResults] = useState<PlaceSearchResult[]>([]);
   const [placeSearching, setPlaceSearching] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
+  const [inviteVisible, setInviteVisible] = useState(false);
 
   useEffect(() => {
     if (!mapId) return;
     const unsub = listenMap(mapId, setMap);
     return () => unsub();
   }, [mapId]);
+
+  useEffect(() => {
+    if (showInvite !== '1') return;
+    if (!map?.code) return;
+    setInviteVisible(true);
+  }, [showInvite, map?.code]);
 
   useEffect(() => {
     if (!mapId) return;
@@ -120,6 +127,11 @@ export default function SharedMapDetailScreen() {
     if (placeResults.length === 0 && placeQuery.trim().length > 0) return '検索結果がありません。';
     return null;
   }, [placeSearching, placeError, placeResults.length, placeQuery]);
+
+  const inviteCode = map?.code ?? '';
+  const inviteQrUrl = inviteCode
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(inviteCode)}`
+    : '';
 
   if (!mapId) {
     return (
@@ -338,6 +350,74 @@ export default function SharedMapDetailScreen() {
       </View>
 
       <BottomAdBanner />
+
+      <Modal visible={inviteVisible} transparent animationType="fade" onRequestClose={() => setInviteVisible(false)}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.25)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}>
+          <View
+            style={{
+              width: '100%',
+              borderRadius: 18,
+              backgroundColor: '#FFFEF8',
+              padding: 16,
+              borderWidth: 1,
+              borderColor: '#E7E2D5',
+            }}>
+            <Pressable onPress={() => setInviteVisible(false)} style={{ alignSelf: 'flex-end' }}>
+              <Text style={{ fontWeight: '900', fontSize: 18 }}>×</Text>
+            </Pressable>
+
+            <Text style={{ fontWeight: '900', fontSize: 16, textAlign: 'center', marginTop: 4 }}>
+              招待コードで共有しよう！
+            </Text>
+            <Text style={{ color: '#6B7280', textAlign: 'center', marginTop: 6 }}>
+              コードを入力するだけで簡単に参加できます
+            </Text>
+
+            <View
+              style={{
+                marginTop: 14,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 14,
+                backgroundColor: '#FFF7E6',
+                alignItems: 'center',
+              }}>
+              <Text style={{ fontSize: 22, fontWeight: '900', color: '#B45309' }}>{inviteCode || '------'}</Text>
+            </View>
+
+            <View style={{ alignItems: 'center', marginTop: 12 }}>
+              {inviteCode ? <Image source={{ uri: inviteQrUrl }} style={{ width: 140, height: 140 }} /> : null}
+              <Text style={{ color: '#6B7280', marginTop: 8 }}>QRコードでも参加できます</Text>
+            </View>
+
+            <Pressable
+              onPress={() => {
+                if (!inviteCode) return;
+                Alert.alert('招待コード', 'コードを長押しでコピーできます。');
+              }}
+              style={{
+                marginTop: 12,
+                backgroundColor: '#F59E0B',
+                borderRadius: 14,
+                paddingVertical: 12,
+                alignItems: 'center',
+              }}>
+              <Text style={{ color: 'white', fontWeight: '900' }}>コードをコピー</Text>
+            </Pressable>
+
+            <Pressable onPress={() => setInviteVisible(false)} style={{ marginTop: 10, alignItems: 'center' }}>
+              <Text style={{ color: '#2563EB', fontWeight: '800' }}>閉じる</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

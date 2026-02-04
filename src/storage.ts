@@ -442,6 +442,36 @@ export async function setThemeMode(mode: ThemeMode): Promise<void> {
   await setSetting(db, SETTING_KEYS.themeMode, mode);
 }
 
+export async function getProfileAvatarUri(): Promise<string | null> {
+  const db = await getReadyDb();
+  const stored = await getSetting(db, SETTING_KEYS.profileAvatarUri);
+  return stored ? stored : null;
+}
+
+export async function setProfileAvatarUri(uri: string | null): Promise<void> {
+  const db = await getReadyDb();
+  if (!uri) {
+    await setSetting(db, SETTING_KEYS.profileAvatarUri, '');
+    return;
+  }
+  await setSetting(db, SETTING_KEYS.profileAvatarUri, uri);
+}
+
+export async function getSelectedBadgeId(): Promise<string | null> {
+  const db = await getReadyDb();
+  const stored = await getSetting(db, SETTING_KEYS.selectedBadgeId);
+  return stored ? stored : null;
+}
+
+export async function setSelectedBadgeId(id: string | null): Promise<void> {
+  const db = await getReadyDb();
+  if (!id) {
+    await setSetting(db, SETTING_KEYS.selectedBadgeId, '');
+    return;
+  }
+  await setSetting(db, SETTING_KEYS.selectedBadgeId, id);
+}
+
 export async function recordNearbyShownIfNeeded(hasCandidates: boolean): Promise<void> {
   if (!hasCandidates) return;
   const db = await getReadyDb();

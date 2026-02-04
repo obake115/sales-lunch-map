@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, ImageBackground, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import type { Store } from '@/src/models';
 import { useStores } from '@/src/state/StoresContext';
@@ -19,6 +19,23 @@ const UI = {
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+  } as const,
+  cardImage: {
+    borderWidth: 1,
+    borderColor: '#E7E2D5',
+    borderRadius: 16,
+    padding: 0,
+    backgroundColor: '#FFFEF8',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+    overflow: 'hidden',
+  } as const,
+  cardOverlay: {
+    padding: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   } as const,
   input: {
     borderWidth: 1,
@@ -58,6 +75,8 @@ const UI = {
 
 const TIME_BANDS: Array<Store['timeBand']> = ['10', '20', '30'];
 const RADIUS_OPTIONS = [100, 200, 300, 400, 500];
+const MOOD_TAGS = ['サクッと', 'ゆっくり', '商談向き'];
+const SCENE_TAGS = ['1人OK', 'ご褒美'];
 
 export default function PlaceDetailScreen() {
   const router = useRouter();
@@ -80,24 +99,47 @@ export default function PlaceDetailScreen() {
     await updateStore(store.id, patch);
     await refresh();
   };
+  const toggleTag = (list: string[] | undefined, value: string) => {
+    const current = list ?? [];
+    return current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+  };
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}>
-        <View style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>ランチ候補名</Text>
-          <TextInput
-            value={store.name}
-            onChangeText={(text) => setField({ name: text })}
-            placeholder="例：現場前の定食屋"
-            style={UI.input}
-          />
-          <Pressable
-            onPress={() => setField({ isFavorite: !store.isFavorite })}
-            style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
-            <Text style={{ fontWeight: '800' }}>{store.isFavorite ? '⭐ 次回候補にする' : '☆ 次回候補にする'}</Text>
-          </Pressable>
-        </View>
+        {store.photoUri ? (
+          <ImageBackground source={{ uri: store.photoUri }} style={UI.cardImage} imageStyle={{ borderRadius: 16 }}>
+            <View style={UI.cardOverlay}>
+              <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>ランチ候補名</Text>
+              <TextInput
+                value={store.name}
+                onChangeText={(text) => setField({ name: text })}
+                placeholder="例：現場前の定食屋"
+                style={UI.input}
+              />
+              <Pressable
+                onPress={() => setField({ isFavorite: !store.isFavorite })}
+                style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
+                <Text style={{ fontWeight: '800' }}>{store.isFavorite ? '⭐ 次回候補にする' : '☆ 次回候補にする'}</Text>
+              </Pressable>
+            </View>
+          </ImageBackground>
+        ) : (
+          <View style={UI.card}>
+            <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>ランチ候補名</Text>
+            <TextInput
+              value={store.name}
+              onChangeText={(text) => setField({ name: text })}
+              placeholder="例：現場前の定食屋"
+              style={UI.input}
+            />
+            <Pressable
+              onPress={() => setField({ isFavorite: !store.isFavorite })}
+              style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800' }}>{store.isFavorite ? '⭐ 次回候補にする' : '☆ 次回候補にする'}</Text>
+            </Pressable>
+          </View>
+        )}
 
         <View style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>クイック情報</Text>
@@ -153,6 +195,26 @@ export default function PlaceDetailScreen() {
               style={{ ...UI.chip, ...(store.seating === 'table' ? UI.chipActive : null) }}>
               <Text style={{ fontWeight: '800' }}>テーブル</Text>
             </Pressable>
+          </View>
+
+          <Text style={{ fontWeight: '800', marginTop: 10, marginBottom: 6 }}>気分・シーン</Text>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            {MOOD_TAGS.map((tag) => (
+              <Pressable
+                key={tag}
+                onPress={() => setField({ moodTags: toggleTag(store.moodTags, tag) })}
+                style={{ ...UI.chip, ...(store.moodTags?.includes(tag) ? UI.chipActive : null) }}>
+                <Text style={{ fontWeight: '800' }}>{tag}</Text>
+              </Pressable>
+            ))}
+            {SCENE_TAGS.map((tag) => (
+              <Pressable
+                key={tag}
+                onPress={() => setField({ sceneTags: toggleTag(store.sceneTags, tag) })}
+                style={{ ...UI.chip, ...(store.sceneTags?.includes(tag) ? UI.chipActive : null) }}>
+                <Text style={{ fontWeight: '800' }}>{tag}</Text>
+              </Pressable>
+            ))}
           </View>
         </View>
 

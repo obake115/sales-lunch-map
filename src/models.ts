@@ -6,8 +6,11 @@ export type Store = {
   longitude: number;
   enabled: boolean;
   backgroundImageUri?: string;
+  photoUri?: string;
   note?: string;
   timeBand?: '10' | '20' | '30';
+  moodTags?: string[];
+  sceneTags?: string[];
   parking?: number;
   smoking?: number;
   seating?: 'counter' | 'table';

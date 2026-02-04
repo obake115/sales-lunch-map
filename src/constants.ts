@@ -22,5 +22,7 @@ export const SETTING_KEYS = {
   nearbyShownDate: 'nearbyShownDate',
   seeded: 'seeded',
   themeMode: 'themeMode',
+  profileAvatarUri: 'profileAvatarUri',
+  selectedBadgeId: 'selectedBadgeId',
 };
 

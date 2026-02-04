@@ -1,10 +1,19 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { getAchievedBadges, getNextBadge } from '@/src/domain/badges';
 import { useStores } from '@/src/state/StoresContext';
 import { useThemeMode } from '@/src/state/ThemeContext';
-import { getLoginBonusState, getNearbyShownCount, type LoginBonusState } from '@/src/storage';
+import {
+    getLoginBonusState,
+    getNearbyShownCount,
+    getProfileAvatarUri,
+    getSelectedBadgeId,
+    setProfileAvatarUri,
+    setSelectedBadgeId,
+    type LoginBonusState,
+} from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 
 const UI = {
@@ -85,6 +94,80 @@ const UI = {
     fontWeight: '800',
     color: '#111827',
   } as const,
+  profileAvatar: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: '#FDE68A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 10,
+  } as const,
+  profileAvatarText: {
+    fontWeight: '800',
+    color: '#92400E',
+  } as const,
+  profileAvatarImage: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+  } as const,
+  profileAvatarHint: {
+    textAlign: 'center',
+    color: '#6B7280',
+    marginBottom: 8,
+  } as const,
+  profileName: {
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 16,
+    color: '#111827',
+  } as const,
+  profileSubtitle: {
+    textAlign: 'center',
+    color: '#6B7280',
+    marginTop: 4,
+    marginBottom: 10,
+  } as const,
+  profileStats: {
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+    marginTop: 8,
+    paddingTop: 10,
+    gap: 6,
+  } as const,
+  profileStatRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  } as const,
+  profileBadge: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#F3E8FF',
+    backgroundColor: '#FDF4FF',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+  } as const,
+  profileBadgeText: {
+    color: '#7C3AED',
+    fontWeight: '800',
+  } as const,
+  profileSaveBtn: {
+    marginTop: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    alignItems: 'center',
+  } as const,
+  profileSaveText: {
+    color: '#111827',
+    fontWeight: '700',
+  } as const,
 } as const;
 
 function requirementText(
@@ -120,6 +203,8 @@ export default function ProfileScreen() {
   const { themeMode, setThemeMode } = useThemeMode();
   const [loginState, setLoginState] = useState<LoginBonusState | null>(null);
   const [nearbyShownCount, setNearbyShownCount] = useState(0);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [selectedBadgeId, setSelectedBadgeIdState] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -135,6 +220,28 @@ export default function ProfileScreen() {
     };
   }, [loading, stores.length]);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const uri = await getProfileAvatarUri();
+      if (mounted) setAvatarUri(uri);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const storedId = await getSelectedBadgeId();
+      if (mounted) setSelectedBadgeIdState(storedId);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const stats = useMemo(
     () => ({
       storesCount: stores.length,
@@ -149,12 +256,106 @@ export default function ProfileScreen() {
   const achievedBadges = getAchievedBadges(stats).slice(0, 3);
   const nextBadge = getNextBadge(stats);
   const style = usageStyle(stats);
+  const selectedBadge = useMemo(() => {
+    if (!selectedBadgeId) return null;
+    return getAchievedBadges(stats).find((badge) => badge.id === selectedBadgeId) ?? null;
+  }, [selectedBadgeId, stats]);
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
         <View style={{ marginBottom: 14 }}>
           <Text style={UI.headerTitle}>プロフィール</Text>
+        </View>
+
+        <View style={{ ...UI.card, marginBottom: 16 }}>
+          <Pressable
+            onPress={async () => {
+              const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (!permission.granted) {
+                Alert.alert('写真へのアクセスが必要です', 'プロフィール写真を変更するために許可してください。');
+                return;
+              }
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              });
+              if (result.canceled) return;
+              const uri = result.assets?.[0]?.uri;
+              if (!uri) return;
+              setAvatarUri(uri);
+              await setProfileAvatarUri(uri);
+            }}
+            style={UI.profileAvatar}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={UI.profileAvatarImage} />
+            ) : (
+              <Text style={UI.profileAvatarText}>T.K.</Text>
+            )}
+          </Pressable>
+          <Text style={UI.profileAvatarHint}>写真を変更</Text>
+          <Text style={UI.profileName}>T.K.</Text>
+
+          <View style={UI.profileStats}>
+            <View style={UI.profileStatRow}>
+              <Text style={UI.statLabel}>参考になった</Text>
+              <Text style={UI.statValue}>{nearbyShownCount}回</Text>
+            </View>
+            <View style={UI.profileStatRow}>
+              <Text style={UI.statLabel}>登録したお店</Text>
+              <Text style={UI.statValue}>{stores.length}件</Text>
+            </View>
+            <View style={UI.profileStatRow}>
+              <Text style={UI.statLabel}>次回候補</Text>
+              <Text style={UI.statValue}>{stats.favoritesCount}件</Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={() => {
+              const choices = getAchievedBadges(stats);
+              if (choices.length === 0) {
+                Alert.alert('称号がありません', '条件を満たすと称号を選択できます。');
+                return;
+              }
+              Alert.alert(
+                '称号を選択',
+                '',
+                [
+                  ...choices.map((badge) => ({
+                    text: badge.label,
+                    onPress: async () => {
+                      setSelectedBadgeIdState(badge.id);
+                      await setSelectedBadgeId(badge.id);
+                    },
+                  })),
+                  {
+                    text: '選択解除',
+                    style: 'destructive',
+                    onPress: async () => {
+                      setSelectedBadgeIdState(null);
+                      await setSelectedBadgeId(null);
+                    },
+                  },
+                  { text: 'キャンセル', style: 'cancel' },
+                ],
+                { cancelable: true }
+              );
+            }}
+            style={UI.profileBadge}>
+            <Text style={UI.profileBadgeText}>
+              ⭐ {selectedBadge?.label ?? (achievedBadges[0]?.label ?? '称号を選択')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Alert.alert('保存しました');
+            }}
+            style={UI.profileSaveBtn}>
+            <Text style={UI.profileSaveText}>保存</Text>
+          </Pressable>
         </View>
 
         <View style={{ ...UI.card, marginBottom: 16 }}>
