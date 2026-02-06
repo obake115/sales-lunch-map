@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Modal, Platform, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Image, Modal, Platform, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-import { getAllActiveReminders, setMemoReminder, type ReminderListItem } from '@/src/storage';
+import { addAlbumPhoto, getAlbumPhotos } from '@/src/storage';
+import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { formatYmd } from '@/src/domain/date';
 
 const UI = {
   card: {
@@ -18,49 +21,103 @@ const UI = {
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   } as const,
-  primaryBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  header: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#111827',
+    marginBottom: 8,
+  } as const,
+  subText: {
+    color: '#6B7280',
+  } as const,
+  addBtn: {
+    marginBottom: 12,
     borderRadius: 14,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#F59E0B',
+    paddingVertical: 10,
+    alignItems: 'center',
+  } as const,
+  addBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  } as const,
+  image: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+  } as const,
+  imagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
-  secondaryBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
+  imageText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  } as const,
+  gridImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+  } as const,
+  dateText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+  } as const,
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
     justifyContent: 'center',
+    padding: 20,
+  } as const,
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+  } as const,
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 12,
+  } as const,
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 10,
+  } as const,
+  modalBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  } as const,
+  modalBtnPrimary: {
+    backgroundColor: '#F59E0B',
+  } as const,
+  modalBtnText: {
+    color: '#374151',
+    fontWeight: '700',
+  } as const,
+  modalBtnTextPrimary: {
+    color: '#FFFFFF',
   } as const,
 } as const;
 
-function formatDateTime(ms: number) {
-  const d = new Date(ms);
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  const hh = d.getHours();
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${y}年${m}月${day}日 ${hh}:${mm}`;
-}
-
-export default function RemindersScreen() {
+export default function AlbumScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState<ReminderListItem[]>([]);
-
-  const [editing, setEditing] = useState<ReminderListItem | null>(null);
-  const [draftAtMs, setDraftAtMs] = useState<number>(Date.now() + 60 * 60 * 1000);
-  const [iosPickerMode, setIosPickerMode] = useState<'date' | 'time'>('date');
-  const [androidPickerMode, setAndroidPickerMode] = useState<'date' | 'time' | null>(null);
+  const [photos, setPhotos] = useState<Awaited<ReturnType<typeof getAlbumPhotos>>>([]);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pendingUri, setPendingUri] = useState<string | null>(null);
+  const [pendingDate, setPendingDate] = useState<Date>(new Date());
 
   const refresh = useCallback(async () => {
-    const next = await getAllActiveReminders();
-    setItems(next);
+    const next = await getAlbumPhotos();
+    setPhotos(next);
   }, []);
 
   useEffect(() => {
@@ -74,260 +131,103 @@ export default function RemindersScreen() {
     })();
   }, [refresh]);
 
-  const empty = useMemo(() => !loading && items.length === 0, [loading, items.length]);
+  const empty = useMemo(() => !loading && photos.length === 0, [loading, photos.length]);
 
   return (
-    <View style={{ flex: 1, padding: 16, paddingBottom: 110, gap: 12 }}>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, padding: 16, paddingBottom: 110 }}>
+        <Text style={UI.header}>アルバム</Text>
         <Pressable
-          onPress={refresh}
-          style={UI.primaryBtn}>
-          <Text style={{ color: 'white', fontWeight: '900' }}>{loading ? '更新中...' : '更新'}</Text>
+          onPress={async () => {
+            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!permission.granted) {
+              Alert.alert('写真へのアクセスが必要です', 'アルバムに追加するために許可してください。');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
+            if (result.canceled) return;
+            const uri = result.assets?.[0]?.uri;
+            if (!uri) return;
+            setPendingUri(uri);
+            setPendingDate(new Date());
+            setPickerVisible(true);
+          }}
+          style={UI.addBtn}>
+          <Text style={UI.addBtnText}>写真を追加</Text>
         </Pressable>
-        <Pressable
-          onPress={() => router.back()}
-          style={UI.secondaryBtn}>
-          <Text style={{ fontWeight: '800', color: '#111827' }}>戻る</Text>
-        </Pressable>
+        {empty && <Text style={UI.subText}>まだ写真がありません。</Text>}
+
+        <FlatList
+          data={photos}
+          keyExtractor={(p) => p.id}
+          numColumns={2}
+          columnWrapperStyle={{ gap: 10 }}
+          contentContainerStyle={{ gap: 10 }}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                if (!item.storeId) return;
+                router.push({ pathname: '/store/[id]', params: { id: item.storeId } });
+              }}
+              style={{ flex: 1 }}>
+              <View style={{ gap: 6 }}>
+                <Image source={{ uri: item.uri }} style={UI.gridImage} />
+                <Text style={UI.dateText}>{formatYmd(new Date(item.takenAt))}</Text>
+              </View>
+            </Pressable>
+          )}
+        />
       </View>
 
-      {empty && <Text style={{ color: '#6B7280' }}>リマインド設定中のメモがありません。</Text>}
+      <BottomAdBanner />
 
-      <FlatList
-        data={items}
-        keyExtractor={(i) => `${i.storeId}:${i.memoId}`}
-        contentContainerStyle={{ gap: 10 }}
-        renderItem={({ item }) => (
-          <View
-            style={{ ...UI.card, gap: 8 }}>
-            <Pressable onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.storeId } })}>
-              <Text style={{ fontWeight: '900' }} numberOfLines={1}>
-                {item.storeName}
-              </Text>
-              <Text style={{ marginTop: 4, fontWeight: '800' }} numberOfLines={2}>
-                {item.text}
-              </Text>
-              <Text style={{ marginTop: 6, color: '#2563EB', fontWeight: '800' }}>{formatDateTime(item.reminderAt)}</Text>
-            </Pressable>
-
-            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
+      <Modal transparent visible={pickerVisible} animationType="fade">
+        <View style={UI.modalBackdrop}>
+          <View style={UI.modalCard}>
+            <Text style={UI.modalTitle}>日付を選択</Text>
+            <DateTimePicker
+              value={pendingDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              locale="ja-JP"
+              onChange={(event, date) => {
+                if (Platform.OS === 'android' && event.type === 'dismissed') {
+                  setPickerVisible(false);
+                  setPendingUri(null);
+                  return;
+                }
+                if (date) setPendingDate(date);
+              }}
+            />
+            <View style={UI.modalActions}>
               <Pressable
                 onPress={() => {
-                  setEditing(item);
-                  setDraftAtMs(item.reminderAt);
-                  setIosPickerMode('date');
+                  setPickerVisible(false);
+                  setPendingUri(null);
                 }}
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 8,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: '#BFDBFE',
-                  backgroundColor: '#EFF6FF',
-                }}>
-                <Text style={{ color: '#1D4ED8', fontWeight: '900' }}>変更</Text>
+                style={UI.modalBtn}>
+                <Text style={UI.modalBtnText}>キャンセル</Text>
               </Pressable>
               <Pressable
                 onPress={async () => {
-                  await setMemoReminder(item.storeId, item.memoId, null);
+                  if (!pendingUri) return;
+                  await addAlbumPhoto(pendingUri, undefined, pendingDate.getTime());
                   await refresh();
+                  setPickerVisible(false);
+                  setPendingUri(null);
                 }}
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 8,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: '#E7E2D5',
-                  backgroundColor: '#FFFFFF',
-                }}>
-                <Text style={{ color: '#374151', fontWeight: '900' }}>解除</Text>
+                style={[UI.modalBtn, UI.modalBtnPrimary]}>
+                <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>保存</Text>
               </Pressable>
             </View>
           </View>
-        )}
-      />
-
-      {/* edit modal */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={editing != null}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => setEditing(null)}>
-          <View style={{ flex: 1, backgroundColor: '#0B0F17' }}>
-            <View
-              style={{
-                paddingTop: 12,
-                paddingHorizontal: 14,
-                paddingBottom: 10,
-                borderBottomWidth: 1,
-                borderBottomColor: 'rgba(255,255,255,0.08)',
-                backgroundColor: '#0B0F17',
-              }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Pressable onPress={() => setEditing(null)}>
-                  <Text style={{ color: '#FBBF24', fontWeight: '800', fontSize: 16 }}>キャンセル</Text>
-                </Pressable>
-                <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>リマインドを変更</Text>
-                <Pressable
-                  onPress={async () => {
-                    if (!editing) return;
-                    try {
-                      await setMemoReminder(editing.storeId, editing.memoId, draftAtMs);
-                      setEditing(null);
-                      await refresh();
-                    } catch (e: any) {
-                      Alert.alert('設定できませんでした', e?.message ?? 'しばらくしてから再度お試しください。');
-                    }
-                  }}>
-                  <Text style={{ color: '#FBBF24', fontWeight: '900', fontSize: 16 }}>保存</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={{ paddingHorizontal: 14, paddingTop: 10 }}>
-              <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#111827' }}>
-                <View style={{ flexDirection: 'row' }}>
-                  <Pressable
-                    onPress={() => setIosPickerMode('date')}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      alignItems: 'center',
-                      backgroundColor: iosPickerMode === 'date' ? '#0F172A' : '#111827',
-                    }}>
-                    <Text style={{ color: iosPickerMode === 'date' ? 'white' : '#9CA3AF', fontWeight: '900' }}>日付</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setIosPickerMode('time')}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      alignItems: 'center',
-                      backgroundColor: iosPickerMode === 'time' ? '#0F172A' : '#111827',
-                    }}>
-                    <Text style={{ color: iosPickerMode === 'time' ? 'white' : '#9CA3AF', fontWeight: '900' }}>時刻</Text>
-                  </Pressable>
-                </View>
-                <DateTimePicker
-                  value={new Date(draftAtMs)}
-                  mode={iosPickerMode}
-                  display="spinner"
-                  locale="ja-JP"
-                  themeVariant="dark"
-                  onChange={(_e, selected) => {
-                    if (!selected) return;
-                    setDraftAtMs((prev) => {
-                      const next = new Date(prev);
-                      if (iosPickerMode === 'date') {
-                        next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
-                      } else {
-                        next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
-                      }
-                      return next.getTime();
-                    });
-                  }}
-                  style={{ height: 216, backgroundColor: '#111827' }}
-                />
-              </View>
-
-              <View style={{ marginTop: 14, borderRadius: 16, overflow: 'hidden', backgroundColor: '#111827' }}>
-                <View style={{ paddingHorizontal: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ color: 'white', fontWeight: '700' }}>日時</Text>
-                  <Text style={{ color: '#60A5FA', fontWeight: '800' }}>{formatDateTime(draftAtMs)}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {Platform.OS === 'android' && editing != null && (
-        <Modal transparent animationType="fade" visible={true} onRequestClose={() => setEditing(null)}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <View style={{ width: '100%', maxWidth: 420, borderRadius: 16, backgroundColor: 'white', padding: 14, gap: 10 }}>
-              <Text style={{ fontWeight: '900', fontSize: 16 }}>リマインドを変更</Text>
-              <Text style={{ color: '#6B7280' }}>{editing.storeName}</Text>
-              <Text style={{ fontWeight: '800' }} numberOfLines={2}>
-                {editing.text}
-              </Text>
-
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable
-                  onPress={() => setAndroidPickerMode('date')}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: '#E5E7EB',
-                    backgroundColor: 'white',
-                    alignItems: 'center',
-                  }}>
-                  <Text style={{ fontWeight: '800' }}>日付</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setAndroidPickerMode('time')}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: '#E5E7EB',
-                    backgroundColor: 'white',
-                    alignItems: 'center',
-                  }}>
-                  <Text style={{ fontWeight: '800' }}>時刻</Text>
-                </Pressable>
-              </View>
-              <Text style={{ color: '#2563EB', fontWeight: '900' }}>選択中: {formatDateTime(draftAtMs)}</Text>
-
-              {!!androidPickerMode && (
-                <DateTimePicker
-                  value={new Date(draftAtMs)}
-                  mode={androidPickerMode}
-                  display="default"
-                  onChange={(event: any, selected) => {
-                    const mode = androidPickerMode;
-                    setAndroidPickerMode(null);
-                    if (!selected) return;
-                    if (event?.type && event.type !== 'set') return;
-                    setDraftAtMs((prev) => {
-                      const next = new Date(prev);
-                      if (mode === 'date') {
-                        next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
-                      } else {
-                        next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
-                      }
-                      return next.getTime();
-                    });
-                  }}
-                />
-              )}
-
-              <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}>
-                <Pressable onPress={() => setEditing(null)} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
-                  <Text style={{ fontWeight: '800', color: '#374151' }}>キャンセル</Text>
-                </Pressable>
-                <Pressable
-                  onPress={async () => {
-                    try {
-                      await setMemoReminder(editing.storeId, editing.memoId, draftAtMs);
-                      setEditing(null);
-                      await refresh();
-                    } catch (e: any) {
-                      Alert.alert('設定できませんでした', e?.message ?? 'しばらくしてから再度お試しください。');
-                    }
-                  }}
-                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#2563EB' }}>
-                  <Text style={{ color: 'white', fontWeight: '900' }}>保存</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
+        </View>
+      </Modal>
     </View>
   );
 }
-

@@ -32,3 +32,11 @@ export type Memo = {
   createdAt: number;
 };
 
+export type AlbumPhoto = {
+  id: string;
+  uri: string;
+  createdAt: number;
+  takenAt: number;
+  storeId?: string;
+};
+

@@ -41,8 +41,17 @@ export async function runMigrations(db: SQLiteDatabase) {
       value TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS album_photos (
+      id TEXT PRIMARY KEY NOT NULL,
+      uri TEXT NOT NULL,
+      storeId TEXT,
+      createdAt INTEGER NOT NULL,
+      takenAt INTEGER
+    );
+
     CREATE INDEX IF NOT EXISTS idx_places_lat_lng ON places (lat, lng);
     CREATE INDEX IF NOT EXISTS idx_memos_storeId ON memos (storeId);
+    CREATE INDEX IF NOT EXISTS idx_album_photos_createdAt ON album_photos (createdAt);
   `);
 
   const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(places)');
@@ -57,5 +66,11 @@ export async function runMigrations(db: SQLiteDatabase) {
   const hasSceneTags = columns.some((col) => col.name === 'sceneTags');
   if (!hasSceneTags) {
     await db.execAsync('ALTER TABLE places ADD COLUMN sceneTags TEXT');
+  }
+
+  const albumColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(album_photos)');
+  const hasTakenAt = albumColumns.some((col) => col.name === 'takenAt');
+  if (!hasTakenAt) {
+    await db.execAsync('ALTER TABLE album_photos ADD COLUMN takenAt INTEGER');
   }
 }

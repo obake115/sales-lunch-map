@@ -83,7 +83,7 @@ const UI = {
   } as const,
   quickRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginBottom: 12,
   } as const,
   quickBtn: {
@@ -277,6 +277,13 @@ export default function StoreListScreen() {
           <Pressable onPress={() => router.push('/shared')} style={UI.quickBtn}>
             <Image
               source={require('@/assets/images/quick-shared.png')}
+              style={UI.quickImage}
+              resizeMode="cover"
+            />
+          </Pressable>
+          <Pressable onPress={() => router.push('/shared')} style={UI.quickBtn}>
+            <Image
+              source={require('@/assets/images/quick-everyone.jpg')}
               style={UI.quickImage}
               resizeMode="cover"
             />

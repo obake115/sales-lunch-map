@@ -9,7 +9,7 @@ import { getSetting, setSetting } from './db/settingsRepo';
 import { getDb } from './db/sqlite';
 import { addDays, formatYmd } from './domain/date';
 import { createId } from './id';
-import type { Memo, Store } from './models';
+import type { AlbumPhoto, Memo, Store } from './models';
 
 type MemoRow = {
   id: string;
@@ -19,6 +19,14 @@ type MemoRow = {
   reminderAt: number | null;
   reminderNotificationId: string | null;
   createdAt: number;
+};
+
+type AlbumPhotoRow = {
+  id: string;
+  uri: string;
+  storeId: string | null;
+  createdAt: number;
+  takenAt: number | null;
 };
 
 export type ReminderListItem = {
@@ -62,6 +70,14 @@ const rowToMemo = (row: MemoRow): Memo => ({
   reminderAt: typeof row.reminderAt === 'number' ? row.reminderAt : undefined,
   reminderNotificationId: row.reminderNotificationId ?? undefined,
   createdAt: row.createdAt,
+});
+
+const rowToAlbumPhoto = (row: AlbumPhotoRow): AlbumPhoto => ({
+  id: row.id,
+  uri: row.uri,
+  storeId: row.storeId ?? undefined,
+  createdAt: row.createdAt,
+  takenAt: typeof row.takenAt === 'number' ? row.takenAt : row.createdAt,
 });
 
 async function getReadyDb(): Promise<SQLiteDatabase> {
@@ -234,6 +250,30 @@ export async function getMemos(storeId: string): Promise<Memo[]> {
     storeId
   );
   return rows.map(rowToMemo);
+}
+
+export async function getAlbumPhotos(): Promise<AlbumPhoto[]> {
+  const db = await getReadyDb();
+  const rows = await db.getAllAsync<AlbumPhotoRow>(
+    'SELECT * FROM album_photos ORDER BY COALESCE(takenAt, createdAt) DESC, createdAt DESC'
+  );
+  return rows.map(rowToAlbumPhoto);
+}
+
+export async function addAlbumPhoto(
+  uri: string,
+  storeId?: string,
+  takenAt?: number
+): Promise<AlbumPhoto> {
+  const db = await getReadyDb();
+  const createdAt = Date.now();
+  const safeTakenAt = typeof takenAt === 'number' ? takenAt : createdAt;
+  const id = createId('photo');
+  await db.runAsync(
+    'INSERT INTO album_photos (id, uri, storeId, createdAt, takenAt) VALUES (?, ?, ?, ?, ?)',
+    [id, uri, storeId ?? null, createdAt, safeTakenAt]
+  );
+  return { id, uri, storeId, createdAt, takenAt: safeTakenAt };
 }
 
 export async function addMemo(storeId: string, text: string): Promise<Memo> {
