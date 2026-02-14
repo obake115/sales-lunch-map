@@ -18,7 +18,7 @@
       "bundleIdentifier": "jp.kawashun.saleslunchmap",
       "infoPlist": {
         "NSCameraUsageDescription": "招待コードのQRを読み取るためにカメラを使用します。",
-        "NSLocationWhenInUseUsageDescription": "店舗の近くで買い物メモをリマインドするために位置情報を使用します。",
+        "NSLocationWhenInUseUsageDescription": "現在地周辺の店舗表示および地図機能のために位置情報を使用します。",
         "NSPhotoLibraryUsageDescription": "プロフィール写真を選択するために写真ライブラリへのアクセスを許可してください。",
         "NSPhotoLibraryAddUsageDescription": "プロフィール写真を保存するために写真ライブラリへのアクセスを許可してください。",
         "ITSAppUsesNonExemptEncryption": false

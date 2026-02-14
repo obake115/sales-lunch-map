@@ -301,12 +301,10 @@
   },
   "collection": {
     "title": "Your collection",
-    "hint": "Tap the map to highlight the nearest region.",
-    "cardTitleAll": "Random memories",
+    "hint": "Tap the map to select a prefecture.",
+    "cardTitleRecent": "Recent memories",
     "cardTitleSelected": "Memories in %{name}",
-    "shuffle": "Shuffle",
-    "emptyBody": "No memories yet.",
-    "clearFilter": "%{name} · Show all"
+    "emptyBody": "No memories yet."
   },
   "pref": {
     "photoPermissionTitle": "Photo access required",
@@ -419,11 +417,11 @@
     "pickDate": "Select a date",
     "select": "Select"
   },
-  "permissionNotice": {
-    "title": "Permissions required",
-    "locationMissing": "Location (while in use) is not allowed, so we can't get your current location.",
-    "notificationsMissing": "Notifications are not allowed, so reminders can't be shown.",
-    "allow": "Allow"
+  "locationDenied": {
+    "title": "Location unavailable",
+    "body": "To use the map and current location features, please enable location access in Settings.",
+    "openSettings": "Open Settings",
+    "cancel": "Cancel"
   },
   "auth": {
     "anonymousDisabled": "Anonymous sign-in is disabled. Enable Anonymous in Firebase.",

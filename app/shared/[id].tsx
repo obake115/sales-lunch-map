@@ -241,7 +241,14 @@ export default function SharedMapDetailScreen() {
                 onPress={async () => {
                   const fg = await Location.requestForegroundPermissionsAsync();
                   if (!fg.granted) {
-                    Alert.alert(t('sharedDetail.locationTitle'), t('sharedDetail.locationBody'));
+                    Alert.alert(
+                      t('locationDenied.title'),
+                      t('locationDenied.body'),
+                      [
+                        { text: t('locationDenied.cancel'), style: 'cancel' },
+                        { text: t('locationDenied.openSettings'), onPress: () => Linking.openSettings() },
+                      ]
+                    );
                     return;
                   }
                   const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });

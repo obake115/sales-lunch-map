@@ -301,12 +301,10 @@
   },
   "collection": {
     "title": "あなたのコレクション",
-    "hint": "地図をタップすると、最寄りの地方がハイライトされます。",
-    "cardTitleAll": "ランダムに選んだ思い出",
+    "hint": "地図をタップして都道府県を選択できます。",
+    "cardTitleRecent": "最近の思い出",
     "cardTitleSelected": "%{name}の思い出",
-    "shuffle": "シャッフル",
-    "emptyBody": "まだ投稿がありません。",
-    "clearFilter": "%{name}・すべて表示"
+    "emptyBody": "まだ投稿がありません。"
   },
   "pref": {
     "photoPermissionTitle": "写真へのアクセスが必要です",
@@ -370,11 +368,11 @@
     "pickDate": "日付を選択",
     "select": "選択"
   },
-  "permissionNotice": {
-    "title": "権限が必要です",
-    "locationMissing": "位置情報（使用中の許可）がないため、現在地取得ができません。",
-    "notificationsMissing": "通知が許可されていないため、リマインドを表示できません。",
-    "allow": "許可する"
+  "locationDenied": {
+    "title": "位置情報が利用できません",
+    "body": "地図や現在地の機能を使うには、設定から位置情報を有効にしてください。",
+    "openSettings": "設定を開く",
+    "cancel": "キャンセル"
   },
   "auth": {
     "anonymousDisabled": "匿名ログインが無効です。FirebaseでAnonymousを有効化してください。",

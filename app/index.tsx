@@ -9,7 +9,6 @@ import { t } from '@/src/i18n';
 import { getHasSeenOnboarding, getProfileAvatarUri, getTravelLunchProgress } from '@/src/storage';
 import { useThemeMode } from '@/src/state/ThemeContext';
 import { InlineAdBanner } from '@/src/ui/AdBanner';
-import { PermissionNotice } from '@/src/ui/PermissionNotice';
 
 const QUICK_PADDING_H = 32;
 const QUICK_GAP = 8;
@@ -280,8 +279,6 @@ export default function StoreListScreen() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, padding: 16, paddingBottom: 110 }}>
-        <PermissionNotice />
-
         <View style={UI.headerRow}>
           <Text style={[UI.headerTitle, themeMode === 'navy' ? { color: '#FFFFFF' } : null]}>
             {t('home.title')}

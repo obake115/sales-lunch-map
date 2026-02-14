@@ -10,7 +10,6 @@ import type { Store } from '@/src/models';
 import { useStores } from '@/src/state/StoresContext';
 import { getMemos } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
-import { PermissionNotice } from '@/src/ui/PermissionNotice';
 
 const UI = {
   card: {
@@ -149,8 +148,21 @@ export default function MapScreen() {
 
   useEffect(() => {
     (async () => {
-      const fg = await Location.getForegroundPermissionsAsync();
-      if (!fg.granted) return;
+      let fg = await Location.getForegroundPermissionsAsync();
+      if (!fg.granted) {
+        fg = await Location.requestForegroundPermissionsAsync();
+      }
+      if (!fg.granted) {
+        Alert.alert(
+          t('locationDenied.title'),
+          t('locationDenied.body'),
+          [
+            { text: t('locationDenied.cancel'), style: 'cancel' },
+            { text: t('locationDenied.openSettings'), onPress: () => Linking.openSettings() },
+          ]
+        );
+        return;
+      }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setDeviceLatLng({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
     })();
@@ -205,7 +217,6 @@ export default function MapScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110, gap: 12 }}>
-        <PermissionNotice />
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable
