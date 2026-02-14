@@ -8,67 +8,13 @@ import {
   ScrollView,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 
 import { t } from '@/src/i18n';
 import { getTravelLunchEntries } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
-import { JapanMapStage } from '@/components/collection/JapanMapStage';
-import { JapanMapOverlay } from '@/components/collection/JapanMapOverlay';
+import { JapanMapInteractive } from '@/src/ui/JapanMapInteractive';
 import type { TravelLunchEntry } from '@/src/models';
-
-const MAP_SOURCE = require('@/assets/maps/japan_beige.png');
-
-const PREF_MARKERS: { id: string; x: number; y: number }[] = [
-  { id: 'hokkaido', x: 0.55, y: 0.45 },
-  { id: 'aomori', x: 0.5, y: 0.1 },
-  { id: 'akita', x: 0.25, y: 0.35 },
-  { id: 'iwate', x: 0.7, y: 0.35 },
-  { id: 'yamagata', x: 0.35, y: 0.6 },
-  { id: 'miyagi', x: 0.65, y: 0.6 },
-  { id: 'fukushima', x: 0.5, y: 0.85 },
-  { id: 'gunma', x: 0.35, y: 0.25 },
-  { id: 'tochigi', x: 0.55, y: 0.25 },
-  { id: 'ibaraki', x: 0.75, y: 0.35 },
-  { id: 'saitama', x: 0.45, y: 0.45 },
-  { id: 'tokyo', x: 0.55, y: 0.6 },
-  { id: 'chiba', x: 0.75, y: 0.6 },
-  { id: 'kanagawa', x: 0.5, y: 0.8 },
-  { id: 'niigata', x: 0.7, y: 0.2 },
-  { id: 'toyama', x: 0.55, y: 0.25 },
-  { id: 'ishikawa', x: 0.4, y: 0.25 },
-  { id: 'fukui', x: 0.3, y: 0.45 },
-  { id: 'nagano', x: 0.65, y: 0.45 },
-  { id: 'yamanashi', x: 0.75, y: 0.6 },
-  { id: 'gifu', x: 0.45, y: 0.6 },
-  { id: 'aichi', x: 0.4, y: 0.8 },
-  { id: 'shizuoka', x: 0.75, y: 0.8 },
-  { id: 'kyoto', x: 0.5, y: 0.2 },
-  { id: 'shiga', x: 0.55, y: 0.35 },
-  { id: 'hyogo', x: 0.25, y: 0.35 },
-  { id: 'osaka', x: 0.45, y: 0.45 },
-  { id: 'nara', x: 0.6, y: 0.55 },
-  { id: 'mie', x: 0.65, y: 0.75 },
-  { id: 'wakayama', x: 0.45, y: 0.85 },
-  { id: 'shimane', x: 0.35, y: 0.35 },
-  { id: 'tottori', x: 0.7, y: 0.35 },
-  { id: 'hiroshima', x: 0.4, y: 0.65 },
-  { id: 'okayama', x: 0.7, y: 0.65 },
-  { id: 'yamaguchi', x: 0.1, y: 0.55 },
-  { id: 'kagawa', x: 0.6, y: 0.25 },
-  { id: 'tokushima', x: 0.75, y: 0.4 },
-  { id: 'ehime', x: 0.3, y: 0.5 },
-  { id: 'kochi', x: 0.55, y: 0.75 },
-  { id: 'fukuoka', x: 0.35, y: 0.2 },
-  { id: 'saga', x: 0.25, y: 0.35 },
-  { id: 'nagasaki', x: 0.1, y: 0.4 },
-  { id: 'oita', x: 0.6, y: 0.4 },
-  { id: 'kumamoto', x: 0.3, y: 0.55 },
-  { id: 'miyazaki', x: 0.7, y: 0.65 },
-  { id: 'kagoshima', x: 0.45, y: 0.85 },
-  { id: 'okinawa', x: 0.85, y: 0.95 },
-];
 
 const UI = {
   title: {
@@ -106,17 +52,29 @@ const UI = {
     marginHorizontal: -16,
     alignItems: 'center',
   } as const,
-  selectedChip: {
-    alignSelf: 'flex-start',
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginTop: 8,
+  } as const,
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#EC4899',
   } as const,
-  selectedChipText: {
-    color: '#111827',
+  chipText: {
+    color: '#FFFFFF',
     fontWeight: '600',
+    fontSize: 12,
+  } as const,
+  chipClose: {
+    marginLeft: 4,
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 12,
   } as const,
   cardAreaHeader: {
@@ -130,17 +88,6 @@ const UI = {
     fontSize: 14,
     fontWeight: '700',
     color: '#111827',
-  } as const,
-  shuffleBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-  } as const,
-  shuffleText: {
-    fontSize: 12,
-    color: '#111827',
-    fontWeight: '600',
   } as const,
   cardRow: {
     flexDirection: 'row',
@@ -209,36 +156,27 @@ const UI = {
     fontWeight: '700',
     fontSize: 13,
   } as const,
-  mapOverlayWrap: {
-    width: '100%',
-    height: '100%',
-  } as const,
 } as const;
 
 export default function CollectionDetailScreen() {
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
   const [posts, setPosts] = useState<TravelLunchEntry[]>([]);
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
-  const [randomPosts, setRandomPosts] = useState<TravelLunchEntry[]>([]);
-
-  const mapSize = useMemo(() => {
-    const resolved = Image.resolveAssetSource(MAP_SOURCE);
-    const ratio =
-      resolved?.width && resolved?.height ? resolved.width / resolved.height : 1.4;
-    const width = Math.max(0, screenWidth);
-    const height = Math.min(520, width, width / ratio);
-    return { width, height, ratio };
-  }, [screenWidth]);
 
   const visitedPrefectures = useMemo(() => {
     return new Set(posts.map((p) => p.prefectureId));
   }, [posts]);
 
+  // Sort by createdAt desc, then filter by selected prefecture
+  const visiblePosts = useMemo(() => {
+    const sorted = posts.slice().sort((a, b) => b.createdAt - a.createdAt);
+    if (!selectedPrefecture) return sorted;
+    return sorted.filter((p) => p.prefectureId === selectedPrefecture);
+  }, [posts, selectedPrefecture]);
+
   const refresh = useCallback(async () => {
     const list = await getTravelLunchEntries();
     setPosts(list);
-    setRandomPosts(pickRandomPosts(list, 5));
   }, []);
 
   useFocusEffect(
@@ -247,37 +185,15 @@ export default function CollectionDetailScreen() {
     }, [refresh])
   );
 
-  const visiblePosts = useMemo(() => {
-    if (!selectedPrefecture) return randomPosts;
-    return posts.filter((p) => p.prefectureId === selectedPrefecture);
-  }, [posts, randomPosts, selectedPrefecture]);
-
   const selectedName = selectedPrefecture ? t(`prefectures.${selectedPrefecture}`) : null;
 
-  const handleMapPress = useCallback(
-    (payload: { x: number; y: number; width: number; height: number }) => {
-      const normX = payload.x / payload.width;
-      const normY = payload.y / payload.height;
-      let min = Number.POSITIVE_INFINITY;
-      let chosen: string | null = null;
-      for (const marker of PREF_MARKERS) {
-        const dx = marker.x - normX;
-        const dy = marker.y - normY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < min) {
-          min = dist;
-          chosen = marker.id;
-        }
-      }
-      if (!chosen) return;
-      setSelectedPrefecture((prev) => (prev === chosen ? null : chosen));
+  const handleMapSelect = useCallback(
+    (prefId: string) => {
+      setSelectedPrefecture((prev) => (prev === prefId ? null : prefId));
     },
     []
   );
 
-  const shuffle = useCallback(() => {
-    setRandomPosts(pickRandomPosts(posts, 5));
-  }, [posts]);
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
@@ -292,73 +208,74 @@ export default function CollectionDetailScreen() {
         <Text style={UI.hint}>{t('collection.hint')}</Text>
 
         <View style={UI.mapWrap}>
-          <JapanMapStage width={mapSize.width} height={mapSize.height} onPress={handleMapPress}>
-            <View style={UI.mapOverlayWrap}>
-              <JapanMapOverlay
-                width={mapSize.width}
-                height={mapSize.height}
-                visitedPrefectures={visitedPrefectures}
-                selectedPrefecture={selectedPrefecture}
-              />
-            </View>
-          </JapanMapStage>
+          <JapanMapInteractive
+            onSelect={handleMapSelect}
+            selectedPref={selectedPrefecture}
+            visitedPrefs={visitedPrefectures}
+          />
         </View>
 
-        {selectedName ? (
-          <Pressable style={UI.selectedChip} onPress={() => setSelectedPrefecture(null)}>
-            <Text style={UI.selectedChipText}>{t('collection.clearFilter', { name: selectedName })}</Text>
-          </Pressable>
+        {selectedPrefecture ? (
+          <View style={UI.chipRow}>
+            <Pressable
+              style={UI.chip}
+              onPress={() => setSelectedPrefecture(null)}
+            >
+              <Text style={UI.chipText}>{selectedName}</Text>
+              <Text style={UI.chipClose}> ✕</Text>
+            </Pressable>
+          </View>
         ) : null}
 
         <View style={UI.cardAreaHeader}>
           <Text style={UI.cardAreaTitle}>
             {selectedName
               ? t('collection.cardTitleSelected', { name: selectedName })
-              : t('collection.cardTitleAll')}
+              : t('collection.cardTitleRecent')}
           </Text>
-          {!selectedPrefecture ? (
-            <Pressable style={UI.shuffleBtn} onPress={shuffle}>
-              <Text style={UI.shuffleText}>🎲 {t('collection.shuffle')}</Text>
-            </Pressable>
-          ) : null}
         </View>
 
-        {selectedPrefecture && visiblePosts.length === 0 ? (
+        {visiblePosts.length === 0 ? (
           <View style={UI.emptyCard}>
             <Text style={UI.emptyTitle}>{t('travel.prefDetailEmpty')}</Text>
             <Text style={UI.emptyBody}>{t('collection.emptyBody')}</Text>
-            <Pressable
-              style={UI.emptyBtn}
-              onPress={() => router.push(`/travel/new?prefecture=${selectedPrefecture}`)}
-            >
-              <Text style={UI.emptyBtnText}>{t('home.addStore')}</Text>
-            </Pressable>
+            {selectedPrefecture ? (
+              <Pressable
+                style={UI.emptyBtn}
+                onPress={() => router.push(`/travel/new?prefecture=${selectedPrefecture}`)}
+              >
+                <Text style={UI.emptyBtnText}>{t('home.addStore')}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={UI.cardRow}>
-              {visiblePosts.map((post) => (
-                <Pressable
-                  key={post.id}
-                  style={UI.card}
-                  onPress={() => router.push(`/travel/pref/${post.prefectureId}`)}
-                >
-                  <Image source={{ uri: post.imageUri }} style={UI.cardImage} />
-                  <View style={UI.cardBody}>
-                    <Text style={UI.cardTitle} numberOfLines={1}>
-                      {post.restaurantName}
-                    </Text>
-                    <Text style={UI.cardMeta} numberOfLines={1}>
-                      {post.genre} | {post.visitedAt}
-                    </Text>
-                    {post.memo ? (
-                      <Text style={UI.cardMemo} numberOfLines={1}>
-                        {post.memo}
+              {visiblePosts.map((post) => {
+                const prefName = t(`prefectures.${post.prefectureId}`);
+                return (
+                  <Pressable
+                    key={post.id}
+                    style={UI.card}
+                    onPress={() => router.push(`/travel/pref/${post.prefectureId}`)}
+                  >
+                    <Image source={{ uri: post.imageUri }} style={UI.cardImage} />
+                    <View style={UI.cardBody}>
+                      <Text style={UI.cardTitle} numberOfLines={1}>
+                        {prefName}｜{post.restaurantName}
                       </Text>
-                    ) : null}
-                  </View>
-                </Pressable>
-              ))}
+                      <Text style={UI.cardMeta} numberOfLines={1}>
+                        {post.genre} | {post.visitedAt}
+                      </Text>
+                      {post.memo ? (
+                        <Text style={UI.cardMemo} numberOfLines={1}>
+                          {post.memo}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           </ScrollView>
         )}
@@ -366,14 +283,4 @@ export default function CollectionDetailScreen() {
       <BottomAdBanner />
     </SafeAreaView>
   );
-}
-
-function pickRandomPosts(posts: TravelLunchEntry[], count: number) {
-  if (posts.length <= count) return posts.slice();
-  const pool = posts.slice();
-  for (let i = pool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, count);
 }
