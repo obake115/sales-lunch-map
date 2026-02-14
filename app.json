@@ -14,27 +14,26 @@
       "backgroundColor": "#FFF4D6"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "jp.kawashun.saleslunchmap",
       "infoPlist": {
+        "NSCameraUsageDescription": "招待コードのQRを読み取るためにカメラを使用します。",
         "NSLocationWhenInUseUsageDescription": "店舗の近くで買い物メモをリマインドするために位置情報を使用します。",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "バックグラウンドでも店舗の近くで買い物メモをリマインドするために位置情報を使用します。",
         "NSPhotoLibraryUsageDescription": "プロフィール写真を選択するために写真ライブラリへのアクセスを許可してください。",
         "NSPhotoLibraryAddUsageDescription": "プロフィール写真を保存するために写真ライブラリへのアクセスを許可してください。",
-        "UIBackgroundModes": [
-          "location"
-        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "jp.kawashun.saleslunchmap",
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE",
-        "READ_MEDIA_IMAGES"
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -57,13 +56,21 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "招待コードのQRを読み取るためにカメラへのアクセスを許可してください。"
+        }
+      ],
+      [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-9492630687794560~7303765475",
-          "iosAppId": "ca-app-pub-9492630687794560~9738357128"
+          "iosAppId": "ca-app-pub-9492630687794560~6268195028"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "./plugins/withDisableAndroidTablet"
     ],
     "cli": {
       "appVersionSource": "remote"
@@ -74,7 +81,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2d622703-a9e1-4574-93b9-649a58b0b392"
+        "projectId": "dcf2b66d-ff77-44d4-918a-2aae335a7281"
       }
     },
     "owner": "kawashun"

@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 
+import { t } from '@/src/i18n';
 import { GEOFENCE_TASK_NAME, NOTIFY_COOLDOWN_MS } from '../constants';
 import { getMemos, getStore, setStoreLastNotifiedAt } from '../storage';
 
@@ -35,8 +36,8 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, async ({ data, error }) => {
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `${store.name}の近くです`,
-        body: '近くに、行ったことのあるランチ候補があります',
+        title: t('geofence.nearTitle', { name: store.name }),
+        body: t('geofence.nearBody'),
         sound: 'default',
       },
       trigger: null,

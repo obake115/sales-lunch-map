@@ -43,3 +43,33 @@ export function BottomAdBanner() {
   );
 }
 
+export function InlineAdBanner() {
+  const unitId = useMemo(() => getAdMobBannerUnitId(), []);
+
+  // Expo Go は AdMob 非対応
+  if (Constants.appOwnership === 'expo') return null;
+
+  let BannerAd: any | null = null;
+  let BannerAdSize: any | null = null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('react-native-google-mobile-ads');
+    BannerAd = mod?.BannerAd ?? null;
+    BannerAdSize = mod?.BannerAdSize ?? null;
+  } catch {
+    BannerAd = null;
+    BannerAdSize = null;
+  }
+
+  if (!BannerAd || !BannerAdSize) return null;
+
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        marginVertical: 8,
+      }}>
+      <BannerAd unitId={unitId} size={BannerAdSize.MEDIUM_RECTANGLE} />
+    </View>
+  );
+}

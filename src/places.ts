@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 export type PlaceSearchResult = {
   placeId: string;
   name: string;
@@ -15,7 +17,7 @@ export async function searchPlaces(
   const trimmed = query.trim();
   if (!trimmed) return [];
   if (!GOOGLE_PLACES_API_KEY) {
-    throw new Error('Google Places APIキーが設定されていません。');
+    throw new Error(t('places.missingApiKey'));
   }
 
   const params = new URLSearchParams({
@@ -34,7 +36,7 @@ export async function searchPlaces(
   const data = await res.json();
 
   if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-    throw new Error(data.error_message ?? '検索に失敗しました。');
+    throw new Error(data.error_message ?? t('places.searchFailed'));
   }
 
   if (!Array.isArray(data.results)) return [];

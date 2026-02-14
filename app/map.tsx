@@ -1,9 +1,11 @@
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Alert, Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 
+import { t } from '@/src/i18n';
 import type { Store } from '@/src/models';
 import { useStores } from '@/src/state/StoresContext';
 import { getMemos } from '@/src/storage';
@@ -38,6 +40,63 @@ const UI = {
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
+  dangerBtn: {
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  } as const,
+  listBtn: {
+    marginTop: 6,
+    borderRadius: 14,
+    backgroundColor: '#F59E0B',
+    paddingVertical: 10,
+    alignItems: 'center',
+  } as const,
+  listBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  } as const,
+  storeImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+  } as const,
+  storeImagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as const,
+  storeImageText: {
+    color: '#6B7280',
+    fontWeight: '600',
+    fontSize: 12,
+  } as const,
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  } as const,
+  tagChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#F3F4F6',
+  } as const,
+  tagText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+  } as const,
+  titleText: {
+    fontWeight: '600',
+  } as const,
+  bodyText: {
+    fontWeight: '400',
+  } as const,
 } as const;
 
 function toRegion(latitude: number, longitude: number): Region {
@@ -59,12 +118,34 @@ async function openGoogleMaps(store: Store) {
 
 export default function MapScreen() {
   const router = useRouter();
-  const { stores } = useStores();
+  const { stores, updateStore, deleteStore, loading } = useStores();
   const markerPressRef = useRef(false);
   const [deviceLatLng, setDeviceLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [memoPreviewByStoreId, setMemoPreviewByStoreId] = useState<Record<string, string>>({});
+  const storesSorted = useMemo(
+    () => stores.slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)),
+    [stores]
+  );
+
+  const handlePickStorePhoto = async (storeId: string) => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('map.photoPermissionTitle'), t('map.photoPermissionBody'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    const uri = result.assets?.[0]?.uri;
+    if (!uri) return;
+    await updateStore(storeId, { photoUri: uri });
+  };
 
   useEffect(() => {
     (async () => {
@@ -112,17 +193,25 @@ export default function MapScreen() {
     () => (selectedStoreId ? stores.find((s) => s.id === selectedStoreId) ?? null : null),
     [stores, selectedStoreId]
   );
+  const tagLabel = (tag: string) => {
+    if (tag === 'サクッと') return t('storeDetail.mood.quick');
+    if (tag === 'ゆっくり') return t('storeDetail.mood.relaxed');
+    if (tag === '接待向き') return t('storeDetail.mood.business');
+    if (tag === '1人OK') return t('storeDetail.scene.solo');
+    if (tag === 'ご褒美') return t('storeDetail.scene.reward');
+    return tag;
+  };
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ flex: 1, padding: 16, paddingBottom: 110, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110, gap: 12 }}>
         <PermissionNotice />
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => router.replace('/')}
             style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-            <Text style={{ fontWeight: '800', color: '#111827' }}>一覧へ戻る</Text>
+            <Text style={{ fontWeight: '800', color: '#111827' }}>{t('map.backToList')}</Text>
           </Pressable>
           <Pressable
             onPress={() => {
@@ -130,14 +219,14 @@ export default function MapScreen() {
               setMapRegion(toRegion(deviceLatLng.latitude, deviceLatLng.longitude));
             }}
             style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-            <Text style={{ fontWeight: '800', color: '#111827' }}>現在地へ</Text>
+            <Text style={{ fontWeight: '800', color: '#111827' }}>{t('map.toCurrent')}</Text>
           </Pressable>
         </View>
 
-        <View style={{ flex: 1, gap: 10 }}>
+        <View style={{ gap: 10 }}>
           <View
             style={{
-              flex: 1,
+              height: 240,
               borderWidth: 1,
               borderColor: '#E7E2D5',
               borderRadius: 16,
@@ -157,7 +246,9 @@ export default function MapScreen() {
                     return;
                   }
                   if ((e as any)?.nativeEvent?.action === 'marker-press') return;
+                  const { latitude, longitude } = e.nativeEvent.coordinate;
                   setSelectedStoreId(null);
+                  router.push({ pathname: '/store/new', params: { lat: String(latitude), lng: String(longitude) } });
                 }}>
                 {stores.map((s) => (
                   <Marker
@@ -175,7 +266,7 @@ export default function MapScreen() {
               </MapView>
             ) : (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#6B7280' }}>位置情報を取得中…</Text>
+                <Text style={{ color: '#6B7280' }}>{t('map.locationLoading')}</Text>
               </View>
             )}
           </View>
@@ -186,25 +277,81 @@ export default function MapScreen() {
                 {selectedStore.name}
               </Text>
               <Text style={{ color: '#6B7280' }} numberOfLines={2}>
-                {memoPreviewByStoreId[selectedStore.id] ? `メモ: ${memoPreviewByStoreId[selectedStore.id]}` : 'メモ: なし'}
+                {memoPreviewByStoreId[selectedStore.id]
+                  ? t('map.memoWithText', { text: memoPreviewByStoreId[selectedStore.id] })
+                  : t('map.memoEmpty')}
               </Text>
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <Pressable
                   onPress={() => router.push({ pathname: '/store/[id]', params: { id: selectedStore.id } })}
                   style={{ flex: 1, ...UI.primaryBtn }}>
-                  <Text style={{ color: 'white', fontWeight: '900' }}>詳細</Text>
+                  <Text style={{ color: 'white', fontWeight: '900' }}>{t('map.detail')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => openGoogleMaps(selectedStore)}
                   style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-                  <Text style={{ fontWeight: '800', color: '#111827' }}>Googleマップで開く</Text>
+                  <Text style={{ fontWeight: '800', color: '#111827' }}>{t('map.openGoogleMaps')}</Text>
                 </Pressable>
               </View>
             </View>
           )}
         </View>
-      </View>
+        <View style={{ marginTop: 4 }}>
+          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 6 }}>{t('map.yourMap')}</Text>
+          <Pressable onPress={() => router.push('/list')} style={UI.listBtn}>
+            <Text style={UI.listBtnText}>{t('map.showList')}</Text>
+          </Pressable>
+        </View>
+
+        {loading && <Text style={[UI.bodyText, { color: '#6B7280' }]}>{t('map.loading')}</Text>}
+        {!loading && storesSorted.length === 0 && (
+          <Text style={[UI.bodyText, { color: '#6B7280' }]}>{t('map.empty')}</Text>
+        )}
+
+        {storesSorted.map((item) => (
+          <Pressable
+            key={item.id}
+            onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.id } })}
+            style={UI.card}>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              <Pressable onPress={() => handlePickStorePhoto(item.id)}>
+                {item.photoUri ? (
+                  <Image source={{ uri: item.photoUri }} style={UI.storeImage} />
+                ) : (
+                  <View style={[UI.storeImage, UI.storeImagePlaceholder]}>
+                    <Text style={UI.storeImageText}>{t('map.addPhoto')}</Text>
+                  </View>
+                )}
+              </Pressable>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <Text style={[UI.titleText, { fontSize: 16 }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={[UI.bodyText, { color: '#6B7280', marginTop: 2 }]}>
+                      {t('map.radiusLabel', { value: 200 })}
+                    </Text>
+                    {item.moodTags?.length || item.sceneTags?.length ? (
+                      <View style={UI.tagRow}>
+                        {[...(item.moodTags ?? []), ...(item.sceneTags ?? [])].map((tag) => (
+                          <View key={tag} style={UI.tagChip}>
+                            <Text style={UI.tagText}>{tagLabel(tag)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                  <Pressable onPress={() => deleteStore(item.id)} style={UI.dangerBtn}>
+                    <Text style={{ color: '#B91C1C', fontWeight: '700' }}>{t('storeDetail.deleteConfirm')}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Pressable>
+        ))}
+      </ScrollView>
 
       <BottomAdBanner />
     </View>

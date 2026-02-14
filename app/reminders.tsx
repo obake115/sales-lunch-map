@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+import i18n, { t } from '@/src/i18n';
 import { addAlbumPhoto, getAlbumPhotos } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { formatYmd } from '@/src/domain/date';
@@ -40,6 +41,31 @@ const UI = {
   addBtnText: {
     color: '#FFFFFF',
     fontWeight: '800',
+  } as const,
+  controlRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  } as const,
+  controlBtn: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    alignItems: 'center',
+  } as const,
+  controlBtnActive: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
+  } as const,
+  controlText: {
+    fontWeight: '700',
+    color: '#374151',
+  } as const,
+  controlTextActive: {
+    color: '#B45309',
   } as const,
   image: {
     width: 88,
@@ -114,6 +140,10 @@ export default function AlbumScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingUri, setPendingUri] = useState<string | null>(null);
   const [pendingDate, setPendingDate] = useState<Date>(new Date());
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [filterDate, setFilterDate] = useState<string | null>(null);
+  const [filterPickerVisible, setFilterPickerVisible] = useState(false);
+  const [filterPendingDate, setFilterPendingDate] = useState<Date>(new Date());
 
   const refresh = useCallback(async () => {
     const next = await getAlbumPhotos();
@@ -131,17 +161,30 @@ export default function AlbumScreen() {
     })();
   }, [refresh]);
 
-  const empty = useMemo(() => !loading && photos.length === 0, [loading, photos.length]);
+  const ordered = useMemo(() => {
+    let list = photos;
+    if (filterDate) {
+      list = list.filter((item) => formatYmd(new Date(item.takenAt)) === filterDate);
+    }
+    const dir = sortOrder === 'desc' ? -1 : 1;
+    return list.slice().sort((a, b) => {
+      const aTime = a.takenAt ?? a.createdAt;
+      const bTime = b.takenAt ?? b.createdAt;
+      return (aTime - bTime) * dir;
+    });
+  }, [photos, filterDate, sortOrder]);
+
+  const empty = useMemo(() => !loading && ordered.length === 0, [loading, ordered.length]);
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, padding: 16, paddingBottom: 110 }}>
-        <Text style={UI.header}>アルバム</Text>
+        <Text style={UI.header}>{t('album.title')}</Text>
         <Pressable
           onPress={async () => {
             const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!permission.granted) {
-              Alert.alert('写真へのアクセスが必要です', 'アルバムに追加するために許可してください。');
+              Alert.alert(t('album.photoPermissionTitle'), t('album.photoPermissionBody'));
               return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -158,12 +201,41 @@ export default function AlbumScreen() {
             setPickerVisible(true);
           }}
           style={UI.addBtn}>
-          <Text style={UI.addBtnText}>写真を追加</Text>
+          <Text style={UI.addBtnText}>{t('album.addPhoto')}</Text>
         </Pressable>
-        {empty && <Text style={UI.subText}>まだ写真がありません。</Text>}
+        <View style={UI.controlRow}>
+          <Pressable
+            onPress={() => setSortOrder('desc')}
+            style={[UI.controlBtn, sortOrder === 'desc' && UI.controlBtnActive]}>
+            <Text style={[UI.controlText, sortOrder === 'desc' && UI.controlTextActive]}>{t('album.sortNew')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setSortOrder('asc')}
+            style={[UI.controlBtn, sortOrder === 'asc' && UI.controlBtnActive]}>
+            <Text style={[UI.controlText, sortOrder === 'asc' && UI.controlTextActive]}>{t('album.sortOld')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setFilterPendingDate(filterDate ? new Date(filterDate) : new Date());
+              setFilterPickerVisible(true);
+            }}
+            style={UI.controlBtn}>
+            <Text style={UI.controlText}>{filterDate ? `${filterDate}` : t('album.filterByDate')}</Text>
+          </Pressable>
+        </View>
+        {filterDate && (
+          <Pressable
+            onPress={() => setFilterDate(null)}
+            style={[UI.controlBtn, { marginBottom: 12 }]}>
+            <Text style={UI.controlText}>{t('album.clearDateFilter')}</Text>
+          </Pressable>
+        )}
+        {empty && (
+          <Text style={UI.subText}>{filterDate ? t('album.emptyForDate') : t('album.empty')}</Text>
+        )}
 
         <FlatList
-          data={photos}
+          data={ordered}
           keyExtractor={(p) => p.id}
           numColumns={2}
           columnWrapperStyle={{ gap: 10 }}
@@ -189,12 +261,12 @@ export default function AlbumScreen() {
       <Modal transparent visible={pickerVisible} animationType="fade">
         <View style={UI.modalBackdrop}>
           <View style={UI.modalCard}>
-            <Text style={UI.modalTitle}>日付を選択</Text>
+            <Text style={UI.modalTitle}>{t('album.pickDate')}</Text>
             <DateTimePicker
               value={pendingDate}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              locale="ja-JP"
+              locale={i18n.locale.startsWith('ja') ? 'ja-JP' : 'en-US'}
               onChange={(event, date) => {
                 if (Platform.OS === 'android' && event.type === 'dismissed') {
                   setPickerVisible(false);
@@ -211,7 +283,7 @@ export default function AlbumScreen() {
                   setPendingUri(null);
                 }}
                 style={UI.modalBtn}>
-                <Text style={UI.modalBtnText}>キャンセル</Text>
+                <Text style={UI.modalBtnText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable
                 onPress={async () => {
@@ -222,7 +294,43 @@ export default function AlbumScreen() {
                   setPendingUri(null);
                 }}
                 style={[UI.modalBtn, UI.modalBtnPrimary]}>
-                <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>保存</Text>
+                <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>{t('common.save')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal transparent visible={filterPickerVisible} animationType="fade">
+        <View style={UI.modalBackdrop}>
+          <View style={UI.modalCard}>
+            <Text style={UI.modalTitle}>{t('album.pickDate')}</Text>
+            <DateTimePicker
+              value={filterPendingDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              locale={i18n.locale.startsWith('ja') ? 'ja-JP' : 'en-US'}
+              onChange={(event, date) => {
+                if (Platform.OS === 'android' && event.type === 'dismissed') {
+                  setFilterPickerVisible(false);
+                  return;
+                }
+                if (date) setFilterPendingDate(date);
+              }}
+            />
+            <View style={UI.modalActions}>
+              <Pressable
+                onPress={() => setFilterPickerVisible(false)}
+                style={UI.modalBtn}>
+                <Text style={UI.modalBtnText}>{t('common.cancel')}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setFilterDate(formatYmd(filterPendingDate));
+                  setFilterPickerVisible(false);
+                }}
+                style={[UI.modalBtn, UI.modalBtnPrimary]}>
+                <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>{t('album.select')}</Text>
               </Pressable>
             </View>
           </View>

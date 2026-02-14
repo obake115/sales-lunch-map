@@ -1,5 +1,7 @@
 import { Modal, Pressable, Text, View } from 'react-native';
 
+import { t } from '@/src/i18n';
+
 const UI = {
   overlay: {
     flex: 1,
@@ -82,27 +84,27 @@ export function LoginBonusModal({ visible, streak, totalDays, onClose }: Props) 
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={UI.overlay}>
         <View style={UI.card}>
-          <Text style={UI.title}>今日のログイン</Text>
-          <Text style={UI.sub}>おかえりなさい！</Text>
+          <Text style={UI.title}>{t('loginBonus.title')}</Text>
+          <Text style={UI.sub}>{t('loginBonus.subtitle')}</Text>
           <View style={UI.badge}>
-            <Text style={UI.badgeText}>+1 日</Text>
+            <Text style={UI.badgeText}>{t('loginBonus.badge')}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>連続利用</Text>
-            <Text style={UI.statValue}>{streak}日</Text>
+            <Text style={UI.statLabel}>{t('loginBonus.streakLabel')}</Text>
+            <Text style={UI.statValue}>{t('profile.countDays', { count: streak })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>累計ログイン</Text>
-            <Text style={UI.statValue}>{totalDays}日</Text>
+            <Text style={UI.statLabel}>{t('loginBonus.totalLabel')}</Text>
+            <Text style={UI.statValue}>{t('profile.countDays', { count: totalDays })}</Text>
           </View>
           {showNext && (
             <View style={UI.statRow}>
-              <Text style={UI.statLabel}>次の称号まで</Text>
-              <Text style={UI.statValue}>あと{remaining}日</Text>
+              <Text style={UI.statLabel}>{t('loginBonus.nextLabel')}</Text>
+              <Text style={UI.statValue}>{t('loginBonus.remaining', { count: remaining })}</Text>
             </View>
           )}
           <Pressable onPress={onClose} style={UI.primaryBtn}>
-            <Text style={{ color: 'white', fontWeight: '900' }}>OK</Text>
+            <Text style={{ color: 'white', fontWeight: '900' }}>{t('common.ok')}</Text>
           </Pressable>
         </View>
       </View>

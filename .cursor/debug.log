@@ -1,0 +1,6 @@
+{"location":"app/index.tsx:124","message":"HomeMapScreen mounted","data":{"storesCount":0},"timestamp":1770128209841,"sessionId":"debug-session","runId":"run1","hypothesisId":"H1"}
+{"location":"app/index.tsx:229","message":"Candidates evaluated","data":{"candidatesCount":0},"timestamp":1770128209844,"sessionId":"debug-session","runId":"run1","hypothesisId":"H4"}
+{"location":"app/index.tsx:140","message":"Loaded nearby radius","data":{"radiusM":300},"timestamp":1770128209862,"sessionId":"debug-session","runId":"run1","hypothesisId":"H2"}
+{"location":"app/index.tsx:124","message":"HomeMapScreen mounted","data":{"storesCount":1},"timestamp":1770128209867,"sessionId":"debug-session","runId":"run1","hypothesisId":"H1"}
+{"location":"app/index.tsx:174","message":"Location acquired","data":{"granted":true,"hasCoords":true},"timestamp":1770128210311,"sessionId":"debug-session","runId":"run1","hypothesisId":"H3"}
+{"location":"app/index.tsx:229","message":"Candidates evaluated","data":{"candidatesCount":1},"timestamp":1770128210317,"sessionId":"debug-session","runId":"run1","hypothesisId":"H4"}

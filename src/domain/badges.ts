@@ -1,3 +1,5 @@
+import { t } from '@/src/i18n';
+
 export type ProfileStats = {
   storesCount: number;
   favoritesCount: number;
@@ -20,37 +22,44 @@ export type Badge = {
 
 const BADGES: Badge[] = [
   {
+    id: 'login_1',
+    label: t('badges.login_1.label'),
+    description: t('badges.login_1.description'),
+    rank: 0,
+    minLoginDays: 1,
+  },
+  {
     id: 'store_5',
-    label: 'ランチ探索家',
-    description: 'ランチ候補を5件登録',
+    label: t('badges.store_5.label'),
+    description: t('badges.store_5.description'),
     rank: 1,
     minStores: 5,
   },
   {
     id: 'store_20',
-    label: 'ランチマスター',
-    description: 'ランチ候補を20件登録',
+    label: t('badges.store_20.label'),
+    description: t('badges.store_20.description'),
     rank: 2,
     minStores: 20,
   },
   {
     id: 'favorite_5',
-    label: '推しランチ達成',
-    description: '次回候補を5件登録',
+    label: t('badges.favorite_5.label'),
+    description: t('badges.favorite_5.description'),
     rank: 3,
     minFavorites: 5,
   },
   {
     id: 'streak_7',
-    label: '1週間皆勤',
-    description: '7日連続ログイン',
+    label: t('badges.streak_7.label'),
+    description: t('badges.streak_7.description'),
     rank: 4,
     minStreak: 7,
   },
   {
     id: 'nearby_10',
-    label: '近場ハンター',
-    description: '近くの候補表示を10回',
+    label: t('badges.nearby_10.label'),
+    description: t('badges.nearby_10.description'),
     rank: 5,
     minNearbyShown: 10,
   },
@@ -70,8 +79,8 @@ export function getCurrentBadge(stats: ProfileStats): Badge {
   if (achieved.length > 0) return achieved[0];
   return {
     id: 'rookie',
-    label: '見習い',
-    description: 'プロフィールを育てて称号を獲得しよう',
+    label: t('badges.rookie.label'),
+    description: t('badges.rookie.description'),
     rank: 0,
   };
 }

@@ -23,6 +23,11 @@ export const SETTING_KEYS = {
   seeded: 'seeded',
   themeMode: 'themeMode',
   profileAvatarUri: 'profileAvatarUri',
+  profileName: 'profileName',
   selectedBadgeId: 'selectedBadgeId',
+  postLimitPurchased: 'postLimitPurchased',
+  postLimitBonusSlots: 'postLimitBonusSlots',
+  postLimitRewardedDate: 'postLimitRewardedDate',
+  hasSeenOnboarding: 'hasSeenOnboarding',
 };
 

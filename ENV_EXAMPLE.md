@@ -21,6 +21,14 @@
 - `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `EXPO_PUBLIC_FIREBASE_APP_ID`
   - FirebaseのWeb設定から取得した値を入れてください
+- `EXPO_PUBLIC_REVCAT_API_KEY_IOS`
+  - RevenueCatのiOS APIキー
+- `EXPO_PUBLIC_REVCAT_API_KEY_ANDROID`
+  - RevenueCatのAndroid APIキー
+- `EXPO_PUBLIC_REVCAT_ENTITLEMENT_ID`
+  - 無制限投稿のエンタイトルメントID（例: `unlimited_posts`）
+- `EXPO_PUBLIC_REVCAT_OFFERING_ID`
+  - 使うOffering ID（未指定ならcurrent）
 
 ## ローカルで指定（PowerShell例）
 

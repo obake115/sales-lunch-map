@@ -17,6 +17,7 @@ type PlaceRow = {
   smoking: number | null;
   seating: string | null;
   isFavorite: number;
+  shareToEveryone: number;
   remindEnabled: number;
   remindRadiusM: number | null;
   photoUri: string | null;
@@ -53,6 +54,7 @@ const rowToStore = (row: PlaceRow): Store => ({
   smoking: row.smoking ?? undefined,
   seating: row.seating ?? undefined,
   isFavorite: row.isFavorite === 1,
+  shareToEveryone: row.shareToEveryone === 1,
   remindEnabled: row.remindEnabled === 1,
   remindRadiusM: row.remindRadiusM ?? undefined,
   photoUri: row.photoUri ?? undefined,
@@ -83,6 +85,7 @@ export async function insertPlace(
         | 'smoking'
         | 'seating'
         | 'isFavorite'
+        | 'shareToEveryone'
         | 'remindEnabled'
         | 'remindRadiusM'
         | 'enabled'
@@ -99,8 +102,8 @@ export async function insertPlace(
   await db.runAsync(
     `INSERT INTO places (
       id, name, note, lat, lng, placeId, enabled, timeBand, moodTags, sceneTags, parking, smoking, seating,
-      isFavorite, remindEnabled, remindRadiusM, photoUri, createdAt, updatedAt, lastNotifiedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      isFavorite, shareToEveryone, remindEnabled, remindRadiusM, photoUri, createdAt, updatedAt, lastNotifiedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.name ?? '',
@@ -116,6 +119,7 @@ export async function insertPlace(
       input.smoking ?? null,
       input.seating ?? null,
       input.isFavorite ? 1 : 0,
+      input.shareToEveryone ? 1 : 0,
       input.remindEnabled ? 1 : 0,
       input.remindRadiusM ?? null,
       input.photoUri ?? null,
@@ -137,7 +141,7 @@ export async function updatePlace(
   await db.runAsync(
     `UPDATE places SET
       name = ?, note = ?, lat = ?, lng = ?, placeId = ?, enabled = ?, timeBand = ?, moodTags = ?, sceneTags = ?, parking = ?, smoking = ?, seating = ?,
-      isFavorite = ?, remindEnabled = ?, remindRadiusM = ?, photoUri = ?, updatedAt = ?, lastNotifiedAt = ?
+      isFavorite = ?, shareToEveryone = ?, remindEnabled = ?, remindRadiusM = ?, photoUri = ?, updatedAt = ?, lastNotifiedAt = ?
     WHERE id = ?`,
     [
       next.name ?? '',
@@ -153,6 +157,7 @@ export async function updatePlace(
       next.smoking ?? null,
       next.seating ?? null,
       next.isFavorite ? 1 : 0,
+      next.shareToEveryone ? 1 : 0,
       next.remindEnabled ? 1 : 0,
       next.remindRadiusM ?? null,
       next.photoUri ?? null,

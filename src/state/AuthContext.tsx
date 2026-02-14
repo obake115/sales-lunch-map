@@ -1,13 +1,14 @@
 import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth';
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
+import { t } from '@/src/i18n';
 import { firebaseAuth } from '../firebase';
 
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
   error: string | null;
-  retrySignIn: () => Promise<void>;
+  retrySignIn: () => Promise<User | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,8 +32,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       signInAnonymously(firebaseAuth).catch((e) => {
         const message =
           e?.code === 'auth/operation-not-allowed'
-            ? '匿名ログインが無効です。FirebaseでAnonymousを有効化してください。'
-            : 'ログインに失敗しました。';
+            ? t('auth.anonymousDisabled')
+            : t('auth.loginFailed');
         setError(message);
       });
     } else {
@@ -42,13 +43,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const retrySignIn = async () => {
     setError(null);
-    await signInAnonymously(firebaseAuth).catch((e) => {
+    try {
+      const result = await signInAnonymously(firebaseAuth);
+      return result.user ?? null;
+    } catch (e: any) {
       const message =
         e?.code === 'auth/operation-not-allowed'
-          ? '匿名ログインが無効です。FirebaseでAnonymousを有効化してください。'
-          : 'ログインに失敗しました。';
+          ? t('auth.anonymousDisabled')
+          : t('auth.loginFailed');
       setError(message);
-    });
+      return null;
+    }
   };
 
   const value = useMemo(

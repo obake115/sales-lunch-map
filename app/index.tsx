@@ -1,13 +1,19 @@
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Image, Pressable, Text, View } from 'react-native';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { Alert, Image, Pressable, Text, View, useWindowDimensions, type ImageStyle } from 'react-native';
 
-import { useStores } from '@/src/state/StoresContext';
-import { getProfileAvatarUri } from '@/src/storage';
-import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { TravelLunchCard } from '@/components/TravelLunchCard';
+import { t } from '@/src/i18n';
+import { getHasSeenOnboarding, getProfileAvatarUri, getTravelLunchProgress } from '@/src/storage';
+import { useThemeMode } from '@/src/state/ThemeContext';
+import { InlineAdBanner } from '@/src/ui/AdBanner';
 import { PermissionNotice } from '@/src/ui/PermissionNotice';
+
+const QUICK_PADDING_H = 32;
+const QUICK_GAP = 8;
+const QUICK_ICON_SIZE = 76;
 
 const UI = {
   card: {
@@ -66,6 +72,21 @@ const UI = {
     fontWeight: '600',
     color: '#111827',
   } as const,
+  headerActions: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  } as const,
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as const,
   profileBtn: {
     width: 36,
     height: 36,
@@ -81,38 +102,28 @@ const UI = {
     height: 34,
     borderRadius: 17,
   } as const,
+  quickContainer: {
+    marginTop: 12,
+  } as const,
   quickRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   } as const,
-  quickBtn: {
-    flex: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
+  quickItem: {
     alignItems: 'center',
-    justifyContent: 'center',
-    height: 120,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    justifyContent: 'flex-start',
   } as const,
-  quickText: {
+  quickLabel: {
+    marginTop: 4,
+    fontSize: 12,
     fontWeight: '500',
-    color: '#555555',
-  } as const,
-  quickIcon: {
-    fontSize: 28,
-    marginBottom: 6,
+    color: '#555',
+    textAlign: 'center',
   } as const,
   quickImage: {
-    width: '100%',
-    height: '100%',
+    width: QUICK_ICON_SIZE,
+    height: QUICK_ICON_SIZE,
   } as const,
   storeImage: {
     width: 88,
@@ -180,39 +191,40 @@ function haversineMeters(a: { latitude: number; longitude: number }, b: { latitu
 
 export default function StoreListScreen() {
   const router = useRouter();
-  const { loading, stores, updateStore, deleteStore } = useStores();
-  const [query, setQuery] = useState('');
-  const [sortMode, setSortMode] = useState<'created' | 'name' | 'distance'>('created');
-  const [deviceLatLng, setDeviceLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
+  const { width } = useWindowDimensions();
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [travelProgress, setTravelProgress] = useState(0);
+  const { themeMode } = useThemeMode();
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
-  useEffect(() => {
-    if (sortMode !== 'distance') return;
-    (async () => {
-      const fg = await Location.getForegroundPermissionsAsync();
-      if (!fg.granted) return;
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setDeviceLatLng({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-    })();
-  }, [sortMode]);
-
-  const handlePickStorePhoto = async (storeId: string) => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('写真へのアクセスが必要です', '店舗の写真を追加するために許可してください。');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-    const uri = result.assets?.[0]?.uri;
-    if (!uri) return;
-    await updateStore(storeId, { photoUri: uri });
-  };
+  const quickItemWidth = useMemo(
+    () => (width - QUICK_PADDING_H * 2 - QUICK_GAP * 3) / 4,
+    [width]
+  );
+  const quickItems = useMemo(
+    () => [
+      { key: 'map', label: 'マップ', source: require('@/assets/images/quick-map.png'), onPress: () => router.push('/map') },
+      {
+        key: 'collab',
+        label: '共同編集',
+        source: require('@/assets/images/quick-shared.png'),
+        onPress: () => router.push('/shared'),
+      },
+      {
+        key: 'all',
+        label: 'みんなで',
+        source: require('@/assets/images/quick-everyone.jpg'),
+        onPress: () => router.push('/everyone'),
+      },
+      {
+        key: 'album',
+        label: 'アルバム',
+        source: require('@/assets/images/quick-album.png'),
+        onPress: () => router.push('/reminders'),
+      },
+    ],
+    [router]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -225,30 +237,45 @@ export default function StoreListScreen() {
     };
   }, []);
 
-  const content = useMemo(() => {
-    if (loading) return <Text style={[UI.bodyText, { color: '#6B7280' }]}>読み込み中...</Text>;
-    if (stores.length === 0) return <Text style={[UI.bodyText, { color: '#6B7280' }]}>まずは店舗を追加してください。</Text>;
-    return null;
-  }, [loading, stores.length]);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const seen = await getHasSeenOnboarding();
+        if (!mounted) return;
+        if (!seen) {
+          router.replace('/onboarding');
+          return;
+        }
+        setCheckingOnboarding(false);
+      } catch {
+        if (mounted) setCheckingOnboarding(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
-  const filteredSorted = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = q ? stores.filter((s) => s.name.toLowerCase().includes(q)) : stores.slice();
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+      (async () => {
+        const [uri, progress] = await Promise.all([getProfileAvatarUri(), getTravelLunchProgress()]);
+        if (mounted) {
+          setAvatarUri(uri);
+          setTravelProgress(progress);
+        }
+      })();
+      return () => {
+        mounted = false;
+      };
+    }, [])
+  );
 
-    if (sortMode === 'name') {
-      return filtered.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-    }
-    if (sortMode === 'distance') {
-      if (!deviceLatLng) return filtered;
-      return filtered.sort((a, b) => {
-        const da = haversineMeters(deviceLatLng, { latitude: a.latitude, longitude: a.longitude });
-        const db = haversineMeters(deviceLatLng, { latitude: b.latitude, longitude: b.longitude });
-        return da - db;
-      });
-    }
-    // created (default): newest first based on createdAt if available, else keep order
-    return filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-  }, [stores, query, sortMode, deviceLatLng]);
+  if (checkingOnboarding) {
+    return <View style={{ flex: 1 }} />;
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -256,125 +283,60 @@ export default function StoreListScreen() {
         <PermissionNotice />
 
         <View style={UI.headerRow}>
-          <Text style={UI.headerTitle}>ランチマップ</Text>
-          <Pressable onPress={() => router.push('/profile')} style={UI.profileBtn}>
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={UI.profileImage} />
-            ) : (
-              <Text style={[UI.buttonText, { color: '#111827' }]}>👤</Text>
-            )}
-          </Pressable>
-        </View>
-
-        <View style={UI.quickRow}>
-          <Pressable onPress={() => router.push('/map')} style={UI.quickBtn}>
-            <Image
-              source={require('@/assets/images/quick-map.png')}
-              style={UI.quickImage}
-              resizeMode="cover"
-            />
-          </Pressable>
-          <Pressable onPress={() => router.push('/shared')} style={UI.quickBtn}>
-            <Image
-              source={require('@/assets/images/quick-shared.png')}
-              style={UI.quickImage}
-              resizeMode="cover"
-            />
-          </Pressable>
-          <Pressable onPress={() => router.push('/shared')} style={UI.quickBtn}>
-            <Image
-              source={require('@/assets/images/quick-everyone.jpg')}
-              style={UI.quickImage}
-              resizeMode="cover"
-            />
-          </Pressable>
-          <Pressable onPress={() => router.push('/reminders')} style={UI.quickBtn}>
-            <Image
-              source={require('@/assets/images/quick-album.png')}
-              style={UI.quickImage}
-              resizeMode="cover"
-            />
-          </Pressable>
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-          <Pressable
-            onPress={() => router.push('/store/new')}
-            style={{
-              flex: 1,
-              ...UI.primaryBtn,
-            }}>
-            <Text style={[UI.buttonText, { color: 'white' }]}>店舗を追加</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/reminders')}
-            style={{
-              paddingHorizontal: 12,
-              ...UI.secondaryBtn,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <Text style={[UI.buttonText, { color: '#111827' }]}>⏰</Text>
-          </Pressable>
-        </View>
-
-        <View style={{ marginBottom: 12 }}>
-          <Text style={UI.headerTitle}>あなたのマップ</Text>
-        </View>
-
-        <Pressable onPress={() => router.push('/list')} style={UI.listBtn}>
-          <Text style={UI.listBtnText}>リストを表示</Text>
-        </Pressable>
-
-        {content}
-
-        <FlatList
-          data={filteredSorted}
-          keyExtractor={(s) => s.id}
-          contentContainerStyle={{ gap: 10 }}
-          renderItem={({ item }) => (
+          <Text style={[UI.headerTitle, themeMode === 'navy' ? { color: '#FFFFFF' } : null]}>
+            {t('home.title')}
+          </Text>
+          <View style={UI.headerActions}>
             <Pressable
-              onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.id } })}
-              style={UI.card}>
-              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                <Pressable onPress={() => handlePickStorePhoto(item.id)}>
-                  {item.photoUri ? (
-                    <Image source={{ uri: item.photoUri }} style={UI.storeImage} />
-                  ) : (
-                    <View style={[UI.storeImage, UI.storeImagePlaceholder]}>
-                      <Text style={UI.storeImageText}>写真追加</Text>
-                    </View>
-                  )}
-                </Pressable>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={[UI.titleText, { fontSize: 16 }]} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                    <Text style={[UI.bodyText, { color: '#6B7280', marginTop: 2 }]}>半径 200m</Text>
-                    {(item.moodTags?.length || item.sceneTags?.length) ? (
-                      <View style={UI.tagRow}>
-                        {[...(item.moodTags ?? []), ...(item.sceneTags ?? [])].map((tag) => (
-                          <View key={tag} style={UI.tagChip}>
-                            <Text style={UI.tagText}>{tag}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    ) : null}
-                    </View>
-                    <Pressable onPress={() => deleteStore(item.id)} style={UI.dangerBtn}>
-                      <Text style={[UI.buttonText, { color: '#B91C1C' }]}>削除</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
+              onPress={() => Alert.alert(t('home.noticeTitle'), t('home.noticeBody'))}
+              style={UI.iconBtn}>
+              <FontAwesome name="bell-o" size={18} color="#F59E0B" />
             </Pressable>
-          )}
-        />
-      </View>
+            <Pressable
+              onPress={() => Alert.alert(t('home.settingsTitle'), t('home.settingsBody'))}
+              style={UI.iconBtn}>
+              <FontAwesome name="cog" size={18} color="#6B7280" />
+            </Pressable>
+            <Pressable onPress={() => router.push('/profile')} style={UI.profileBtn}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={UI.profileImage} />
+              ) : (
+                <Text style={[UI.buttonText, { color: '#111827' }]}>👤</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
 
-      <BottomAdBanner />
+        <View style={[UI.quickContainer, { paddingHorizontal: QUICK_PADDING_H }]}>
+          <View style={[UI.quickRow, { columnGap: QUICK_GAP, justifyContent: 'center' }]}>
+            {quickItems.map((item) => (
+              <Pressable
+                key={item.key}
+                style={[UI.quickItem, { width: quickItemWidth }]}
+                onPress={item.onPress}
+                hitSlop={8}>
+              <Image source={item.source} style={UI.quickImage} resizeMode="contain" />
+                <Text style={UI.quickLabel} numberOfLines={1} ellipsizeMode="tail">
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <TravelLunchCard
+          iconSource={require('@/assets/images/collection-cover.png')}
+          visitedCount={travelProgress}
+          title={t('home.collectionTitle')}
+          subtitle={t('home.collectionSub')}
+          ctaLabel={t('home.addStore')}
+          onPress={() => router.push('/collection')}
+          onAdd={() => router.push('/travel/new')}
+        />
+
+        <InlineAdBanner />
+
+      </View>
     </View>
   );
 }

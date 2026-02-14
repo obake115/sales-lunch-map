@@ -1,6 +1,8 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+
+import { t } from './i18n';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -13,7 +15,7 @@ const firebaseConfig = {
 
 function ensureFirebaseConfig() {
   if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.appId) {
-    throw new Error('Firebaseの環境変数が不足しています。');
+    throw new Error(t('firebase.missingConfig'));
   }
 }
 
@@ -23,5 +25,25 @@ export const firebaseApp = (() => {
   return initializeApp(firebaseConfig);
 })();
 
-export const firebaseAuth = getAuth(firebaseApp);
+function getReactNativePersistenceSafe() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('firebase/auth/react-native');
+    const getReactNativePersistence = mod?.getReactNativePersistence;
+    return AsyncStorage && getReactNativePersistence ? getReactNativePersistence(AsyncStorage) : null;
+  } catch {
+    return null;
+  }
+}
+
+export const firebaseAuth = (() => {
+  try {
+    const persistence = getReactNativePersistenceSafe();
+    return persistence ? initializeAuth(firebaseApp, { persistence }) : getAuth(firebaseApp);
+  } catch {
+    return getAuth(firebaseApp);
+  }
+})();
 export const firebaseDb = getFirestore(firebaseApp);

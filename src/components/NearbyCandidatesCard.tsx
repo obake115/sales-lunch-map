@@ -1,5 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { t } from '@/src/i18n';
+
 type Candidate = {
   id: string;
   name: string;
@@ -60,9 +62,9 @@ const UI = {
 export function NearbyCandidatesCard({ radiusM, candidates, onPressItem }: Props) {
   return (
     <View style={UI.card}>
-      <Text style={UI.title}>📍 近くのランチ候補（{radiusM}m）</Text>
+      <Text style={UI.title}>{t('nearby.title', { radius: radiusM })}</Text>
       {candidates.length === 0 ? (
-        <Text style={UI.empty}>近くの候補はまだありません。＋で登録してみよう</Text>
+        <Text style={UI.empty}>{t('nearby.empty')}</Text>
       ) : (
         candidates.map((item) => (
           <Pressable
@@ -73,7 +75,7 @@ export function NearbyCandidatesCard({ radiusM, candidates, onPressItem }: Props
               {item.name}
               {item.isFavorite ? <Text style={UI.favorite}>⭐</Text> : null}
             </Text>
-            <Text style={UI.itemMeta}>徒歩{item.minutes}分</Text>
+            <Text style={UI.itemMeta}>{t('nearby.walkMinutes', { minutes: item.minutes })}</Text>
           </Pressable>
         ))
       )}

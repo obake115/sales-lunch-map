@@ -1,15 +1,19 @@
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { getAchievedBadges, getNextBadge } from '@/src/domain/badges';
+import { t } from '@/src/i18n';
 import { useStores } from '@/src/state/StoresContext';
 import { useThemeMode } from '@/src/state/ThemeContext';
 import {
     getLoginBonusState,
     getNearbyShownCount,
     getProfileAvatarUri,
+    getProfileName,
     getSelectedBadgeId,
+    setProfileName,
     setProfileAvatarUri,
     setSelectedBadgeId,
     type LoginBonusState,
@@ -48,6 +52,12 @@ const UI = {
     color: '#111827',
     fontWeight: '900',
   } as const,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 8,
+  } as const,
   badgePill: {
     alignSelf: 'flex-start',
     backgroundColor: '#FDE68A',
@@ -59,16 +69,6 @@ const UI = {
   badgeText: {
     fontWeight: '800',
     color: '#92400E',
-  } as const,
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 8,
-  } as const,
-  styleText: {
-    fontWeight: '800',
-    color: '#111827',
   } as const,
   styleSub: {
     color: '#6B7280',
@@ -168,43 +168,81 @@ const UI = {
     color: '#111827',
     fontWeight: '700',
   } as const,
+  nameInput: {
+    borderWidth: 1,
+    borderColor: '#E7E2D5',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    marginTop: 8,
+  } as const,
+  nameHint: {
+    color: '#6B7280',
+    marginTop: 6,
+    textAlign: 'center',
+    fontSize: 12,
+  } as const,
+  settingRow: {
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E7E2D5',
+  } as const,
+  settingLabel: {
+    fontWeight: '800',
+    color: '#111827',
+  } as const,
+  settingSub: {
+    color: '#6B7280',
+    marginTop: 4,
+    fontSize: 12,
+  } as const,
 } as const;
 
 function requirementText(
   badge: ReturnType<typeof getNextBadge>,
   stats: { storesCount: number; favoritesCount: number; nearbyShownCount: number; totalLoginDays: number; loginStreak: number }
 ) {
-  if (!badge) return '全ての称号を達成しました！';
-  if (badge.minStores) return `あと${Math.max(0, badge.minStores - stats.storesCount)}店舗登録で「${badge.label}」`;
-  if (badge.minFavorites) return `あと${Math.max(0, badge.minFavorites - stats.favoritesCount)}件で「${badge.label}」`;
+  if (!badge) return t('profile.badges.allAchieved');
+  if (badge.minStores)
+    return t('profile.badges.needStores', {
+      count: Math.max(0, badge.minStores - stats.storesCount),
+      label: badge.label,
+    });
+  if (badge.minFavorites)
+    return t('profile.badges.needFavorites', {
+      count: Math.max(0, badge.minFavorites - stats.favoritesCount),
+      label: badge.label,
+    });
   if (badge.minNearbyShown)
-    return `あと${Math.max(0, badge.minNearbyShown - stats.nearbyShownCount)}回で「${badge.label}」`;
+    return t('profile.badges.needNearby', {
+      count: Math.max(0, badge.minNearbyShown - stats.nearbyShownCount),
+      label: badge.label,
+    });
   if (badge.minLoginDays)
-    return `あと${Math.max(0, badge.minLoginDays - stats.totalLoginDays)}日ログインで「${badge.label}」`;
-  if (badge.minStreak) return `連続${Math.max(0, badge.minStreak - stats.loginStreak)}日ログインで「${badge.label}」`;
-  return `次の称号: ${badge.label}`;
-}
-
-function usageStyle(stats: { storesCount: number; favoritesCount: number; nearbyShownCount: number }) {
-  if (stats.favoritesCount >= 5) {
-    return { title: 'こだわり派', description: '次回候補をしっかり決めるタイプ' };
-  }
-  if (stats.storesCount >= 10) {
-    return { title: '開拓派', description: '新しいランチ候補をどんどん増やすタイプ' };
-  }
-  if (stats.nearbyShownCount >= 5) {
-    return { title: '近場派', description: '近くの候補をまず試したいタイプ' };
-  }
-  return { title: '気まま派', description: 'その日の気分で選ぶタイプ' };
+    return t('profile.badges.needLoginDays', {
+      count: Math.max(0, badge.minLoginDays - stats.totalLoginDays),
+      label: badge.label,
+    });
+  if (badge.minStreak)
+    return t('profile.badges.needStreak', {
+      count: Math.max(0, badge.minStreak - stats.loginStreak),
+      label: badge.label,
+    });
+  return t('profile.badges.next', { label: badge.label });
 }
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { stores, loading } = useStores();
   const { themeMode, setThemeMode } = useThemeMode();
   const [loginState, setLoginState] = useState<LoginBonusState | null>(null);
   const [nearbyShownCount, setNearbyShownCount] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [profileName, setProfileNameState] = useState('');
   const [selectedBadgeId, setSelectedBadgeIdState] = useState<string | null>(null);
+
+  const initials = profileName.trim() ? profileName.trim().slice(0, 2) : 'T.K.';
 
   useEffect(() => {
     let mounted = true;
@@ -234,6 +272,17 @@ export default function ProfileScreen() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      const name = await getProfileName();
+      if (mounted) setProfileNameState(name);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
       const storedId = await getSelectedBadgeId();
       if (mounted) setSelectedBadgeIdState(storedId);
     })();
@@ -241,6 +290,7 @@ export default function ProfileScreen() {
       mounted = false;
     };
   }, []);
+
 
   const stats = useMemo(
     () => ({
@@ -255,7 +305,6 @@ export default function ProfileScreen() {
 
   const achievedBadges = getAchievedBadges(stats).slice(0, 3);
   const nextBadge = getNextBadge(stats);
-  const style = usageStyle(stats);
   const selectedBadge = useMemo(() => {
     if (!selectedBadgeId) return null;
     return getAchievedBadges(stats).find((badge) => badge.id === selectedBadgeId) ?? null;
@@ -265,7 +314,7 @@ export default function ProfileScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
         <View style={{ marginBottom: 14 }}>
-          <Text style={UI.headerTitle}>プロフィール</Text>
+          <Text style={UI.headerTitle}>{t('profile.title')}</Text>
         </View>
 
         <View style={{ ...UI.card, marginBottom: 16 }}>
@@ -273,7 +322,7 @@ export default function ProfileScreen() {
             onPress={async () => {
               const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
               if (!permission.granted) {
-                Alert.alert('写真へのアクセスが必要です', 'プロフィール写真を変更するために許可してください。');
+                Alert.alert(t('profile.photoPermissionTitle'), t('profile.photoPermissionBody'));
                 return;
               }
               const result = await ImagePicker.launchImageLibraryAsync({
@@ -292,24 +341,30 @@ export default function ProfileScreen() {
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={UI.profileAvatarImage} />
             ) : (
-              <Text style={UI.profileAvatarText}>T.K.</Text>
+              <Text style={UI.profileAvatarText}>{initials}</Text>
             )}
           </Pressable>
-          <Text style={UI.profileAvatarHint}>写真を変更</Text>
-          <Text style={UI.profileName}>T.K.</Text>
+          <Text style={UI.profileAvatarHint}>{t('profile.changePhoto')}</Text>
+          <TextInput
+            value={profileName}
+            onChangeText={setProfileNameState}
+            placeholder={t('profile.namePlaceholder')}
+            style={UI.nameInput}
+          />
+          <Text style={UI.nameHint}>{t('profile.nameHint')}</Text>
 
           <View style={UI.profileStats}>
             <View style={UI.profileStatRow}>
-              <Text style={UI.statLabel}>参考になった</Text>
-              <Text style={UI.statValue}>{nearbyShownCount}回</Text>
+              <Text style={UI.statLabel}>{t('profile.stats.helpful')}</Text>
+              <Text style={UI.statValue}>{t('profile.countTimes', { count: nearbyShownCount })}</Text>
             </View>
             <View style={UI.profileStatRow}>
-              <Text style={UI.statLabel}>登録したお店</Text>
-              <Text style={UI.statValue}>{stores.length}件</Text>
+              <Text style={UI.statLabel}>{t('profile.stats.registered')}</Text>
+              <Text style={UI.statValue}>{t('profile.countItems', { count: stores.length })}</Text>
             </View>
             <View style={UI.profileStatRow}>
-              <Text style={UI.statLabel}>次回候補</Text>
-              <Text style={UI.statValue}>{stats.favoritesCount}件</Text>
+              <Text style={UI.statLabel}>{t('profile.stats.favorite')}</Text>
+              <Text style={UI.statValue}>{t('profile.countItems', { count: stats.favoritesCount })}</Text>
             </View>
           </View>
 
@@ -317,11 +372,11 @@ export default function ProfileScreen() {
             onPress={() => {
               const choices = getAchievedBadges(stats);
               if (choices.length === 0) {
-                Alert.alert('称号がありません', '条件を満たすと称号を選択できます。');
+                Alert.alert(t('profile.badges.noneTitle'), t('profile.badges.noneBody'));
                 return;
               }
               Alert.alert(
-                '称号を選択',
+                t('profile.badges.selectTitle'),
                 '',
                 [
                   ...choices.map((badge) => ({
@@ -332,77 +387,93 @@ export default function ProfileScreen() {
                     },
                   })),
                   {
-                    text: '選択解除',
+                    text: t('profile.badges.clear'),
                     style: 'destructive',
                     onPress: async () => {
                       setSelectedBadgeIdState(null);
                       await setSelectedBadgeId(null);
                     },
                   },
-                  { text: 'キャンセル', style: 'cancel' },
+                  { text: t('common.cancel'), style: 'cancel' },
                 ],
                 { cancelable: true }
               );
             }}
             style={UI.profileBadge}>
             <Text style={UI.profileBadgeText}>
-              ⭐ {selectedBadge?.label ?? (achievedBadges[0]?.label ?? '称号を選択')}
+              👑 {selectedBadge?.label ?? (achievedBadges[0]?.label ?? t('profile.badges.selectTitle'))}
             </Text>
           </Pressable>
           <Pressable
             onPress={() => {
-              Alert.alert('保存しました');
+              setProfileName(profileName);
+              Alert.alert(t('profile.saved'));
             }}
             style={UI.profileSaveBtn}>
-            <Text style={UI.profileSaveText}>保存</Text>
+            <Text style={UI.profileSaveText}>{t('common.save')}</Text>
           </Pressable>
+
         </View>
 
         <View style={{ ...UI.card, marginBottom: 16 }}>
-          <Text style={UI.sectionTitle}>テーマ</Text>
-          <Text style={UI.styleSub}>暖色 / ネイビーを切り替えできます</Text>
+          <Text style={UI.sectionTitle}>{t('profile.themeTitle')}</Text>
+          <Text style={UI.styleSub}>{t('profile.themeSub')}</Text>
           <View style={UI.themeRow}>
             <Pressable
               onPress={() => setThemeMode('warm')}
               style={{ ...UI.themeBtn, ...(themeMode === 'warm' ? UI.themeBtnActive : null) }}>
-              <Text style={UI.themeBtnText}>暖色</Text>
+              <Text style={UI.themeBtnText}>{t('profile.themeWarm')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setThemeMode('navy')}
               style={{ ...UI.themeBtn, ...(themeMode === 'navy' ? UI.themeBtnActive : null) }}>
-              <Text style={UI.themeBtnText}>ネイビー</Text>
+              <Text style={UI.themeBtnText}>{t('profile.themeNavy')}</Text>
             </Pressable>
           </View>
         </View>
 
         <View style={{ ...UI.card, marginBottom: 16 }}>
-          <Text style={UI.sectionTitle}>ステータス</Text>
+          <Text style={UI.sectionTitle}>{t('profile.settingsTitle')}</Text>
+          <Pressable
+            onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'preview' } })}
+            style={{ paddingTop: 10 }}>
+            <Text style={UI.settingLabel}>{t('profile.settingsHowTo')}</Text>
+            <Text style={UI.settingSub}>{t('profile.settingsHowToSub')}</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/post-limit-info')} style={UI.settingRow}>
+            <Text style={UI.settingLabel}>{t('profile.settingsPostLimit')}</Text>
+            <Text style={UI.settingSub}>{t('profile.settingsPostLimitSub')}</Text>
+          </Pressable>
+        </View>
+
+        <View style={{ ...UI.card, marginBottom: 16 }}>
+          <Text style={UI.sectionTitle}>{t('profile.statusTitle')}</Text>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>登録店舗数</Text>
-            <Text style={UI.statValue}>{stores.length}件</Text>
+            <Text style={UI.statLabel}>{t('profile.statusStores')}</Text>
+            <Text style={UI.statValue}>{t('profile.countItems', { count: stores.length })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>次回候補数</Text>
-            <Text style={UI.statValue}>{stats.favoritesCount}件</Text>
+            <Text style={UI.statLabel}>{t('profile.statusFavorites')}</Text>
+            <Text style={UI.statValue}>{t('profile.countItems', { count: stats.favoritesCount })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>累計ログイン</Text>
-            <Text style={UI.statValue}>{loginState?.totalDays ?? 0}日</Text>
+            <Text style={UI.statLabel}>{t('profile.statusTotalLogin')}</Text>
+            <Text style={UI.statValue}>{t('profile.countDays', { count: loginState?.totalDays ?? 0 })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>連続ログイン</Text>
-            <Text style={UI.statValue}>{loginState?.streak ?? 0}日</Text>
+            <Text style={UI.statLabel}>{t('profile.statusStreak')}</Text>
+            <Text style={UI.statValue}>{t('profile.countDays', { count: loginState?.streak ?? 0 })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>徒歩圏内表示</Text>
-            <Text style={UI.statValue}>{nearbyShownCount}回</Text>
+            <Text style={UI.statLabel}>{t('profile.statusNearby')}</Text>
+            <Text style={UI.statValue}>{t('profile.countTimes', { count: nearbyShownCount })}</Text>
           </View>
         </View>
 
         <View style={UI.card}>
-          <Text style={UI.sectionTitle}>称号</Text>
+          <Text style={UI.sectionTitle}>{t('profile.badges.title')}</Text>
           {achievedBadges.length === 0 ? (
-            <Text style={{ color: '#6B7280' }}>まだ称号がありません。</Text>
+            <Text style={{ color: '#6B7280' }}>{t('profile.badges.empty')}</Text>
           ) : (
             achievedBadges.map((badge) => (
               <View key={badge.id} style={UI.badgePill}>
@@ -413,11 +484,6 @@ export default function ProfileScreen() {
           <Text style={{ color: '#6B7280' }}>{requirementText(nextBadge, stats)}</Text>
         </View>
 
-        <View style={UI.card}>
-          <Text style={UI.sectionTitle}>利用スタイル</Text>
-          <Text style={UI.styleText}>{style.title}</Text>
-          <Text style={UI.styleSub}>{style.description}</Text>
-        </View>
       </ScrollView>
 
       <BottomAdBanner />

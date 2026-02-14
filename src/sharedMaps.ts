@@ -15,6 +15,7 @@ import {
     where,
 } from 'firebase/firestore';
 import { firebaseDb } from './firebase';
+import { t } from './i18n';
 
 export type SharedMap = {
   id: string;
@@ -22,6 +23,7 @@ export type SharedMap = {
   code: string;
   ownerId: string;
   memberIds: string[];
+  isReadOnly?: boolean;
   createdAt?: number;
 };
 
@@ -32,6 +34,7 @@ export type SharedStore = {
   latitude: number;
   longitude: number;
   memo?: string;
+  tag?: 'favorite' | 'want' | 'again';
   createdBy: string;
   createdAt?: number;
 };
@@ -63,7 +66,7 @@ export function listenMyMaps(userId: string, onChange: (maps: SharedMap[]) => vo
       const data = d.data() as any;
       return {
         id: d.id,
-        name: data?.name ?? '無題のマップ',
+        name: data?.name ?? t('sharedMaps.untitled'),
         code: data?.code ?? '',
         ownerId: data?.ownerId ?? '',
         memberIds: Array.isArray(data?.memberIds) ? data.memberIds : [],
@@ -77,10 +80,11 @@ export function listenMyMaps(userId: string, onChange: (maps: SharedMap[]) => vo
 export async function createMap(userId: string, name: string): Promise<string> {
   const code = await uniqueCode();
   const docRef = await addDoc(collection(firebaseDb, 'maps'), {
-    name: name.trim() || '無題のマップ',
+    name: name.trim() || t('sharedMaps.untitled'),
     code,
     ownerId: userId,
     memberIds: [userId],
+    isReadOnly: false,
     createdAt: serverTimestamp(),
   });
   return docRef.id;
@@ -89,7 +93,7 @@ export async function createMap(userId: string, name: string): Promise<string> {
 export async function joinMap(userId: string, code: string): Promise<string> {
   const q = query(collection(firebaseDb, 'maps'), where('code', '==', code.trim().toUpperCase()), limit(1));
   const snap = await getDocs(q);
-  if (snap.empty) throw new Error('招待コードが見つかりません。');
+  if (snap.empty) throw new Error(t('sharedMaps.codeNotFound'));
   const docSnap = snap.docs[0]!;
   await updateDoc(docSnap.ref, { memberIds: arrayUnion(userId) });
   return docSnap.id;
@@ -105,10 +109,11 @@ export function listenMap(mapId: string, onChange: (map: SharedMap | null) => vo
     const data = snap.data() as any;
     onChange({
       id: snap.id,
-      name: data?.name ?? '無題のマップ',
+      name: data?.name ?? t('sharedMaps.untitled'),
       code: data?.code ?? '',
       ownerId: data?.ownerId ?? '',
       memberIds: Array.isArray(data?.memberIds) ? data.memberIds : [],
+      isReadOnly: !!data?.isReadOnly,
       createdAt: data?.createdAt?.toMillis?.() ?? undefined,
     });
   });
@@ -126,6 +131,7 @@ export function listenMapStores(mapId: string, onChange: (stores: SharedStore[])
         latitude: data?.latitude ?? 0,
         longitude: data?.longitude ?? 0,
         memo: data?.memo ?? undefined,
+        tag: data?.tag ?? undefined,
         createdBy: data?.createdBy ?? '',
         createdAt: data?.createdAt?.toMillis?.() ?? undefined,
       } as SharedStore;
@@ -136,7 +142,15 @@ export function listenMapStores(mapId: string, onChange: (stores: SharedStore[])
 
 export async function addMapStore(
   mapId: string,
-  input: { name: string; placeId?: string; latitude: number; longitude: number; memo?: string; createdBy: string }
+  input: {
+    name: string;
+    placeId?: string;
+    latitude: number;
+    longitude: number;
+    memo?: string;
+    tag?: 'favorite' | 'want' | 'again';
+    createdBy: string;
+  }
 ) {
   await addDoc(collection(firebaseDb, 'maps', mapId, 'stores'), {
     name: input.name.trim(),
@@ -144,6 +158,7 @@ export async function addMapStore(
     latitude: input.latitude,
     longitude: input.longitude,
     memo: input.memo?.trim() || undefined,
+    tag: input.tag ?? null,
     createdBy: input.createdBy,
     createdAt: serverTimestamp(),
   });
@@ -151,4 +166,16 @@ export async function addMapStore(
 
 export async function deleteMapStore(mapId: string, storeId: string) {
   await deleteDoc(doc(firebaseDb, 'maps', mapId, 'stores', storeId));
+}
+
+export async function updateMapStoreTag(
+  mapId: string,
+  storeId: string,
+  tag: 'favorite' | 'want' | 'again' | null
+) {
+  await updateDoc(doc(firebaseDb, 'maps', mapId, 'stores', storeId), { tag });
+}
+
+export async function setMapReadOnly(mapId: string, isReadOnly: boolean) {
+  await updateDoc(doc(firebaseDb, 'maps', mapId), { isReadOnly });
 }

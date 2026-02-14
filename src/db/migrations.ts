@@ -18,6 +18,7 @@ export async function runMigrations(db: SQLiteDatabase) {
       smoking INTEGER,
       seating TEXT,
       isFavorite INTEGER NOT NULL DEFAULT 0,
+      shareToEveryone INTEGER NOT NULL DEFAULT 0,
       remindEnabled INTEGER NOT NULL DEFAULT 0,
       remindRadiusM INTEGER,
       createdAt TEXT NOT NULL,
@@ -49,9 +50,29 @@ export async function runMigrations(db: SQLiteDatabase) {
       takenAt INTEGER
     );
 
+    CREATE TABLE IF NOT EXISTS prefecture_photos (
+      prefectureId TEXT PRIMARY KEY NOT NULL,
+      photoUri TEXT NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS travel_lunch_entries (
+      id TEXT PRIMARY KEY NOT NULL,
+      prefectureId TEXT NOT NULL,
+      imageUri TEXT NOT NULL,
+      restaurantName TEXT NOT NULL,
+      genre TEXT NOT NULL,
+      visitedAt TEXT NOT NULL,
+      rating INTEGER NOT NULL,
+      memo TEXT,
+      createdAt INTEGER NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_places_lat_lng ON places (lat, lng);
     CREATE INDEX IF NOT EXISTS idx_memos_storeId ON memos (storeId);
     CREATE INDEX IF NOT EXISTS idx_album_photos_createdAt ON album_photos (createdAt);
+    CREATE INDEX IF NOT EXISTS idx_travel_lunch_entries_prefectureId ON travel_lunch_entries (prefectureId);
+    CREATE INDEX IF NOT EXISTS idx_travel_lunch_entries_createdAt ON travel_lunch_entries (createdAt);
   `);
 
   const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(places)');
@@ -66,6 +87,10 @@ export async function runMigrations(db: SQLiteDatabase) {
   const hasSceneTags = columns.some((col) => col.name === 'sceneTags');
   if (!hasSceneTags) {
     await db.execAsync('ALTER TABLE places ADD COLUMN sceneTags TEXT');
+  }
+  const hasShareToEveryone = columns.some((col) => col.name === 'shareToEveryone');
+  if (!hasShareToEveryone) {
+    await db.execAsync('ALTER TABLE places ADD COLUMN shareToEveryone INTEGER NOT NULL DEFAULT 0');
   }
 
   const albumColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(album_photos)');

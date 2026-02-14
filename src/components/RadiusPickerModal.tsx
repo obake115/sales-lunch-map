@@ -1,6 +1,8 @@
 import { Picker } from '@react-native-picker/picker';
 import { Modal, Pressable, Text, View } from 'react-native';
 
+import { t } from '@/src/i18n';
+
 const OPTIONS = [100, 200, 300, 400, 500] as const;
 
 const UI = {
@@ -48,14 +50,14 @@ export function RadiusPickerModal({ visible, value, onChange, onClose }: Props) 
       <Pressable style={UI.overlay} onPress={onClose}>
         <Pressable style={UI.sheet} onPress={() => undefined}>
           <View style={UI.sheetHeader}>
-            <Text style={UI.title}>距離範囲を選択</Text>
+            <Text style={UI.title}>{t('radiusPicker.title')}</Text>
             <Pressable onPress={onClose}>
-              <Text style={UI.actionText}>完了</Text>
+              <Text style={UI.actionText}>{t('radiusPicker.done')}</Text>
             </Pressable>
           </View>
           <Picker selectedValue={value} onValueChange={(next) => onChange(Number(next))}>
             {OPTIONS.map((option) => (
-              <Picker.Item key={option} label={`${option}m`} value={option} />
+              <Picker.Item key={option} label={t('radiusPicker.optionLabel', { value: option })} value={option} />
             ))}
           </Picker>
         </Pressable>

@@ -9,7 +9,8 @@ import { getSetting, setSetting } from './db/settingsRepo';
 import { getDb } from './db/sqlite';
 import { addDays, formatYmd } from './domain/date';
 import { createId } from './id';
-import type { AlbumPhoto, Memo, Store } from './models';
+import type { AlbumPhoto, Memo, PrefecturePhoto, Store, TravelLunchEntry } from './models';
+import { t } from './i18n';
 
 type MemoRow = {
   id: string;
@@ -29,6 +30,24 @@ type AlbumPhotoRow = {
   takenAt: number | null;
 };
 
+type PrefecturePhotoRow = {
+  prefectureId: string;
+  photoUri: string;
+  updatedAt: number;
+};
+
+type TravelLunchEntryRow = {
+  id: string;
+  prefectureId: string;
+  imageUri: string;
+  restaurantName: string;
+  genre: string;
+  visitedAt: string;
+  rating: number;
+  memo: string | null;
+  createdAt: number;
+};
+
 export type ReminderListItem = {
   storeId: string;
   storeName: string;
@@ -44,6 +63,23 @@ export type LoginBonusState = {
 };
 
 export type ThemeMode = 'warm' | 'navy';
+
+const FREE_POST_LIMIT = 10;
+
+function getReminderTitle(store: Store | null) {
+  if (store?.name) {
+    return t('storage.reminderTitleWithName', { name: store.name });
+  }
+  return t('storage.reminderTitleDefault');
+}
+
+function formatYmdJst(date: Date): string {
+  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  const year = jst.getUTCFullYear();
+  const month = String(jst.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(jst.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 const DEFAULT_LOGIN_BONUS_STATE: LoginBonusState = {
   lastClaimedDate: undefined,
@@ -78,6 +114,24 @@ const rowToAlbumPhoto = (row: AlbumPhotoRow): AlbumPhoto => ({
   storeId: row.storeId ?? undefined,
   createdAt: row.createdAt,
   takenAt: typeof row.takenAt === 'number' ? row.takenAt : row.createdAt,
+});
+
+const rowToPrefecturePhoto = (row: PrefecturePhotoRow): PrefecturePhoto => ({
+  prefectureId: row.prefectureId,
+  photoUri: row.photoUri,
+  updatedAt: row.updatedAt,
+});
+
+const rowToTravelLunchEntry = (row: TravelLunchEntryRow): TravelLunchEntry => ({
+  id: row.id,
+  prefectureId: row.prefectureId,
+  imageUri: row.imageUri,
+  restaurantName: row.restaurantName,
+  genre: row.genre,
+  visitedAt: row.visitedAt,
+  rating: row.rating,
+  memo: row.memo ?? undefined,
+  createdAt: row.createdAt,
 });
 
 async function getReadyDb(): Promise<SQLiteDatabase> {
@@ -187,6 +241,12 @@ async function getMemoById(db: SQLiteDatabase, memoId: string): Promise<Memo | n
   return row ? rowToMemo(row) : null;
 }
 
+async function getStoreCount(): Promise<number> {
+  const db = await getReadyDb();
+  const row = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM places');
+  return row?.count ?? 0;
+}
+
 export async function getStores(): Promise<Store[]> {
   const db = await getReadyDb();
   return getAllPlaces(db);
@@ -204,6 +264,11 @@ export async function addStore(input: {
   longitude: number;
   note?: string;
 }): Promise<Store> {
+  const currentCount = await getStoreCount();
+  const limitState = await getPostLimitState(currentCount);
+  if (!limitState.isUnlimited && currentCount >= limitState.freeLimit + limitState.extraSlotCount) {
+    throw new Error(t('storage.postLimitReached'));
+  }
   const now = Date.now();
   const store: Store = {
     id: createId('store'),
@@ -276,6 +341,137 @@ export async function addAlbumPhoto(
   return { id, uri, storeId, createdAt, takenAt: safeTakenAt };
 }
 
+export async function getPrefecturePhotos(): Promise<PrefecturePhoto[]> {
+  const db = await getReadyDb();
+  const rows = await db.getAllAsync<PrefecturePhotoRow>('SELECT * FROM prefecture_photos');
+  return rows.map(rowToPrefecturePhoto);
+}
+
+export async function setPrefecturePhoto(prefectureId: string, photoUri: string): Promise<void> {
+  const db = await getReadyDb();
+  const updatedAt = Date.now();
+  await db.runAsync(
+    `INSERT INTO prefecture_photos (prefectureId, photoUri, updatedAt)
+     VALUES (?, ?, ?)
+     ON CONFLICT(prefectureId)
+     DO UPDATE SET photoUri = excluded.photoUri, updatedAt = excluded.updatedAt`,
+    [prefectureId, photoUri, updatedAt]
+  );
+}
+
+export async function addTravelLunchEntry(input: {
+  prefectureId: string;
+  imageUri: string;
+  restaurantName: string;
+  genre: string;
+  visitedAt: string;
+  rating: number;
+  memo?: string;
+}): Promise<TravelLunchEntry> {
+  const db = await getReadyDb();
+  const createdAt = Date.now();
+  const entry: TravelLunchEntry = {
+    id: createId('travel'),
+    prefectureId: input.prefectureId,
+    imageUri: input.imageUri,
+    restaurantName: input.restaurantName.trim(),
+    genre: input.genre,
+    visitedAt: input.visitedAt,
+    rating: input.rating,
+    memo: input.memo?.trim() || undefined,
+    createdAt,
+  };
+  await db.runAsync(
+    `INSERT INTO travel_lunch_entries
+      (id, prefectureId, imageUri, restaurantName, genre, visitedAt, rating, memo, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      entry.id,
+      entry.prefectureId,
+      entry.imageUri,
+      entry.restaurantName,
+      entry.genre,
+      entry.visitedAt,
+      entry.rating,
+      entry.memo ?? null,
+      entry.createdAt,
+    ]
+  );
+  return entry;
+}
+
+export async function getTravelLunchEntries(): Promise<TravelLunchEntry[]> {
+  const db = await getReadyDb();
+  const rows = await db.getAllAsync<TravelLunchEntryRow>(
+    'SELECT * FROM travel_lunch_entries ORDER BY createdAt DESC'
+  );
+  return rows.map(rowToTravelLunchEntry);
+}
+
+export async function getTravelLunchProgress(): Promise<number> {
+  const db = await getReadyDb();
+  const row = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(DISTINCT prefectureId) as count FROM travel_lunch_entries'
+  );
+  return row?.count ?? 0;
+}
+
+export type PostLimitState = {
+  isUnlimited: boolean;
+  freeLimit: number;
+  extraSlotCount: number;
+  used: number;
+  remaining: number;
+  canWatchRewardAd: boolean;
+  rewardedDate: string | null;
+};
+
+export async function getPostLimitState(usedCount?: number): Promise<PostLimitState> {
+  const db = await getReadyDb();
+  const purchased = (await getSetting(db, SETTING_KEYS.postLimitPurchased)) === '1';
+  const used = typeof usedCount === 'number' ? usedCount : await getStoreCount();
+  const today = formatYmdJst(new Date());
+  const rewardedDate = await getSetting(db, SETTING_KEYS.postLimitRewardedDate);
+  const extraSlotCount = Number(await getSetting(db, SETTING_KEYS.postLimitBonusSlots)) || 0;
+  const canWatchRewardAd = rewardedDate !== today;
+  const limit = FREE_POST_LIMIT + extraSlotCount;
+  const remaining = purchased ? Number.POSITIVE_INFINITY : Math.max(0, limit - used);
+  return {
+    isUnlimited: purchased,
+    freeLimit: FREE_POST_LIMIT,
+    extraSlotCount,
+    used,
+    remaining,
+    canWatchRewardAd,
+    rewardedDate: rewardedDate || null,
+  };
+}
+
+export async function grantDailyRewardedSlot(): Promise<boolean> {
+  const db = await getReadyDb();
+  const purchased = (await getSetting(db, SETTING_KEYS.postLimitPurchased)) === '1';
+  if (purchased) return false;
+  const today = formatYmdJst(new Date());
+  const rewardedDate = await getSetting(db, SETTING_KEYS.postLimitRewardedDate);
+  if (rewardedDate === today) return false;
+  const extraSlotCount = Number(await getSetting(db, SETTING_KEYS.postLimitBonusSlots)) || 0;
+  await setSetting(db, SETTING_KEYS.postLimitBonusSlots, String(extraSlotCount + 1));
+  await setSetting(db, SETTING_KEYS.postLimitRewardedDate, today);
+  return true;
+}
+
+export async function setPostLimitPurchased(purchased: boolean): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.postLimitPurchased, purchased ? '1' : '0');
+}
+
+export async function resetPostLimitState(): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.postLimitPurchased, '0');
+  await setSetting(db, SETTING_KEYS.postLimitBonusSlots, '0');
+  await setSetting(db, SETTING_KEYS.postLimitRewardedDate, '');
+}
+
 export async function addMemo(storeId: string, text: string): Promise<Memo> {
   const memo: Memo = {
     id: createId('memo'),
@@ -293,7 +489,7 @@ export async function addMemo(storeId: string, text: string): Promise<Memo> {
 
 export async function updateMemoText(storeId: string, memoId: string, text: string) {
   const nextText = text.trim();
-  if (!nextText) throw new Error('メモが空です');
+  if (!nextText) throw new Error(t('storage.memoEmpty'));
 
   const db = await getReadyDb();
   const current = await getMemoById(db, memoId);
@@ -310,7 +506,7 @@ export async function updateMemoText(storeId: string, memoId: string, text: stri
   let reminderNotificationId = current.reminderNotificationId;
   if (hasFutureReminder) {
     const store = await getStore(storeId);
-    const title = store ? `${store.name}のリマインド` : '買い物メモのリマインド';
+    const title = getReminderTitle(store);
     const when = new Date(current.reminderAt as number);
     reminderNotificationId = await Notifications.scheduleNotificationAsync({
       content: {
@@ -345,14 +541,14 @@ export async function setMemoReminder(storeId: string, memoId: string, reminderA
 
   const when = new Date(reminderAt);
   if (Number.isNaN(when.getTime())) {
-    throw new Error('日時が不正です');
+    throw new Error(t('storage.invalidDate'));
   }
   if (when.getTime() < Date.now() + 5_000) {
-    throw new Error('未来の日時を指定してください');
+    throw new Error(t('storage.futureDate'));
   }
 
   const store = await getStore(storeId);
-  const title = store ? `${store.name}のリマインド` : '買い物メモのリマインド';
+  const title = getReminderTitle(store);
   const body = current.text;
 
   const newId = await Notifications.scheduleNotificationAsync({
@@ -449,7 +645,7 @@ export async function ensureSampleStore(): Promise<Store | null> {
   }
 
   const created = await addStore({
-    name: 'サンプル店舗（東京駅）',
+    name: t('storage.sampleStoreName'),
     latitude: 35.681236,
     longitude: 139.767125,
   });
@@ -480,6 +676,27 @@ export async function getThemeMode(): Promise<ThemeMode> {
 export async function setThemeMode(mode: ThemeMode): Promise<void> {
   const db = await getReadyDb();
   await setSetting(db, SETTING_KEYS.themeMode, mode);
+}
+
+export async function getProfileName(): Promise<string> {
+  const db = await getReadyDb();
+  const stored = await getSetting(db, SETTING_KEYS.profileName);
+  return stored?.trim() ? stored.trim() : 'T.K.';
+}
+
+export async function setProfileName(name: string): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.profileName, name.trim());
+}
+
+export async function getHasSeenOnboarding(): Promise<boolean> {
+  const db = await getReadyDb();
+  return (await getSetting(db, SETTING_KEYS.hasSeenOnboarding)) === '1';
+}
+
+export async function setHasSeenOnboarding(value: boolean): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.hasSeenOnboarding, value ? '1' : '0');
 }
 
 export async function getProfileAvatarUri(): Promise<string | null> {

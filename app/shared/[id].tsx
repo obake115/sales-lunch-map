@@ -1,10 +1,22 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Image, Linking, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import * as ExpoLinking from 'expo-linking';
+import { Alert, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import MapView, { Marker, type Region } from 'react-native-maps';
+import * as Clipboard from 'expo-clipboard';
 
-import { searchPlaces, type PlaceSearchResult } from '@/src/places';
-import { addMapStore, deleteMapStore, listenMap, listenMapStores, type SharedMap, type SharedStore } from '@/src/sharedMaps';
+import { t } from '@/src/i18n';
+import {
+  addMapStore,
+  deleteMapStore,
+  listenMap,
+  listenMapStores,
+  setMapReadOnly,
+  updateMapStoreTag,
+  type SharedMap,
+  type SharedStore,
+} from '@/src/sharedMaps';
 import { useAuth } from '@/src/state/AuthContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 
@@ -54,6 +66,24 @@ const UI = {
   } as const,
 } as const;
 
+const INPUT_PROPS = {
+  autoCorrect: false,
+  spellCheck: false,
+  autoCapitalize: 'none' as const,
+  autoComplete: 'off' as const,
+  keyboardType: 'default' as const,
+  blurOnSubmit: false,
+};
+
+function toRegion(latitude: number, longitude: number): Region {
+  return {
+    latitude,
+    longitude,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  };
+}
+
 async function openGoogleMaps(store: { name: string; latitude: number; longitude: number; placeId?: string }) {
   const query = store.placeId ? store.name : `${store.latitude},${store.longitude}`;
   const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}${
@@ -75,14 +105,13 @@ export default function SharedMapDetailScreen() {
   const [placeId, setPlaceId] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [saving, setSaving] = useState(false);
   const [deviceLatLng, setDeviceLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
 
-  const [placeQuery, setPlaceQuery] = useState('');
-  const [placeResults, setPlaceResults] = useState<PlaceSearchResult[]>([]);
-  const [placeSearching, setPlaceSearching] = useState(false);
-  const [placeError, setPlaceError] = useState<string | null>(null);
   const [inviteVisible, setInviteVisible] = useState(false);
+  const [filterTag, setFilterTag] = useState<'all' | 'favorite' | 'want' | 'again'>('all');
+  const [readOnlyUpdating, setReadOnlyUpdating] = useState(false);
 
   useEffect(() => {
     if (!mapId) return;
@@ -108,162 +137,167 @@ export default function SharedMapDetailScreen() {
       if (!fg.granted) return;
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setDeviceLatLng({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      setMapRegion((current) => current ?? toRegion(pos.coords.latitude, pos.coords.longitude));
     })();
   }, []);
 
-  const canSearch = placeQuery.trim().length > 0 && !placeSearching;
-  const canSave = name.trim().length > 0 && latitude != null && longitude != null && !saving;
-
-  const pickPlace = (result: PlaceSearchResult) => {
-    setName(result.name);
-    setPlaceId(result.placeId);
-    setLatitude(result.latitude);
-    setLongitude(result.longitude);
-  };
-
-  const placeStatusText = useMemo(() => {
-    if (placeSearching) return '検索中...';
-    if (placeError) return placeError;
-    if (placeResults.length === 0 && placeQuery.trim().length > 0) return '検索結果がありません。';
-    return null;
-  }, [placeSearching, placeError, placeResults.length, placeQuery]);
+  const isOwner = !!user?.uid && user.uid === map?.ownerId;
+  const isReadOnly = !!map?.isReadOnly;
+  const canEdit = !isReadOnly || isOwner;
+  const canSave = name.trim().length > 0 && latitude != null && longitude != null && !saving && canEdit;
 
   const inviteCode = map?.code ?? '';
   const inviteQrUrl = inviteCode
     ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(inviteCode)}`
     : '';
+  const inviteLink = inviteCode
+    ? ExpoLinking.createURL('/shared', { queryParams: { code: inviteCode } })
+    : '';
+  const copyInviteCode = async () => {
+    if (!inviteCode) return;
+    await Clipboard.setStringAsync(inviteCode);
+    Alert.alert(t('sharedDetail.copiedTitle'), t('sharedDetail.copiedCode'));
+  };
+  const copyInviteLink = async () => {
+    if (!inviteLink) return;
+    await Clipboard.setStringAsync(inviteLink);
+    Alert.alert(t('sharedDetail.copiedTitle'), t('sharedDetail.copiedLink'));
+  };
 
   if (!mapId) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text style={{ color: '#6B7280' }}>マップが見つかりません。</Text>
+        <Text style={{ color: '#6B7280' }}>{t('sharedDetail.notFound')}</Text>
       </View>
     );
   }
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ flex: 1, padding: 16, paddingBottom: 110, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 180, gap: 12 }}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable
             onPress={() => router.back()}
             style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-            <Text style={{ fontWeight: '800', color: '#111827' }}>戻る</Text>
+            <Text style={{ fontWeight: '800', color: '#111827' }}>{t('common.back')}</Text>
           </Pressable>
         </View>
 
         <View style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
-            {map?.name ?? '共同マップ'}
+            {map?.name ?? t('sharedDetail.defaultName')}
           </Text>
-          <Text style={{ color: '#6B7280', marginTop: 6 }}>招待コード: {map?.code ?? '-'}</Text>
-          <Text style={{ color: '#6B7280', marginTop: 2 }}>参加者: {map?.memberIds?.length ?? 0}人</Text>
+          <Text style={{ color: '#6B7280', marginTop: 6 }}>
+            {t('shared.inviteCodeLabel')} {map?.code ?? '-'}
+          </Text>
+          <Text style={{ color: '#6B7280', marginTop: 2 }}>
+            {t('shared.membersLabel', { count: map?.memberIds?.length ?? 0 })}
+          </Text>
+          {isOwner ? (
+            <Pressable
+              disabled={readOnlyUpdating}
+              onPress={async () => {
+                if (!map) return;
+                setReadOnlyUpdating(true);
+                try {
+                  await setMapReadOnly(map.id, !isReadOnly);
+                } finally {
+                  setReadOnlyUpdating(false);
+                }
+              }}
+              style={{ marginTop: 10, ...UI.secondaryBtn, paddingVertical: 8 }}>
+              <Text style={{ fontWeight: '800', color: '#111827' }}>
+                {isReadOnly ? t('sharedDetail.readOnlyOff') : t('sharedDetail.readOnlyOn')}
+              </Text>
+            </Pressable>
+          ) : isReadOnly ? (
+            <Text style={{ color: '#B45309', marginTop: 8, fontWeight: '800' }}>
+              {t('sharedDetail.readOnlyNotice')}
+            </Text>
+          ) : null}
         </View>
 
         <View style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 8 }}>店舗を追加</Text>
+          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 8 }}>{t('sharedDetail.addStore')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="店舗名"
+            placeholder={t('sharedDetail.storeNamePlaceholder')}
             style={UI.input}
+            {...INPUT_PROPS}
           />
           <TextInput
             value={memo}
             onChangeText={setMemo}
-            placeholder="メモ（任意）"
+            placeholder={t('sharedDetail.memoPlaceholder')}
             style={{ marginTop: 8, ...UI.input }}
+            {...INPUT_PROPS}
           />
 
           <View style={{ marginTop: 10 }}>
-            <Text style={{ fontWeight: '800', marginBottom: 6 }}>Googleで検索</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TextInput
-                value={placeQuery}
-                onChangeText={setPlaceQuery}
-                placeholder="例：新宿 ランチ"
-                style={{ flex: 1, ...UI.input }}
-              />
-              <Pressable
-                disabled={!canSearch}
-                onPress={async () => {
-                  if (!canSearch) return;
-                  try {
-                    setPlaceSearching(true);
-                    setPlaceError(null);
-                    const results = await searchPlaces(placeQuery, deviceLatLng ? { location: deviceLatLng } : undefined);
-                    setPlaceResults(results);
-                  } catch (e: any) {
-                    setPlaceResults([]);
-                    setPlaceError(e?.message ?? '検索に失敗しました。');
-                  } finally {
-                    setPlaceSearching(false);
-                  }
-                }}
-                style={{
-                  ...UI.secondaryBtn,
-                  paddingHorizontal: 12,
-                  justifyContent: 'center',
-                  backgroundColor: canSearch ? UI.secondaryBtn.backgroundColor : '#F3F4F6',
-                  borderColor: canSearch ? UI.secondaryBtn.borderColor : '#E5E7EB',
-                }}>
-                <Text style={{ color: canSearch ? '#111827' : '#6B7280', fontWeight: '800' }}>検索</Text>
-              </Pressable>
-            </View>
-            {!!placeStatusText && (
-              <Text style={{ color: placeError ? '#DC2626' : '#6B7280', marginTop: 8 }}>{placeStatusText}</Text>
-            )}
-            <View style={{ marginTop: 10, gap: 8 }}>
-              {placeResults.map((r) => (
-                <Pressable
-                  key={r.placeId}
-                  onPress={() => pickPlace(r)}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#E7E2D5',
-                    borderRadius: 12,
-                    padding: 10,
-                    backgroundColor: '#FFFFFF',
-                  }}>
-                  <Text style={{ fontWeight: '800' }} numberOfLines={1}>
-                    {r.name}
-                  </Text>
-                  {!!r.address && (
-                    <Text style={{ color: '#6B7280', marginTop: 4 }} numberOfLines={2}>
-                      {r.address}
-                    </Text>
-                  )}
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <View style={{ marginTop: 10 }}>
-            <Text style={{ fontWeight: '800', marginBottom: 6 }}>位置情報</Text>
+            <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('sharedDetail.location')}</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Pressable
                 onPress={async () => {
                   const fg = await Location.requestForegroundPermissionsAsync();
                   if (!fg.granted) {
-                    Alert.alert('位置情報が必要です', '現在地取得のため、位置情報を許可してください。');
+                    Alert.alert(t('sharedDetail.locationTitle'), t('sharedDetail.locationBody'));
                     return;
                   }
                   const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
                   setLatitude(pos.coords.latitude);
                   setLongitude(pos.coords.longitude);
                   setDeviceLatLng({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+                  setMapRegion(toRegion(pos.coords.latitude, pos.coords.longitude));
                 }}
                 style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-                <Text style={{ fontWeight: '800', color: '#111827' }}>現在地を取得</Text>
+                <Text style={{ fontWeight: '800', color: '#111827' }}>{t('sharedDetail.getCurrent')}</Text>
               </Pressable>
             </View>
             <Text style={{ color: '#6B7280', marginTop: 6 }}>
-              緯度: {latitude ?? '-'} / 経度: {longitude ?? '-'}
+              {t('sharedDetail.latLabel', { value: latitude ?? '-' })} /{' '}
+              {t('sharedDetail.lngLabel', { value: longitude ?? '-' })}
             </Text>
           </View>
 
           <View style={{ marginTop: 10 }}>
-            <Text style={{ color: '#6B7280' }}>Place ID: {placeId || '-'}</Text>
+            <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('sharedDetail.pickOnMap')}</Text>
+            <Text style={{ color: '#6B7280', marginBottom: 8 }}>{t('sharedDetail.pickOnMapHelp')}</Text>
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: '#E7E2D5',
+                borderRadius: 16,
+                overflow: 'hidden',
+                backgroundColor: 'white',
+                height: 220,
+              }}>
+              {mapRegion ? (
+                <MapView
+                  style={{ flex: 1 }}
+                  region={mapRegion}
+                  onRegionChangeComplete={setMapRegion}
+                  onPress={(e) => {
+                    const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
+                    setLatitude(lat);
+                    setLongitude(lng);
+                    setMapRegion(toRegion(lat, lng));
+                  }}
+                  showsUserLocation>
+                  {latitude != null && longitude != null && (
+                    <Marker coordinate={{ latitude, longitude }} />
+                  )}
+                </MapView>
+              ) : (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#6B7280' }}>{t('sharedDetail.locationLoading')}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={{ marginTop: 10 }}>
+            <Text style={{ color: '#6B7280' }}>{t('sharedDetail.placeId', { value: placeId || '-' })}</Text>
           </View>
 
           <Pressable
@@ -284,12 +318,10 @@ export default function SharedMapDetailScreen() {
                 setName('');
                 setMemo('');
                 setPlaceId('');
-                setPlaceQuery('');
-                setPlaceResults([]);
                 setLatitude(null);
                 setLongitude(null);
               } catch (e: any) {
-                Alert.alert('保存できませんでした', e?.message ?? 'しばらくしてから再度お試しください。');
+                Alert.alert(t('sharedDetail.saveFailedTitle'), e?.message ?? t('shared.tryLater'));
               } finally {
                 setSaving(false);
               }
@@ -299,34 +331,108 @@ export default function SharedMapDetailScreen() {
               ...UI.primaryBtn,
               backgroundColor: canSave ? UI.primaryBtn.backgroundColor : '#9BB8FF',
             }}>
-            <Text style={{ color: 'white', fontWeight: '900' }}>{saving ? '保存中...' : '保存'}</Text>
+            <Text style={{ color: 'white', fontWeight: '900' }}>
+              {saving ? t('sharedDetail.saving') : t('common.save')}
+            </Text>
           </Pressable>
         </View>
 
-        <View style={{ flex: 1, gap: 8 }}>
-          <Text style={{ fontWeight: '900' }}>店舗一覧</Text>
-          {stores.length === 0 && <Text style={{ color: '#6B7280' }}>まだ店舗がありません。</Text>}
-          <FlatList
-            data={stores}
-            keyExtractor={(s) => s.id}
-            contentContainerStyle={{ gap: 10 }}
-            renderItem={({ item }) => {
-              const canDelete = user?.uid && user.uid === item.createdBy;
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontWeight: '900' }}>{t('sharedDetail.storeList')}</Text>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            {(['all', 'favorite', 'want', 'again'] as const).map((tag) => {
+              const active = filterTag === tag;
+              const label =
+                tag === 'all'
+                  ? t('sharedDetail.tags.all')
+                  : tag === 'favorite'
+                  ? t('sharedDetail.tags.favorite')
+                  : tag === 'want'
+                  ? t('sharedDetail.tags.want')
+                  : t('sharedDetail.tags.again');
               return (
-                <View style={UI.card}>
+                <Pressable
+                  key={tag}
+                  onPress={() => setFilterTag(tag)}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: active ? '#F59E0B' : '#E5E7EB',
+                    backgroundColor: active ? '#FFF7E6' : '#FFFFFF',
+                    borderRadius: 999,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  }}>
+                  <Text style={{ color: active ? '#B45309' : '#6B7280', fontWeight: '800', fontSize: 12 }}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {stores.length === 0 && <Text style={{ color: '#6B7280' }}>{t('sharedDetail.empty')}</Text>}
+          <View style={{ gap: 10 }}>
+            {(filterTag === 'all' ? stores : stores.filter((s) => s.tag === filterTag)).map((item) => {
+              const canDelete = user?.uid && user.uid === item.createdBy && canEdit;
+              return (
+                <View key={item.id} style={UI.card}>
                   <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
                     {item.name}
                   </Text>
+                  {item.tag ? (
+                    <Text style={{ color: '#B45309', marginTop: 4, fontWeight: '800' }}>
+                      {item.tag === 'favorite'
+                        ? t('sharedDetail.tags.favorite')
+                        : item.tag === 'want'
+                        ? t('sharedDetail.tags.want')
+                        : t('sharedDetail.tags.again')}
+                    </Text>
+                  ) : null}
                   {!!item.memo && (
                     <Text style={{ color: '#6B7280', marginTop: 4 }} numberOfLines={2}>
-                      メモ: {item.memo}
+                      {t('sharedDetail.memoLabel')} {item.memo}
                     </Text>
                   )}
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                    {(['favorite', 'want', 'again'] as const).map((tag) => {
+                      const active = item.tag === tag;
+                      const label =
+                        tag === 'favorite'
+                          ? t('sharedDetail.tags.favorite')
+                          : tag === 'want'
+                          ? t('sharedDetail.tags.want')
+                          : t('sharedDetail.tags.again');
+                      return (
+                        <Pressable
+                          key={tag}
+                          disabled={!canEdit}
+                          onPress={async () => {
+                            if (!canEdit) return;
+                            try {
+                              await updateMapStoreTag(mapId, item.id, active ? null : tag);
+                            } catch (e: any) {
+                              Alert.alert(t('sharedDetail.updateFailedTitle'), e?.message ?? t('shared.tryLater'));
+                            }
+                          }}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: active ? '#F59E0B' : '#E5E7EB',
+                            backgroundColor: active ? '#FFF7E6' : '#FFFFFF',
+                            borderRadius: 999,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                          }}>
+                          <Text style={{ color: active ? '#B45309' : '#6B7280', fontWeight: '800', fontSize: 12 }}>
+                            {label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                     <Pressable
                       onPress={() => openGoogleMaps(item)}
                       style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 10 }}>
-                      <Text style={{ fontWeight: '800', color: '#111827' }}>Googleマップ</Text>
+                      <Text style={{ fontWeight: '800', color: '#111827' }}>{t('sharedDetail.openGoogleMaps')}</Text>
                     </Pressable>
                     {canDelete && (
                       <Pressable
@@ -334,20 +440,20 @@ export default function SharedMapDetailScreen() {
                           try {
                             await deleteMapStore(mapId, item.id);
                           } catch (e: any) {
-                            Alert.alert('削除できませんでした', e?.message ?? 'しばらくしてから再度お試しください。');
+                            Alert.alert(t('sharedDetail.deleteFailedTitle'), e?.message ?? t('shared.tryLater'));
                           }
                         }}
                         style={UI.dangerBtn}>
-                        <Text style={{ color: '#B91C1C', fontWeight: '800' }}>削除</Text>
+                        <Text style={{ color: '#B91C1C', fontWeight: '800' }}>{t('storeDetail.deleteConfirm')}</Text>
                       </Pressable>
                     )}
                   </View>
                 </View>
               );
-            }}
-          />
+            })}
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
       <BottomAdBanner />
 
@@ -374,13 +480,14 @@ export default function SharedMapDetailScreen() {
             </Pressable>
 
             <Text style={{ fontWeight: '900', fontSize: 16, textAlign: 'center', marginTop: 4 }}>
-              招待コードで共有しよう！
+              {t('sharedDetail.inviteTitle')}
             </Text>
             <Text style={{ color: '#6B7280', textAlign: 'center', marginTop: 6 }}>
-              コードを入力するだけで簡単に参加できます
+              {t('sharedDetail.inviteBody')}
             </Text>
 
-            <View
+            <Pressable
+              onLongPress={copyInviteCode}
               style={{
                 marginTop: 14,
                 paddingVertical: 12,
@@ -390,18 +497,15 @@ export default function SharedMapDetailScreen() {
                 alignItems: 'center',
               }}>
               <Text style={{ fontSize: 22, fontWeight: '900', color: '#B45309' }}>{inviteCode || '------'}</Text>
-            </View>
+            </Pressable>
 
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               {inviteCode ? <Image source={{ uri: inviteQrUrl }} style={{ width: 140, height: 140 }} /> : null}
-              <Text style={{ color: '#6B7280', marginTop: 8 }}>QRコードでも参加できます</Text>
+              <Text style={{ color: '#6B7280', marginTop: 8 }}>{t('sharedDetail.inviteQr')}</Text>
             </View>
 
             <Pressable
-              onPress={() => {
-                if (!inviteCode) return;
-                Alert.alert('招待コード', 'コードを長押しでコピーできます。');
-              }}
+              onPress={copyInviteCode}
               style={{
                 marginTop: 12,
                 backgroundColor: '#F59E0B',
@@ -409,11 +513,24 @@ export default function SharedMapDetailScreen() {
                 paddingVertical: 12,
                 alignItems: 'center',
               }}>
-              <Text style={{ color: 'white', fontWeight: '900' }}>コードをコピー</Text>
+              <Text style={{ color: 'white', fontWeight: '900' }}>{t('sharedDetail.copyCode')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={copyInviteLink}
+              style={{
+                marginTop: 10,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 14,
+                paddingVertical: 12,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#E5E5E5',
+              }}>
+              <Text style={{ color: '#111827', fontWeight: '900' }}>{t('sharedDetail.copyLink')}</Text>
             </Pressable>
 
             <Pressable onPress={() => setInviteVisible(false)} style={{ marginTop: 10, alignItems: 'center' }}>
-              <Text style={{ color: '#2563EB', fontWeight: '800' }}>閉じる</Text>
+              <Text style={{ color: '#2563EB', fontWeight: '800' }}>{t('common.close')}</Text>
             </Pressable>
           </View>
         </View>

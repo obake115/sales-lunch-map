@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LoginBonusModal } from './components/LoginBonusModal';
 import { configureNotifications, ensureAndroidDefaultChannel } from './notifications';
+import { syncPurchasedState } from './purchases';
 import { AuthProvider } from './state/AuthContext';
 import { StoresProvider } from './state/StoresContext';
 import { useAppBootstrap } from './state/useAppBootstrap';
@@ -28,6 +29,9 @@ export function AppProviders({ children }: PropsWithChildren) {
     } catch {
       // ignore: Expo Go などで未搭載の場合
     }
+
+    // Sync purchase entitlement on app start (no-op in Expo Go).
+    syncPurchasedState();
   }, []);
 
   return (

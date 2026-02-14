@@ -8,13 +8,14 @@ export type Store = {
   backgroundImageUri?: string;
   photoUri?: string;
   note?: string;
-  timeBand?: '10' | '20' | '30';
+  timeBand?: '10' | '20' | '30' | '30+';
   moodTags?: string[];
   sceneTags?: string[];
   parking?: number;
   smoking?: number;
-  seating?: 'counter' | 'table';
+  seating?: 'counter' | 'table' | 'horigotatsu';
   isFavorite?: boolean;
+  shareToEveryone?: boolean;
   remindEnabled?: boolean;
   remindRadiusM?: number;
   createdAt: number;
@@ -40,3 +41,20 @@ export type AlbumPhoto = {
   storeId?: string;
 };
 
+export type PrefecturePhoto = {
+  prefectureId: string;
+  photoUri: string;
+  updatedAt: number;
+};
+
+export type TravelLunchEntry = {
+  id: string;
+  prefectureId: string;
+  imageUri: string;
+  restaurantName: string;
+  genre: string;
+  visitedAt: string; // YYYY-MM-DD
+  rating: number; // 1-5
+  memo?: string;
+  createdAt: number;
+};
