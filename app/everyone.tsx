@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker, type Region } from 'react-native-maps';
 
 import { t } from '@/src/i18n';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { NeuCard } from '@/src/ui/NeuCard';
 import { listenMapStores, listenMyMaps, type SharedMap, type SharedStore } from '@/src/sharedMaps';
@@ -49,6 +50,7 @@ function haversineMeters(a: { latitude: number; longitude: number }, b: { latitu
 
 export default function EveryoneScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { user } = useAuth();
   const [maps, setMaps] = useState<SharedMap[]>([]);
   const [mapStores, setMapStores] = useState<Record<string, SharedStore[]>>({});
@@ -60,7 +62,7 @@ export default function EveryoneScreen() {
 
   const mapNameById = useMemo(() => { const out: Record<string, string> = {}; maps.forEach((m) => { out[m.id] = m.name; }); return out; }, [maps]);
   const combinedStores = useMemo(() => {
-    const merged = Object.entries(mapStores).flatMap(([mapId, stores]) => stores.map((store) => ({ ...store, mapName: mapNameById[mapId] ?? t('sharedDetail.defaultName') })));
+    const merged = Object.entries(mapStores).flatMap(([mapId, stores]) => stores.map((store) => ({ ...store, mapName: mapNameById[mapId] ?? t('sharedDetail.defaultName'), distanceM: undefined as number | undefined })));
     if (!deviceLatLng) return merged;
     return merged.map((store) => ({ ...store, distanceM: haversineMeters(deviceLatLng, { latitude: store.latitude, longitude: store.longitude }) })).sort((a, b) => (a.distanceM ?? 0) - (b.distanceM ?? 0));
   }, [mapStores, mapNameById, deviceLatLng]);
@@ -70,47 +72,47 @@ export default function EveryoneScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
-        <NeuCard style={UI.card}>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
           <View style={UI.heroTitleRow}>
             <View>
-              <Text style={{ fontWeight: '900', fontSize: 16 }}>{t('everyone.title')}</Text>
-              <Text style={{ color: '#6B7280', marginTop: 4 }}>{t('everyone.subtitle')}</Text>
+              <Text style={{ fontWeight: '900', fontSize: 16, color: colors.text }}>{t('everyone.title')}</Text>
+              <Text style={{ color: colors.subText, marginTop: 4 }}>{t('everyone.subtitle')}</Text>
             </View>
-            <View style={UI.infoIcon}><Text style={{ fontWeight: '900', color: '#6B7280' }}>i</Text></View>
+            <View style={[UI.infoIcon, { backgroundColor: colors.card }]}><Text style={{ fontWeight: '900', color: colors.subText }}>i</Text></View>
           </View>
           <View style={UI.chipRow}>
-            <View style={UI.chip}><Text style={UI.chipText}>{t('everyone.filterArea')}</Text></View>
-            <View style={UI.chip}><Text style={UI.chipText}>{t('everyone.filterGenre')}</Text></View>
-            <View style={UI.chip}><Text style={UI.chipText}>{t('everyone.filterPopular')}</Text></View>
-            <View style={UI.chip}><Text style={UI.chipText}>≡</Text></View>
+            <View style={{ ...UI.chip, opacity: 0.5, backgroundColor: colors.card }}><Text style={UI.chipText}>{t('everyone.filterArea')}</Text></View>
+            <View style={{ ...UI.chip, opacity: 0.5, backgroundColor: colors.card }}><Text style={UI.chipText}>{t('everyone.filterGenre')}</Text></View>
+            <View style={{ ...UI.chip, opacity: 0.5, backgroundColor: colors.card }}><Text style={UI.chipText}>{t('everyone.filterPopular')}</Text></View>
+            <Text style={{ fontSize: 10, color: colors.subText }}>{t('everyone.filterComingSoon')}</Text>
           </View>
-          <View style={UI.mapCard}>
+          <View style={[UI.mapCard, { backgroundColor: colors.card }]}>
             {region ? (
               <MapView style={{ flex: 1 }} region={region} showsUserLocation>
                 {combinedStores.map((store) => (<Marker key={`${store.id}-${store.mapName}`} coordinate={{ latitude: store.latitude, longitude: store.longitude }} title={store.name} />))}
               </MapView>
             ) : (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text style={UI.emptyText}>{t('everyone.locationLoading')}</Text></View>
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Text style={[UI.emptyText, { color: colors.subText }]}>{t('everyone.locationLoading')}</Text></View>
             )}
           </View>
         </NeuCard>
         <View style={{ marginTop: 14 }}>
-          <Text style={{ fontWeight: '900', marginBottom: 6 }}>{t('everyone.nearbyTitle')}</Text>
+          <Text style={{ fontWeight: '900', marginBottom: 6, color: colors.text }}>{t('everyone.nearbyTitle')}</Text>
           {displayStores.length === 0 ? (
-            <Text style={UI.emptyText}>{user ? t('everyone.empty') : t('everyone.loginRequired')}</Text>
+            <Text style={[UI.emptyText, { color: colors.subText }]}>{user ? t('everyone.empty') : t('everyone.loginRequired')}</Text>
           ) : (
             <View style={UI.cardRow}>
               <View style={{ flex: 1 }}>
                 {displayStores.map((store) => (
-                  <NeuCard key={`${store.id}-${store.mapName}`} style={UI.placeCard}>
-                    <View style={UI.placeImage} />
+                  <NeuCard key={`${store.id}-${store.mapName}`} style={[UI.placeCard, { backgroundColor: colors.card }]}>
+                    <View style={[UI.placeImage, { backgroundColor: colors.chipBg }]} />
                     <View style={UI.placeBody}>
-                      <Text style={UI.placeTitle}>{store.name}</Text>
+                      <Text style={[UI.placeTitle, { color: colors.text }]}>{store.name}</Text>
                       <View style={UI.placeMeta}>
-                        {typeof store.distanceM === 'number' && <Text style={UI.shareText}>{Math.round(store.distanceM)}m</Text>}
-                        <Text style={UI.shareText}>{store.mapName}</Text>
+                        {typeof store.distanceM === 'number' && <Text style={[UI.shareText, { color: colors.subText }]}>{Math.round(store.distanceM)}m</Text>}
+                        <Text style={[UI.shareText, { color: colors.subText }]}>{store.mapName}</Text>
                       </View>
-                      {store.memo ? <Text style={UI.shareText}>{store.memo}</Text> : null}
+                      {store.memo ? <Text style={[UI.shareText, { color: colors.subText }]}>{store.memo}</Text> : null}
                     </View>
                   </NeuCard>
                 ))}

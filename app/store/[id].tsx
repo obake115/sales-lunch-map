@@ -1,9 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ImageBackground, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { logReminderSetup, logStoreDeleted } from '@/src/analytics';
 import { t } from '@/src/i18n';
 import type { Store } from '@/src/models';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { useStores } from '@/src/state/StoresContext';
 import { updateStore } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
@@ -71,7 +73,7 @@ const INPUT_PROPS = {
   blurOnSubmit: false,
 };
 
-const TIME_BANDS: Array<Store['timeBand']> = ['10', '20', '30', '30+'];
+const TIME_BANDS: NonNullable<Store['timeBand']>[] = ['10', '20', '30', '30+'];
 const TIME_BAND_LABELS: Record<NonNullable<Store['timeBand']>, string> = {
   '10': 'storeDetail.timeBands.10',
   '20': 'storeDetail.timeBands.20',
@@ -94,14 +96,35 @@ export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const storeId = id ?? '';
 
+  const colors = useThemeColors();
   const { stores, deleteStore, refresh } = useStores();
   const store = useMemo(() => stores.find((s) => s.id === storeId) ?? null, [stores, storeId]);
   const [showReminder, setShowReminder] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const [draftNote, setDraftNote] = useState('');
+
+  useEffect(() => {
+    if (store) {
+      setDraftName(store.name);
+      setDraftNote(store.note ?? '');
+    }
+  }, [store?.id]);
+
+  const saveTextFields = useCallback(async () => {
+    if (!store) return;
+    const patch: Partial<Omit<Store, 'id' | 'createdAt'>> = {};
+    if (draftName !== store.name) patch.name = draftName;
+    if (draftNote !== (store.note ?? '')) patch.note = draftNote;
+    if (Object.keys(patch).length > 0) {
+      await updateStore(store.id, patch);
+      await refresh();
+    }
+  }, [store, draftName, draftNote, refresh]);
 
   if (!store) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text style={{ color: '#6B7280' }}>{t('storeDetail.notFound')}</Text>
+        <Text style={{ color: colors.subText }}>{t('storeDetail.notFound')}</Text>
       </View>
     );
   }
@@ -124,8 +147,9 @@ export default function PlaceDetailScreen() {
               <View style={UI.cardOverlay}>
                 <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.nameLabel')}</Text>
                 <TextInput
-                  value={store.name}
-                  onChangeText={(text) => setField({ name: text })}
+                  value={draftName}
+                  onChangeText={setDraftName}
+                  onBlur={saveTextFields}
                   placeholder={t('storeDetail.namePlaceholder')}
                   style={UI.input}
                   {...INPUT_PROPS}
@@ -141,13 +165,15 @@ export default function PlaceDetailScreen() {
             </ImageBackground>
           </NeuCard>
         ) : (
-          <NeuCard style={UI.card}>
-            <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.nameLabel')}</Text>
+          <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+            <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeDetail.nameLabel')}</Text>
             <TextInput
-              value={store.name}
-              onChangeText={(text) => setField({ name: text })}
+              value={draftName}
+              onChangeText={setDraftName}
+              onBlur={saveTextFields}
               placeholder={t('storeDetail.namePlaceholder')}
-              style={UI.input}
+              style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
+              placeholderTextColor={colors.subText}
               {...INPUT_PROPS}
             />
             <Pressable
@@ -160,124 +186,130 @@ export default function PlaceDetailScreen() {
           </NeuCard>
         )}
 
-        <NeuCard style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.quickInfo')}</Text>
-          <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('storeDetail.waitTime')}</Text>
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeDetail.quickInfo')}</Text>
+          <Text style={{ fontWeight: '800', marginBottom: 6, color: colors.text }}>{t('storeDetail.waitTime')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             {TIME_BANDS.map((band) => (
               <Pressable
                 key={band}
                 onPress={() => setField({ timeBand: store.timeBand === band ? undefined : band })}
-                style={{ ...UI.chip, ...(store.timeBand === band ? UI.chipActive : null) }}>
-                <Text style={{ fontWeight: '800' }}>{t(TIME_BAND_LABELS[band])}</Text>
+                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.timeBand === band ? UI.chipActive : null) }}>
+                <Text style={{ fontWeight: '800', color: colors.text }}>{t(TIME_BAND_LABELS[band])}</Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('storeDetail.seating')}</Text>
+          <Text style={{ fontWeight: '800', marginBottom: 6, color: colors.text }}>{t('storeDetail.seating')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             <Pressable
               onPress={() => setField({ seating: store.seating === 'counter' ? undefined : 'counter' })}
-              style={{ ...UI.chip, ...(store.seating === 'counter' ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.seatingCounter')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'counter' ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.seatingCounter')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setField({ seating: store.seating === 'table' ? undefined : 'table' })}
-              style={{ ...UI.chip, ...(store.seating === 'table' ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.seatingTable')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'table' ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.seatingTable')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setField({ seating: store.seating === 'horigotatsu' ? undefined : 'horigotatsu' })}
-              style={{ ...UI.chip, ...(store.seating === 'horigotatsu' ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.seatingHorigotatsu')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'horigotatsu' ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.seatingHorigotatsu')}</Text>
             </Pressable>
           </View>
 
-          <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('storeDetail.moodScene')}</Text>
+          <Text style={{ fontWeight: '800', marginBottom: 6, color: colors.text }}>{t('storeDetail.moodScene')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             {MOOD_TAGS.map((tag) => (
               <Pressable
                 key={tag.value}
                 onPress={() => setField({ moodTags: toggleTag(store.moodTags, tag.value) })}
-                style={{ ...UI.chip, ...(store.moodTags?.includes(tag.value) ? UI.chipActive : null) }}>
-                <Text style={{ fontWeight: '800' }}>{t(tag.label)}</Text>
+                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.moodTags?.includes(tag.value) ? UI.chipActive : null) }}>
+                <Text style={{ fontWeight: '800', color: colors.text }}>{t(tag.label)}</Text>
               </Pressable>
             ))}
             {SCENE_TAGS.map((tag) => (
               <Pressable
                 key={tag.value}
                 onPress={() => setField({ sceneTags: toggleTag(store.sceneTags, tag.value) })}
-                style={{ ...UI.chip, ...(store.sceneTags?.includes(tag.value) ? UI.chipActive : null) }}>
-                <Text style={{ fontWeight: '800' }}>{t(tag.label)}</Text>
+                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.sceneTags?.includes(tag.value) ? UI.chipActive : null) }}>
+                <Text style={{ fontWeight: '800', color: colors.text }}>{t(tag.label)}</Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('storeDetail.parking')}</Text>
+          <Text style={{ fontWeight: '800', marginBottom: 6, color: colors.text }}>{t('storeDetail.parking')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             <Pressable
               onPress={() => setField({ parking: store.parking === 1 ? undefined : 1 })}
-              style={{ ...UI.chip, ...(store.parking === 1 ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.parkingYes')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.parking === 1 ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.parkingYes')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setField({ parking: store.parking === 0 ? undefined : 0 })}
-              style={{ ...UI.chip, ...(store.parking === 0 ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.parkingNo')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.parking === 0 ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.parkingNo')}</Text>
             </Pressable>
           </View>
 
-          <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('storeDetail.smoking')}</Text>
+          <Text style={{ fontWeight: '800', marginBottom: 6, color: colors.text }}>{t('storeDetail.smoking')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             <Pressable
               onPress={() => setField({ smoking: store.smoking === 1 ? undefined : 1 })}
-              style={{ ...UI.chip, ...(store.smoking === 1 ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.smokingAllowed')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.smoking === 1 ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.smokingAllowed')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setField({ smoking: store.smoking === 0 ? undefined : 0 })}
-              style={{ ...UI.chip, ...(store.smoking === 0 ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.smokingNo')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.smoking === 0 ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.smokingNo')}</Text>
             </Pressable>
           </View>
 
-          <Text style={{ fontWeight: '800', marginTop: 12, marginBottom: 6 }}>{t('storeDetail.shareTitle')}</Text>
+          <Text style={{ fontWeight: '800', marginTop: 12, marginBottom: 6, color: colors.text }}>{t('storeDetail.shareTitle')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             <Pressable
               onPress={() => setField({ shareToEveryone: true })}
-              style={{ ...UI.chip, ...(store.shareToEveryone ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.shareOn')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.shareToEveryone ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.shareOn')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setField({ shareToEveryone: false })}
-              style={{ ...UI.chip, ...(!store.shareToEveryone ? UI.chipActive : null) }}>
-              <Text style={{ fontWeight: '800' }}>{t('storeDetail.shareOff')}</Text>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(!store.shareToEveryone ? UI.chipActive : null) }}>
+              <Text style={{ fontWeight: '800', color: colors.text }}>{t('storeDetail.shareOff')}</Text>
             </Pressable>
           </View>
         </NeuCard>
 
-        <NeuCard style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.memoTitle')}</Text>
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeDetail.memoTitle')}</Text>
           <TextInput
-            value={store.note ?? ''}
-            onChangeText={(text) => setField({ note: text })}
+            value={draftNote}
+            onChangeText={setDraftNote}
+            onBlur={saveTextFields}
             placeholder={t('storeDetail.memoPlaceholder')}
-            style={UI.input}
+            style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
+            placeholderTextColor={colors.subText}
             multiline
             {...INPUT_PROPS}
           />
         </NeuCard>
 
-        <NeuCard style={UI.card}>
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
           <Pressable onPress={() => setShowReminder((v) => !v)}>
-            <Text style={{ fontWeight: '900', fontSize: 16 }}>{t('storeDetail.remindTitle')}</Text>
+            <Text style={{ fontWeight: '900', fontSize: 16, color: colors.text }}>{t('storeDetail.remindTitle')}</Text>
           </Pressable>
           {showReminder && (
             <View style={{ marginTop: 10, gap: 8 }}>
               <Pressable
-                onPress={() => setField({ remindEnabled: !store.remindEnabled })}
-                style={{ ...UI.chip, ...(store.remindEnabled ? UI.chipActive : null) }}>
-                <Text style={{ fontWeight: '800' }}>
+                onPress={() => {
+                  const next = !store.remindEnabled;
+                  logReminderSetup({ store_id: store.id, enabled: next });
+                  setField({ remindEnabled: next });
+                }}
+                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.remindEnabled ? UI.chipActive : null) }}>
+                <Text style={{ fontWeight: '800', color: colors.text }}>
                   {store.remindEnabled ? t('storeDetail.remindOn') : t('storeDetail.remindOff')}
                 </Text>
               </Pressable>
@@ -286,8 +318,8 @@ export default function PlaceDetailScreen() {
                   <Pressable
                     key={radius}
                     onPress={() => setField({ remindRadiusM: radius })}
-                    style={{ ...UI.chip, ...(store.remindRadiusM === radius ? UI.chipActive : null) }}>
-                    <Text style={{ fontWeight: '800' }}>{radius}m</Text>
+                    style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.remindRadiusM === radius ? UI.chipActive : null) }}>
+                    <Text style={{ fontWeight: '800', color: colors.text }}>{radius}m</Text>
                   </Pressable>
                 ))}
               </View>
@@ -296,7 +328,7 @@ export default function PlaceDetailScreen() {
         </NeuCard>
 
         <View style={{ gap: 10 }}>
-          <Pressable onPress={() => router.back()} style={UI.primaryBtn}>
+          <Pressable onPress={async () => { await saveTextFields(); router.back(); }} style={UI.primaryBtn}>
             <Text style={{ color: 'white', fontWeight: '900' }}>{t('storeDetail.saveBack')}</Text>
           </Pressable>
           <Pressable
@@ -307,13 +339,14 @@ export default function PlaceDetailScreen() {
                   text: t('storeDetail.deleteConfirm'),
                   style: 'destructive',
                   onPress: async () => {
+                    logStoreDeleted({ store_id: store.id });
                     await deleteStore(store.id);
                     router.back();
                   },
                 },
               ]);
             }}
-            style={UI.dangerBtn}>
+            style={{ ...UI.dangerBtn, backgroundColor: colors.dangerBg }}>
             <Text style={{ color: '#B91C1C', fontWeight: '900' }}>{t('storeDetail.deleteConfirm')}</Text>
           </Pressable>
         </View>

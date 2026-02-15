@@ -26,6 +26,15 @@ type PlaceRow = {
   lastNotifiedAt: string | null;
 };
 
+const safeJsonParse = (value: string | null): string[] | undefined => {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+};
+
 const toMillis = (value: string | null) => {
   if (!value) return undefined;
   const parsed = Date.parse(value);
@@ -47,12 +56,12 @@ const rowToStore = (row: PlaceRow): Store => ({
   longitude: row.lng,
   enabled: row.enabled === 1,
   note: row.note ?? undefined,
-  timeBand: row.timeBand ?? undefined,
-  moodTags: row.moodTags ? JSON.parse(row.moodTags) : undefined,
-  sceneTags: row.sceneTags ? JSON.parse(row.sceneTags) : undefined,
+  timeBand: (row.timeBand as Store['timeBand']) ?? undefined,
+  moodTags: safeJsonParse(row.moodTags),
+  sceneTags: safeJsonParse(row.sceneTags),
   parking: row.parking ?? undefined,
   smoking: row.smoking ?? undefined,
-  seating: row.seating ?? undefined,
+  seating: (row.seating as Store['seating']) ?? undefined,
   isFavorite: row.isFavorite === 1,
   shareToEveryone: row.shareToEveryone === 1,
   remindEnabled: row.remindEnabled === 1,
@@ -81,6 +90,8 @@ export async function insertPlace(
         Store,
         | 'note'
         | 'timeBand'
+        | 'moodTags'
+        | 'sceneTags'
         | 'parking'
         | 'smoking'
         | 'seating'

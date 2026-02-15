@@ -10,7 +10,7 @@ type StoresContextValue = {
   loading: boolean;
   stores: Store[];
   refresh: () => Promise<void>;
-  addStore: (input: { name: string; placeId?: string; latitude: number; longitude: number }) => Promise<Store>;
+  addStore: (input: { name: string; placeId?: string; latitude: number; longitude: number; note?: string }) => Promise<Store>;
   updateStore: (storeId: string, patch: Partial<Omit<Store, 'id' | 'createdAt'>>) => Promise<Store | null>;
   setStoreEnabled: (storeId: string, enabled: boolean) => Promise<void>;
   deleteStore: (storeId: string) => Promise<void>;
@@ -55,7 +55,7 @@ export function StoresProvider({ children }: PropsWithChildren) {
   }, [stores, loading]);
 
   const addStore = useCallback(
-    async (input: { name: string; placeId?: string; latitude: number; longitude: number }) => {
+    async (input: { name: string; placeId?: string; latitude: number; longitude: number; note?: string }) => {
       const created = await storage.addStore(input);
       await refresh();
       const count = await storage.getStoreCount();
