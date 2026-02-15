@@ -8,31 +8,18 @@ import { t } from '@/src/i18n';
 import { createMap, joinMap, listenMyMaps, type SharedMap } from '@/src/sharedMaps';
 import { useAuth } from '@/src/state/AuthContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   heroCard: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   heroImage: {
     width: '100%',
@@ -40,27 +27,31 @@ const UI = {
     borderRadius: 14,
   } as const,
   input: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   primaryBtn: {
     backgroundColor: '#F59E0B',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
   secondaryBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
+    backgroundColor: '#E9E4DA',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   headerRow: {
     flexDirection: 'row',
@@ -71,11 +62,13 @@ const UI = {
     width: 36,
     height: 36,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   headerTitle: {
     flex: 1,
@@ -99,10 +92,13 @@ const UI = {
     width: 18,
     height: 18,
     borderRadius: 9,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
   } as const,
   infoText: {
     color: '#6B7280',
@@ -235,7 +231,7 @@ export default function SharedMapsScreen() {
         </View>
         <Text style={UI.headerSub}>{t('shared.subtitle')}</Text>
 
-        <View style={UI.heroCard}>
+        <NeuCard style={UI.heroCard}>
           <Image source={require('@/assets/images/shared-hero.png')} style={UI.heroImage} />
           <Text style={{ fontWeight: '900', fontSize: 16, marginTop: 12 }}>{t('shared.heroTitle')}</Text>
           <Text style={{ color: '#6B7280', marginTop: 6 }}>{t('shared.heroBody')}</Text>
@@ -254,7 +250,6 @@ export default function SharedMapsScreen() {
                   marginTop: 8,
                   ...UI.secondaryBtn,
                   paddingVertical: 10,
-                  borderColor: '#E5E5E5',
                 }}>
                 <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.retryPrepare')}</Text>
               </Pressable>
@@ -293,7 +288,7 @@ export default function SharedMapsScreen() {
               <Text style={{ color: 'white', fontWeight: '900' }}>{t('shared.createButton')}</Text>
             </Pressable>
           ) : null}
-        </View>
+        </NeuCard>
 
         {authReady ? (
           <>
@@ -306,7 +301,7 @@ export default function SharedMapsScreen() {
 
             <View style={{ height: 16 }} />
 
-            <View style={UI.card}>
+            <NeuCard style={UI.card}>
               <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 8 }}>{t('shared.joinByCode')}</Text>
               <TextInput
                 value={joinCode}
@@ -326,7 +321,6 @@ export default function SharedMapsScreen() {
                   marginTop: 10,
                   ...UI.secondaryBtn,
                   paddingVertical: 10,
-                  borderColor: '#E5E5E5',
                 }}>
                 <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.joinByQr')}</Text>
               </Pressable>
@@ -358,11 +352,10 @@ export default function SharedMapsScreen() {
                   marginTop: 10,
                   ...UI.secondaryBtn,
                   paddingVertical: 12,
-                  borderColor: canUseShared ? '#E5E5E5' : '#E5E7EB',
                 }}>
                 <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.joinButton')}</Text>
               </Pressable>
-            </View>
+            </NeuCard>
           </>
         ) : null}
 
@@ -372,17 +365,18 @@ export default function SharedMapsScreen() {
           {maps.map((item) => (
             <Pressable
               key={item.id}
-              onPress={() => router.push({ pathname: '/shared/[id]', params: { id: item.id } })}
-              style={UI.card}>
-              <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text style={{ color: '#6B7280', marginTop: 4 }}>
-                {t('shared.inviteCodeLabel')} {item.code}
-              </Text>
-              <Text style={{ color: '#6B7280', marginTop: 2 }}>
-                {t('shared.membersLabel', { count: item.memberIds.length })}
-              </Text>
+              onPress={() => router.push({ pathname: '/shared/[id]', params: { id: item.id } })}>
+              <NeuCard style={UI.card}>
+                <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={{ color: '#6B7280', marginTop: 4 }}>
+                  {t('shared.inviteCodeLabel')} {item.code}
+                </Text>
+                <Text style={{ color: '#6B7280', marginTop: 2 }}>
+                  {t('shared.membersLabel', { count: item.memberIds.length })}
+                </Text>
+              </NeuCard>
             </Pressable>
           ))}
         </View>
@@ -399,14 +393,12 @@ export default function SharedMapsScreen() {
             justifyContent: 'center',
             padding: 20,
           }}>
-          <View
+          <NeuCard
             style={{
               width: '100%',
-              borderRadius: 18,
-              backgroundColor: '#FFFEF8',
+              borderRadius: 20,
+              backgroundColor: '#E9E4DA',
               padding: 16,
-              borderWidth: 1,
-              borderColor: '#E7E2D5',
             }}>
             <Text style={{ fontWeight: '900', fontSize: 16, textAlign: 'center', marginBottom: 10 }}>
               {t('shared.scanTitle')}
@@ -427,7 +419,7 @@ export default function SharedMapsScreen() {
                 </Pressable>
                 <Pressable
                   onPress={handleLibraryScan}
-                  style={{ ...UI.secondaryBtn, paddingVertical: 10, borderColor: '#E5E5E5' }}>
+                  style={{ ...UI.secondaryBtn, paddingVertical: 10 }}>
                   <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.scanWithPhoto')}</Text>
                 </Pressable>
               </View>
@@ -464,9 +456,9 @@ export default function SharedMapsScreen() {
             )}
 
             <Pressable onPress={() => setQrVisible(false)} style={{ marginTop: 12, alignItems: 'center' }}>
-              <Text style={{ color: '#2563EB', fontWeight: '800' }}>{t('common.close')}</Text>
+              <Text style={{ color: '#4F78FF', fontWeight: '800' }}>{t('common.close')}</Text>
             </Pressable>
-          </View>
+          </NeuCard>
         </View>
       </Modal>
     </View>

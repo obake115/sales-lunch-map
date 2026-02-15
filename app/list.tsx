@@ -5,33 +5,27 @@ import { FlatList, Modal, Pressable, ScrollView, Text, TextInput, View } from 'r
 import { t } from '@/src/i18n';
 import { useStores } from '@/src/state/StoresContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   input: {
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   inputGroup: {
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     padding: 12,
     gap: 10,
     marginBottom: 12,
@@ -62,13 +56,14 @@ const UI = {
     paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     alignSelf: 'flex-start',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   chipActive: {
-    borderColor: '#F59E0B',
     backgroundColor: '#FEF3C7',
   } as const,
   chipText: {
@@ -86,8 +81,8 @@ const UI = {
     padding: 20,
   } as const,
   modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#E9E4DA',
+    borderRadius: 20,
     padding: 16,
   } as const,
   modalTitle: {
@@ -106,7 +101,7 @@ const UI = {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   modalBtnPrimary: {
     backgroundColor: '#F59E0B',
@@ -167,7 +162,7 @@ export default function StoreListSearchScreen() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, padding: 16, paddingBottom: 110 }}>
-        <View style={UI.inputGroup}>
+        <NeuCard style={UI.inputGroup}>
           <View style={UI.inputRow}>
             <Pressable
               onPress={() => {
@@ -186,7 +181,7 @@ export default function StoreListSearchScreen() {
               {...INPUT_PROPS}
             />
           </View>
-        </View>
+        </NeuCard>
 
         {loading && <Text style={UI.emptyText}>{t('list.loading')}</Text>}
         {!loading && filtered.length === 0 && <Text style={UI.emptyText}>{t('list.empty')}</Text>}
@@ -196,14 +191,16 @@ export default function StoreListSearchScreen() {
           keyExtractor={(s) => s.id}
           contentContainerStyle={{ gap: 10 }}
           renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.id } })}
-              style={UI.card}>
-              <Text style={UI.title} numberOfLines={1}>
-                {item.name}
-              </Text>
-              {item.note ? <Text style={UI.subtitle}>{item.note}</Text> : null}
-            </Pressable>
+            <NeuCard style={{ borderRadius: 20 }}>
+              <Pressable
+                onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.id } })}
+                style={{ padding: 14 }}>
+                <Text style={UI.title} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                {item.note ? <Text style={UI.subtitle}>{item.note}</Text> : null}
+              </Pressable>
+            </NeuCard>
           )}
         />
       </View>
@@ -212,7 +209,7 @@ export default function StoreListSearchScreen() {
 
       <Modal transparent visible={filterVisible} animationType="fade">
         <View style={UI.modalBackdrop}>
-          <View style={UI.modalCard}>
+          <NeuCard style={{ borderRadius: 20, padding: 16 }}>
             <Text style={UI.modalTitle}>{t('list.filterTitle')}</Text>
             <ScrollView>
               <View style={[UI.filterRow, { flexWrap: 'wrap' }]}>
@@ -251,7 +248,7 @@ export default function StoreListSearchScreen() {
                 <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>{t('list.apply')}</Text>
               </Pressable>
             </View>
-          </View>
+          </NeuCard>
         </View>
       </Modal>
     </View>

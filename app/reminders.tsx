@@ -7,20 +7,14 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import i18n, { t } from '@/src/i18n';
 import { addAlbumPhoto, getAlbumPhotos } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 import { formatYmd } from '@/src/domain/date';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   header: {
     fontSize: 18,
@@ -50,15 +44,16 @@ const UI = {
   controlBtn: {
     flex: 1,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     paddingVertical: 8,
     alignItems: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   controlBtnActive: {
     backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
   } as const,
   controlText: {
     fontWeight: '700',
@@ -71,7 +66,7 @@ const UI = {
     width: 88,
     height: 88,
     borderRadius: 14,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   imagePlaceholder: {
     alignItems: 'center',
@@ -99,8 +94,8 @@ const UI = {
     padding: 20,
   } as const,
   modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#E9E4DA',
+    borderRadius: 20,
     padding: 16,
   } as const,
   modalTitle: {
@@ -119,7 +114,7 @@ const UI = {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   modalBtnPrimary: {
     backgroundColor: '#F59E0B',
@@ -260,7 +255,7 @@ export default function AlbumScreen() {
 
       <Modal transparent visible={pickerVisible} animationType="fade">
         <View style={UI.modalBackdrop}>
-          <View style={UI.modalCard}>
+          <NeuCard style={UI.modalCard}>
             <Text style={UI.modalTitle}>{t('album.pickDate')}</Text>
             <DateTimePicker
               value={pendingDate}
@@ -297,13 +292,13 @@ export default function AlbumScreen() {
                 <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>{t('common.save')}</Text>
               </Pressable>
             </View>
-          </View>
+          </NeuCard>
         </View>
       </Modal>
 
       <Modal transparent visible={filterPickerVisible} animationType="fade">
         <View style={UI.modalBackdrop}>
-          <View style={UI.modalCard}>
+          <NeuCard style={UI.modalCard}>
             <Text style={UI.modalTitle}>{t('album.pickDate')}</Text>
             <DateTimePicker
               value={filterPendingDate}
@@ -333,7 +328,7 @@ export default function AlbumScreen() {
                 <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>{t('album.select')}</Text>
               </Pressable>
             </View>
-          </View>
+          </NeuCard>
         </View>
       </Modal>
     </View>

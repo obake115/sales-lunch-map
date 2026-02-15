@@ -2,26 +2,20 @@ import { useEffect, useState } from 'react';
 import { Text, View, Pressable } from 'react-native';
 import { t } from '@/src/i18n';
 import { getPermissionState, requestAllNeededPermissions, type PermissionState } from '../permissions';
+import { NeuCard } from './NeuCard';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    backgroundColor: '#FFFEF8',
+    backgroundColor: '#E9E4DA',
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
   } as const,
   primaryBtn: {
     marginTop: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4F78FF',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
   } as const,
 } as const;
@@ -46,7 +40,7 @@ export function PermissionNotice() {
   if (missingNotifications) lines.push(t('permissionNotice.notificationsMissing'));
 
   return (
-    <View style={UI.card}>
+    <NeuCard style={UI.card}>
       <Text style={{ fontWeight: '900', marginBottom: 6 }}>{t('permissionNotice.title')}</Text>
       {lines.map((t) => (
         <Text key={t} style={{ color: '#374151', marginBottom: 4 }}>
@@ -61,7 +55,7 @@ export function PermissionNotice() {
         style={UI.primaryBtn}>
         <Text style={{ color: 'white', fontWeight: '900' }}>{t('permissionNotice.allow')}</Text>
       </Pressable>
-    </View>
+    </NeuCard>
   );
 }
 

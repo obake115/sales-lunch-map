@@ -4,6 +4,7 @@ import { Dimensions, Image, Pressable, ScrollView, Text, View } from 'react-nati
 
 import { t } from '@/src/i18n';
 import { setHasSeenOnboarding } from '@/src/storage';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function OnboardingScreen() {
             width: 8,
             height: 8,
             borderRadius: 4,
-            backgroundColor: index === pageIndex ? '#FFA726' : '#E5E7EB',
+            backgroundColor: index === pageIndex ? '#FFA726' : '#D5D0C6',
           }}
         />
       )),
@@ -57,7 +58,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FBF3E8' }}>
+    <View style={{ flex: 1, backgroundColor: '#E9E4DA' }}>
       <View
         style={{
           paddingHorizontal: 16,
@@ -86,21 +87,14 @@ export default function OnboardingScreen() {
         }}>
         {slides.map((slide) => (
           <View key={slide.title} style={{ width, paddingHorizontal: 24, paddingTop: 10 }}>
-            <View
+            <NeuCard
               style={{
-                borderRadius: 18,
-                backgroundColor: '#FFFFFF',
-                borderWidth: 1,
-                borderColor: '#E7E2D5',
+                borderRadius: 20,
+                backgroundColor: '#E9E4DA',
                 padding: 20,
                 minHeight: 380,
                 justifyContent: 'center',
                 gap: 16,
-                shadowColor: '#000',
-                shadowOpacity: 0.06,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 2,
               }}>
               <Text style={{ fontSize: 20, fontWeight: '900', color: '#1F2937', textAlign: 'center' }}>
                 {slide.title}
@@ -113,14 +107,12 @@ export default function OnboardingScreen() {
                 style={{
                   height: 170,
                   borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: '#F1E5D7',
-                  backgroundColor: '#FFF7ED',
+                  backgroundColor: '#D5D0C6',
                   overflow: 'hidden',
                 }}>
                 <Image source={slide.image} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               </View>
-            </View>
+            </NeuCard>
           </View>
         ))}
       </ScrollView>
@@ -146,9 +138,11 @@ export default function OnboardingScreen() {
               borderRadius: 24,
               alignItems: 'center',
               justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: '#E9E4DA',
+              shadowColor: '#C8C3B9',
+              shadowOffset: { width: 2, height: 2 },
+              shadowOpacity: 0.4,
+              shadowRadius: 4,
             }}>
             <Text style={{ color: '#6B7280', fontWeight: '800' }}>{t('common.back')}</Text>
           </Pressable>

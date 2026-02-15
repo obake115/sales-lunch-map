@@ -69,8 +69,8 @@ function RootLayoutNav() {
           ...DefaultTheme,
           colors: {
             ...DefaultTheme.colors,
-            background: '#FFF8EB',
-            card: '#FFF8EB',
+            background: '#E9E4DA',
+            card: '#E9E4DA',
           },
         };
 

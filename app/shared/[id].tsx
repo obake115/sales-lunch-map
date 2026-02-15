@@ -19,46 +19,42 @@ import {
 } from '@/src/sharedMaps';
 import { useAuth } from '@/src/state/AuthContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   input: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   primaryBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4F78FF',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
   secondaryBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
+    backgroundColor: '#E9E4DA',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   dangerBtn: {
-    borderWidth: 1,
-    borderColor: '#FECACA',
     backgroundColor: '#FEF2F2',
     borderRadius: 12,
     paddingHorizontal: 10,
@@ -183,7 +179,7 @@ export default function SharedMapDetailScreen() {
           </Pressable>
         </View>
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
             {map?.name ?? t('sharedDetail.defaultName')}
           </Text>
@@ -215,9 +211,9 @@ export default function SharedMapDetailScreen() {
               {t('sharedDetail.readOnlyNotice')}
             </Text>
           ) : null}
-        </View>
+        </NeuCard>
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 8 }}>{t('sharedDetail.addStore')}</Text>
           <TextInput
             value={name}
@@ -272,11 +268,9 @@ export default function SharedMapDetailScreen() {
             <Text style={{ color: '#6B7280', marginBottom: 8 }}>{t('sharedDetail.pickOnMapHelp')}</Text>
             <View
               style={{
-                borderWidth: 1,
-                borderColor: '#E7E2D5',
                 borderRadius: 16,
                 overflow: 'hidden',
-                backgroundColor: 'white',
+                backgroundColor: '#E9E4DA',
                 height: 220,
               }}>
               {mapRegion ? (
@@ -342,7 +336,7 @@ export default function SharedMapDetailScreen() {
               {saving ? t('sharedDetail.saving') : t('common.save')}
             </Text>
           </Pressable>
-        </View>
+        </NeuCard>
 
         <View style={{ gap: 8 }}>
           <Text style={{ fontWeight: '900' }}>{t('sharedDetail.storeList')}</Text>
@@ -362,12 +356,14 @@ export default function SharedMapDetailScreen() {
                   key={tag}
                   onPress={() => setFilterTag(tag)}
                   style={{
-                    borderWidth: 1,
-                    borderColor: active ? '#F59E0B' : '#E5E7EB',
-                    backgroundColor: active ? '#FFF7E6' : '#FFFFFF',
+                    backgroundColor: active ? '#FFF7E6' : '#E9E4DA',
                     borderRadius: 999,
                     paddingHorizontal: 10,
                     paddingVertical: 6,
+                    shadowColor: '#C8C3B9',
+                    shadowOffset: { width: 2, height: 2 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 4,
                   }}>
                   <Text style={{ color: active ? '#B45309' : '#6B7280', fontWeight: '800', fontSize: 12 }}>
                     {label}
@@ -381,7 +377,7 @@ export default function SharedMapDetailScreen() {
             {(filterTag === 'all' ? stores : stores.filter((s) => s.tag === filterTag)).map((item) => {
               const canDelete = user?.uid && user.uid === item.createdBy && canEdit;
               return (
-                <View key={item.id} style={UI.card}>
+                <NeuCard key={item.id} style={UI.card}>
                   <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
                     {item.name}
                   </Text>
@@ -421,12 +417,14 @@ export default function SharedMapDetailScreen() {
                             }
                           }}
                           style={{
-                            borderWidth: 1,
-                            borderColor: active ? '#F59E0B' : '#E5E7EB',
-                            backgroundColor: active ? '#FFF7E6' : '#FFFFFF',
+                            backgroundColor: active ? '#FFF7E6' : '#E9E4DA',
                             borderRadius: 999,
                             paddingHorizontal: 10,
                             paddingVertical: 6,
+                            shadowColor: '#C8C3B9',
+                            shadowOffset: { width: 2, height: 2 },
+                            shadowOpacity: 0.4,
+                            shadowRadius: 4,
                           }}>
                           <Text style={{ color: active ? '#B45309' : '#6B7280', fontWeight: '800', fontSize: 12 }}>
                             {label}
@@ -455,7 +453,7 @@ export default function SharedMapDetailScreen() {
                       </Pressable>
                     )}
                   </View>
-                </View>
+                </NeuCard>
               );
             })}
           </View>
@@ -473,14 +471,12 @@ export default function SharedMapDetailScreen() {
             justifyContent: 'center',
             padding: 20,
           }}>
-          <View
+          <NeuCard
             style={{
               width: '100%',
-              borderRadius: 18,
-              backgroundColor: '#FFFEF8',
+              borderRadius: 20,
+              backgroundColor: '#E9E4DA',
               padding: 16,
-              borderWidth: 1,
-              borderColor: '#E7E2D5',
             }}>
             <Pressable onPress={() => setInviteVisible(false)} style={{ alignSelf: 'flex-end' }}>
               <Text style={{ fontWeight: '900', fontSize: 18 }}>×</Text>
@@ -516,7 +512,7 @@ export default function SharedMapDetailScreen() {
               style={{
                 marginTop: 12,
                 backgroundColor: '#F59E0B',
-                borderRadius: 14,
+                borderRadius: 28,
                 paddingVertical: 12,
                 alignItems: 'center',
               }}>
@@ -526,20 +522,22 @@ export default function SharedMapDetailScreen() {
               onPress={copyInviteLink}
               style={{
                 marginTop: 10,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#E9E4DA',
                 borderRadius: 14,
                 paddingVertical: 12,
                 alignItems: 'center',
-                borderWidth: 1,
-                borderColor: '#E5E5E5',
+                shadowColor: '#C8C3B9',
+                shadowOffset: { width: 2, height: 2 },
+                shadowOpacity: 0.4,
+                shadowRadius: 4,
               }}>
               <Text style={{ color: '#111827', fontWeight: '900' }}>{t('sharedDetail.copyLink')}</Text>
             </Pressable>
 
             <Pressable onPress={() => setInviteVisible(false)} style={{ marginTop: 10, alignItems: 'center' }}>
-              <Text style={{ color: '#2563EB', fontWeight: '800' }}>{t('common.close')}</Text>
+              <Text style={{ color: '#4F78FF', fontWeight: '800' }}>{t('common.close')}</Text>
             </Pressable>
-          </View>
+          </NeuCard>
         </View>
       </Modal>
     </View>

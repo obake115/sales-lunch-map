@@ -7,66 +7,54 @@ import type { Store } from '@/src/models';
 import { useStores } from '@/src/state/StoresContext';
 import { updateStore } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   cardImage: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 0,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
     overflow: 'hidden',
   } as const,
   cardOverlay: {
     padding: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(233, 228, 218, 0.6)',
   } as const,
   input: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   chipActive: {
-    borderColor: '#60A5FA',
     backgroundColor: '#DBEAFE',
   } as const,
   primaryBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4F78FF',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
   } as const,
   dangerBtn: {
-    borderWidth: 1,
-    borderColor: '#FECACA',
     backgroundColor: '#FEF2F2',
     borderRadius: 14,
     paddingVertical: 12,
@@ -131,27 +119,29 @@ export default function PlaceDetailScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}>
         {store.photoUri ? (
-          <ImageBackground source={{ uri: store.photoUri }} style={UI.cardImage} imageStyle={{ borderRadius: 16 }}>
-            <View style={UI.cardOverlay}>
-              <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.nameLabel')}</Text>
-              <TextInput
-                value={store.name}
-                onChangeText={(text) => setField({ name: text })}
-                placeholder={t('storeDetail.namePlaceholder')}
-                style={UI.input}
-                {...INPUT_PROPS}
-              />
-              <Pressable
-                onPress={() => setField({ isFavorite: !store.isFavorite })}
-                style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
-                <Text style={{ fontWeight: '800' }}>
-                  {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
-                </Text>
-              </Pressable>
-            </View>
-          </ImageBackground>
+          <NeuCard style={UI.cardImage}>
+            <ImageBackground source={{ uri: store.photoUri }} style={{ width: '100%' }} imageStyle={{ borderRadius: 20 }}>
+              <View style={UI.cardOverlay}>
+                <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.nameLabel')}</Text>
+                <TextInput
+                  value={store.name}
+                  onChangeText={(text) => setField({ name: text })}
+                  placeholder={t('storeDetail.namePlaceholder')}
+                  style={UI.input}
+                  {...INPUT_PROPS}
+                />
+                <Pressable
+                  onPress={() => setField({ isFavorite: !store.isFavorite })}
+                  style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
+                  <Text style={{ fontWeight: '800' }}>
+                    {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
+                  </Text>
+                </Pressable>
+              </View>
+            </ImageBackground>
+          </NeuCard>
         ) : (
-          <View style={UI.card}>
+          <NeuCard style={UI.card}>
             <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.nameLabel')}</Text>
             <TextInput
               value={store.name}
@@ -167,10 +157,10 @@ export default function PlaceDetailScreen() {
                 {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
               </Text>
             </Pressable>
-          </View>
+          </NeuCard>
         )}
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.quickInfo')}</Text>
           <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('storeDetail.waitTime')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -264,9 +254,9 @@ export default function PlaceDetailScreen() {
               <Text style={{ fontWeight: '800' }}>{t('storeDetail.shareOff')}</Text>
             </Pressable>
           </View>
-        </View>
+        </NeuCard>
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeDetail.memoTitle')}</Text>
           <TextInput
             value={store.note ?? ''}
@@ -276,9 +266,9 @@ export default function PlaceDetailScreen() {
             multiline
             {...INPUT_PROPS}
           />
-        </View>
+        </NeuCard>
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Pressable onPress={() => setShowReminder((v) => !v)}>
             <Text style={{ fontWeight: '900', fontSize: 16 }}>{t('storeDetail.remindTitle')}</Text>
           </Pressable>
@@ -303,7 +293,7 @@ export default function PlaceDetailScreen() {
               </View>
             </View>
           )}
-        </View>
+        </NeuCard>
 
         <View style={{ gap: 10 }}>
           <Pressable onPress={() => router.back()} style={UI.primaryBtn}>

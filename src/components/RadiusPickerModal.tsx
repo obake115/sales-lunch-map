@@ -12,12 +12,10 @@ const UI = {
     backgroundColor: 'rgba(0,0,0,0.35)',
   } as const,
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     paddingTop: 12,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   } as const,
   sheetHeader: {
     flexDirection: 'row',
@@ -32,7 +30,7 @@ const UI = {
     color: '#111827',
   } as const,
   actionText: {
-    color: '#2563EB',
+    color: '#4F78FF',
     fontWeight: '700',
   } as const,
 };

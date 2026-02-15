@@ -12,32 +12,28 @@ import { purchaseUnlimited, restorePurchases } from '@/src/purchases';
 import { useStores } from '@/src/state/StoresContext';
 import { getPostLimitState, grantDailyRewardedSlot, type PostLimitState } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   input: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   primaryBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4F78FF',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
   } as const,
   paywallOverlay: {
@@ -46,7 +42,7 @@ const UI = {
     backgroundColor: 'rgba(0,0,0,0.3)',
   } as const,
   paywallSheet: {
-    backgroundColor: '#FFFDF7',
+    backgroundColor: '#E9E4DA',
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingHorizontal: 18,
@@ -71,12 +67,14 @@ const UI = {
     marginBottom: 12,
   } as const,
   valueCard: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     padding: 12,
     marginBottom: 14,
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   paywallValueTitle: {
     fontWeight: '800',
@@ -103,8 +101,8 @@ const UI = {
     color: '#111827',
   } as const,
   primaryCta: {
-    borderRadius: 12,
-    backgroundColor: '#2563EB',
+    borderRadius: 28,
+    backgroundColor: '#4F78FF',
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 10,
@@ -115,14 +113,16 @@ const UI = {
   } as const,
   adCta: {
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     paddingVertical: 12,
     alignItems: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   adCtaDisabled: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   adCtaText: {
     color: '#111827',
@@ -327,7 +327,7 @@ export default function StoreNewScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 110 }}>
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeNew.nameLabel')}</Text>
           <TextInput
             value={name}
@@ -336,9 +336,9 @@ export default function StoreNewScreen() {
             style={UI.input}
             {...INPUT_PROPS}
           />
-        </View>
+        </NeuCard>
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeNew.memoLabel')}</Text>
           <TextInput
             value={note}
@@ -348,18 +348,16 @@ export default function StoreNewScreen() {
             multiline
             {...INPUT_PROPS}
           />
-        </View>
+        </NeuCard>
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 6 }}>{t('storeNew.locationTitle')}</Text>
           <Text style={{ color: '#6B7280', marginBottom: 10 }}>{t('storeNew.locationHelp')}</Text>
           <View
             style={{
-              borderWidth: 1,
-              borderColor: '#E7E2D5',
               borderRadius: 16,
               overflow: 'hidden',
-              backgroundColor: 'white',
+              backgroundColor: '#E9E4DA',
               height: 240,
             }}>
             {region ? (
@@ -396,7 +394,7 @@ export default function StoreNewScreen() {
               </View>
             )}
           </View>
-        </View>
+        </NeuCard>
 
         <Pressable
           disabled={!canSave}
@@ -434,7 +432,7 @@ export default function StoreNewScreen() {
           }}
           style={{
             ...UI.primaryBtn,
-            backgroundColor: canSave ? UI.primaryBtn.backgroundColor : '#E5E7EB',
+            backgroundColor: canSave ? UI.primaryBtn.backgroundColor : '#D5D0C6',
           }}>
           <Text style={{ color: canSave ? 'white' : '#6B7280', fontWeight: '900' }}>
             {t('storeNew.saveButton')}
@@ -531,7 +529,7 @@ export default function StoreNewScreen() {
               onPress={() => setPaywallVisible(false)}
               disabled={isProcessingUnlock}
               style={{ marginTop: 10, alignItems: 'center' }}>
-              <Text style={{ color: '#2563EB', fontWeight: '800' }}>{t('common.cancel')}</Text>
+              <Text style={{ color: '#4F78FF', fontWeight: '800' }}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </View>

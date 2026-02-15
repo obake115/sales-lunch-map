@@ -9,6 +9,8 @@ import {
   type PressableProps,
 } from 'react-native';
 
+import { NeuCard } from '@/src/ui/NeuCard';
+
 type Props = {
   iconSource: ImageSourcePropType;
   visitedCount: number;
@@ -30,22 +32,24 @@ export function TravelLunchCard({
 }: Props) {
   const progressRatio = Math.min(Math.max(visitedCount / 47, 0), 1);
   return (
-    <Pressable onPress={onPress} style={styles.card}>
-      <View style={styles.titleRow}>
-        <View style={styles.iconWrap}>
-          <Image source={iconSource} style={styles.icon} resizeMode="cover" />
+    <NeuCard style={styles.card}>
+      <Pressable onPress={onPress}>
+        <View style={styles.titleRow}>
+          <View style={styles.iconWrap}>
+            <Image source={iconSource} style={styles.icon} resizeMode="cover" />
+          </View>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          <Text style={styles.progress}>{visitedCount}/47</Text>
         </View>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
+        <Text style={styles.sub} numberOfLines={2}>
+          {subtitle}
         </Text>
-        <Text style={styles.progress}>{visitedCount}/47</Text>
-      </View>
-      <Text style={styles.sub} numberOfLines={2}>
-        {subtitle}
-      </Text>
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${progressRatio * 100}%` }]} />
-      </View>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${progressRatio * 100}%` }]} />
+        </View>
+      </Pressable>
       <Pressable
         onPress={(event) => {
           event?.stopPropagation?.();
@@ -55,7 +59,7 @@ export function TravelLunchCard({
       >
         <Text style={styles.ctaText}>{ctaLabel}</Text>
       </Pressable>
-    </Pressable>
+    </NeuCard>
   );
 }
 
@@ -65,13 +69,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
     padding: 16,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    borderRadius: 20,
+    backgroundColor: '#E9E4DA',
   },
   titleRow: {
     flexDirection: 'row',
@@ -111,7 +110,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#D5D0C6',
     overflow: 'hidden',
   },
   progressFill: {
@@ -122,8 +121,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     height: 44,
     width: '100%',
-    borderRadius: 16,
-    backgroundColor: '#2563EB',
+    borderRadius: 28,
+    backgroundColor: '#4F78FF',
     alignItems: 'center',
     justifyContent: 'center',
   },

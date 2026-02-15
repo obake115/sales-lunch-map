@@ -1,6 +1,7 @@
 import { Modal, Pressable, Text, View } from 'react-native';
 
 import { t } from '@/src/i18n';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   overlay: {
@@ -13,16 +14,9 @@ const UI = {
   card: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: '#FFFEF8',
-    borderRadius: 18,
+    backgroundColor: '#E9E4DA',
+    borderRadius: 20,
     padding: 18,
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
   } as const,
   title: {
     fontSize: 20,
@@ -62,9 +56,9 @@ const UI = {
   } as const,
   primaryBtn: {
     marginTop: 12,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4F78FF',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
   } as const,
 };
@@ -83,7 +77,7 @@ export function LoginBonusModal({ visible, streak, totalDays, onClose }: Props) 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={UI.overlay}>
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={UI.title}>{t('loginBonus.title')}</Text>
           <Text style={UI.sub}>{t('loginBonus.subtitle')}</Text>
           <View style={UI.badge}>
@@ -106,7 +100,7 @@ export function LoginBonusModal({ visible, streak, totalDays, onClose }: Props) 
           <Pressable onPress={onClose} style={UI.primaryBtn}>
             <Text style={{ color: 'white', fontWeight: '900' }}>{t('common.ok')}</Text>
           </Pressable>
-        </View>
+        </NeuCard>
       </View>
     </Modal>
   );

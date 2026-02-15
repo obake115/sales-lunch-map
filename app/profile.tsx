@@ -19,6 +19,7 @@ import {
     type LoginBonusState,
 } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   headerTitle: {
@@ -28,16 +29,9 @@ const UI = {
     letterSpacing: 0.2,
   } as const,
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   statRow: {
     flexDirection: 'row',
@@ -79,15 +73,16 @@ const UI = {
     marginTop: 10,
   } as const,
   themeBtn: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   themeBtnActive: {
-    borderColor: '#2563EB',
     backgroundColor: '#DBEAFE',
   } as const,
   themeBtnText: {
@@ -131,8 +126,6 @@ const UI = {
     marginBottom: 10,
   } as const,
   profileStats: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
     marginTop: 8,
     paddingTop: 10,
     gap: 6,
@@ -143,8 +136,6 @@ const UI = {
   } as const,
   profileBadge: {
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#F3E8FF',
     backgroundColor: '#FDF4FF',
     borderRadius: 14,
     paddingHorizontal: 12,
@@ -158,24 +149,28 @@ const UI = {
   profileSaveBtn: {
     marginTop: 10,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     paddingVertical: 8,
     alignItems: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   profileSaveText: {
     color: '#111827',
     fontWeight: '700',
   } as const,
   nameInput: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
     marginTop: 8,
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   nameHint: {
     color: '#6B7280',
@@ -185,8 +180,6 @@ const UI = {
   } as const,
   settingRow: {
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#E7E2D5',
   } as const,
   settingLabel: {
     fontWeight: '800',
@@ -205,30 +198,15 @@ function requirementText(
 ) {
   if (!badge) return t('profile.badges.allAchieved');
   if (badge.minStores)
-    return t('profile.badges.needStores', {
-      count: Math.max(0, badge.minStores - stats.storesCount),
-      label: badge.label,
-    });
+    return t('profile.badges.needStores', { count: Math.max(0, badge.minStores - stats.storesCount), label: badge.label });
   if (badge.minFavorites)
-    return t('profile.badges.needFavorites', {
-      count: Math.max(0, badge.minFavorites - stats.favoritesCount),
-      label: badge.label,
-    });
+    return t('profile.badges.needFavorites', { count: Math.max(0, badge.minFavorites - stats.favoritesCount), label: badge.label });
   if (badge.minNearbyShown)
-    return t('profile.badges.needNearby', {
-      count: Math.max(0, badge.minNearbyShown - stats.nearbyShownCount),
-      label: badge.label,
-    });
+    return t('profile.badges.needNearby', { count: Math.max(0, badge.minNearbyShown - stats.nearbyShownCount), label: badge.label });
   if (badge.minLoginDays)
-    return t('profile.badges.needLoginDays', {
-      count: Math.max(0, badge.minLoginDays - stats.totalLoginDays),
-      label: badge.label,
-    });
+    return t('profile.badges.needLoginDays', { count: Math.max(0, badge.minLoginDays - stats.totalLoginDays), label: badge.label });
   if (badge.minStreak)
-    return t('profile.badges.needStreak', {
-      count: Math.max(0, badge.minStreak - stats.loginStreak),
-      label: badge.label,
-    });
+    return t('profile.badges.needStreak', { count: Math.max(0, badge.minStreak - stats.loginStreak), label: badge.label });
   return t('profile.badges.next', { label: badge.label });
 }
 
@@ -253,9 +231,7 @@ export default function ProfileScreen() {
       setLoginState(bonus);
       setNearbyShownCount(nearbyShown);
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [loading, stores.length]);
 
   useEffect(() => {
@@ -264,9 +240,7 @@ export default function ProfileScreen() {
       const uri = await getProfileAvatarUri();
       if (mounted) setAvatarUri(uri);
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -275,9 +249,7 @@ export default function ProfileScreen() {
       const name = await getProfileName();
       if (mounted) setProfileNameState(name);
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -286,11 +258,8 @@ export default function ProfileScreen() {
       const storedId = await getSelectedBadgeId();
       if (mounted) setSelectedBadgeIdState(storedId);
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
-
 
   const stats = useMemo(
     () => ({
@@ -317,7 +286,7 @@ export default function ProfileScreen() {
           <Text style={UI.headerTitle}>{t('profile.title')}</Text>
         </View>
 
-        <View style={{ ...UI.card, marginBottom: 16 }}>
+        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
           <Pressable
             onPress={async () => {
               const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -412,10 +381,9 @@ export default function ProfileScreen() {
             style={UI.profileSaveBtn}>
             <Text style={UI.profileSaveText}>{t('common.save')}</Text>
           </Pressable>
+        </NeuCard>
 
-        </View>
-
-        <View style={{ ...UI.card, marginBottom: 16 }}>
+        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
           <Text style={UI.sectionTitle}>{t('profile.themeTitle')}</Text>
           <Text style={UI.styleSub}>{t('profile.themeSub')}</Text>
           <View style={UI.themeRow}>
@@ -430,9 +398,9 @@ export default function ProfileScreen() {
               <Text style={UI.themeBtnText}>{t('profile.themeNavy')}</Text>
             </Pressable>
           </View>
-        </View>
+        </NeuCard>
 
-        <View style={{ ...UI.card, marginBottom: 16 }}>
+        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
           <Text style={UI.sectionTitle}>{t('profile.settingsTitle')}</Text>
           <Pressable
             onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'preview' } })}
@@ -444,9 +412,9 @@ export default function ProfileScreen() {
             <Text style={UI.settingLabel}>{t('profile.settingsPostLimit')}</Text>
             <Text style={UI.settingSub}>{t('profile.settingsPostLimitSub')}</Text>
           </Pressable>
-        </View>
+        </NeuCard>
 
-        <View style={{ ...UI.card, marginBottom: 16 }}>
+        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
           <Text style={UI.sectionTitle}>{t('profile.statusTitle')}</Text>
           <View style={UI.statRow}>
             <Text style={UI.statLabel}>{t('profile.statusStores')}</Text>
@@ -468,9 +436,9 @@ export default function ProfileScreen() {
             <Text style={UI.statLabel}>{t('profile.statusNearby')}</Text>
             <Text style={UI.statValue}>{t('profile.countTimes', { count: nearbyShownCount })}</Text>
           </View>
-        </View>
+        </NeuCard>
 
-        <View style={UI.card}>
+        <NeuCard style={UI.card}>
           <Text style={UI.sectionTitle}>{t('profile.badges.title')}</Text>
           {achievedBadges.length === 0 ? (
             <Text style={{ color: '#6B7280' }}>{t('profile.badges.empty')}</Text>
@@ -482,8 +450,7 @@ export default function ProfileScreen() {
             ))
           )}
           <Text style={{ color: '#6B7280' }}>{requirementText(nextBadge, stats)}</Text>
-        </View>
-
+        </NeuCard>
       </ScrollView>
 
       <BottomAdBanner />

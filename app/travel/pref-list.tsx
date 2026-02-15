@@ -90,12 +90,12 @@ export default function TravelPrefListScreen() {
       };
     }
     return {
-      background: '#FFF8EB',
-      card: '#FFFFFF',
-      cardDim: '#F7F3EA',
+      background: '#E9E4DA',
+      card: '#E9E4DA',
+      cardDim: '#E0DBD1',
       text: '#111827',
       subText: '#6B7280',
-      border: '#E5E7EB',
+      border: '#D5D0C6',
       accent: '#3B82F6',
     };
   }, [themeMode]);
@@ -163,7 +163,10 @@ export default function TravelPrefListScreen() {
                 styles.row,
                 {
                   backgroundColor: hasPosts ? colors.card : colors.cardDim,
-                  borderColor: colors.border,
+                  shadowColor: '#C8C3B9',
+                  shadowOffset: { width: 2, height: 2 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 4,
                 },
               ]}
             >
@@ -226,7 +229,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderRadius: 14,
-    borderWidth: 1,
     marginBottom: 10,
   },
   rowTitle: { flex: 1, fontSize: 15, fontWeight: '600' },

@@ -36,11 +36,11 @@ export default function TravelPrefDetailScreen() {
       };
     }
     return {
-      background: '#FFF8EB',
-      card: '#FFFFFF',
+      background: '#E9E4DA',
+      card: '#E9E4DA',
       text: '#111827',
       subText: '#6B7280',
-      border: '#E5E7EB',
+      border: '#D5D0C6',
       accent: '#3B82F6',
     };
   }, [themeMode]);
@@ -79,7 +79,7 @@ export default function TravelPrefDetailScreen() {
           <Text style={[styles.emptyText, { color: colors.subText }]}>{t('travel.prefDetailEmpty')}</Text>
         }
         renderItem={({ item }) => (
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, shadowColor: '#C8C3B9', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }]}>
             <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
             <View style={styles.cardBody}>
               <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
@@ -139,20 +139,14 @@ const styles = StyleSheet.create({
   },
   emptyText: { textAlign: 'center', marginTop: 32 },
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 20,
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
     overflow: 'hidden',
   },
   cardImage: {
     width: '100%',
     height: 160,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#D5D0C6',
   },
   cardBody: {
     padding: 12,

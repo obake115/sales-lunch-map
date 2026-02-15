@@ -10,38 +10,32 @@ import type { Store } from '@/src/models';
 import { useStores } from '@/src/state/StoresContext';
 import { getMemos } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   primaryBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4F78FF',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
   secondaryBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
+    backgroundColor: '#E9E4DA',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   dangerBtn: {
-    borderWidth: 1,
-    borderColor: '#FECACA',
     backgroundColor: '#FEF2F2',
     borderRadius: 12,
     paddingHorizontal: 10,
@@ -62,7 +56,7 @@ const UI = {
     width: 88,
     height: 88,
     borderRadius: 14,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   storeImagePlaceholder: {
     alignItems: 'center',
@@ -83,7 +77,7 @@ const UI = {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   tagText: {
     fontSize: 12,
@@ -238,11 +232,9 @@ export default function MapScreen() {
           <View
             style={{
               height: 240,
-              borderWidth: 1,
-              borderColor: '#E7E2D5',
               borderRadius: 16,
               overflow: 'hidden',
-              backgroundColor: 'white',
+              backgroundColor: '#E9E4DA',
             }}>
             {mapRegion ? (
               <MapView
@@ -283,7 +275,7 @@ export default function MapScreen() {
           </View>
 
           {selectedStore && (
-            <View style={{ ...UI.card, gap: 8 }}>
+            <NeuCard style={{ ...UI.card, gap: 8 }}>
               <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
                 {selectedStore.name}
               </Text>
@@ -305,7 +297,7 @@ export default function MapScreen() {
                   <Text style={{ fontWeight: '800', color: '#111827' }}>{t('map.openGoogleMaps')}</Text>
                 </Pressable>
               </View>
-            </View>
+            </NeuCard>
           )}
         </View>
         <View style={{ marginTop: 4 }}>
@@ -321,46 +313,47 @@ export default function MapScreen() {
         )}
 
         {storesSorted.map((item) => (
-          <Pressable
-            key={item.id}
-            onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.id } })}
-            style={UI.card}>
-            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-              <Pressable onPress={() => handlePickStorePhoto(item.id)}>
-                {item.photoUri ? (
-                  <Image source={{ uri: item.photoUri }} style={UI.storeImage} />
-                ) : (
-                  <View style={[UI.storeImage, UI.storeImagePlaceholder]}>
-                    <Text style={UI.storeImageText}>{t('map.addPhoto')}</Text>
+          <NeuCard key={item.id} style={{ borderRadius: 20 }}>
+            <Pressable
+              onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.id } })}
+              style={{ padding: 14 }}>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                <Pressable onPress={() => handlePickStorePhoto(item.id)}>
+                  {item.photoUri ? (
+                    <Image source={{ uri: item.photoUri }} style={UI.storeImage} />
+                  ) : (
+                    <View style={[UI.storeImage, UI.storeImagePlaceholder]}>
+                      <Text style={UI.storeImageText}>{t('map.addPhoto')}</Text>
+                    </View>
+                  )}
+                </Pressable>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={[UI.titleText, { fontSize: 16 }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[UI.bodyText, { color: '#6B7280', marginTop: 2 }]}>
+                        {t('map.radiusLabel', { value: 200 })}
+                      </Text>
+                      {item.moodTags?.length || item.sceneTags?.length ? (
+                        <View style={UI.tagRow}>
+                          {[...(item.moodTags ?? []), ...(item.sceneTags ?? [])].map((tag) => (
+                            <View key={tag} style={UI.tagChip}>
+                              <Text style={UI.tagText}>{tagLabel(tag)}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+                    </View>
+                    <Pressable onPress={() => deleteStore(item.id)} style={UI.dangerBtn}>
+                      <Text style={{ color: '#B91C1C', fontWeight: '700' }}>{t('storeDetail.deleteConfirm')}</Text>
+                    </Pressable>
                   </View>
-                )}
-              </Pressable>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1, paddingRight: 12 }}>
-                    <Text style={[UI.titleText, { fontSize: 16 }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={[UI.bodyText, { color: '#6B7280', marginTop: 2 }]}>
-                      {t('map.radiusLabel', { value: 200 })}
-                    </Text>
-                    {item.moodTags?.length || item.sceneTags?.length ? (
-                      <View style={UI.tagRow}>
-                        {[...(item.moodTags ?? []), ...(item.sceneTags ?? [])].map((tag) => (
-                          <View key={tag} style={UI.tagChip}>
-                            <Text style={UI.tagText}>{tagLabel(tag)}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    ) : null}
-                  </View>
-                  <Pressable onPress={() => deleteStore(item.id)} style={UI.dangerBtn}>
-                    <Text style={{ color: '#B91C1C', fontWeight: '700' }}>{t('storeDetail.deleteConfirm')}</Text>
-                  </Pressable>
                 </View>
               </View>
-            </View>
-          </Pressable>
+            </Pressable>
+          </NeuCard>
         ))}
       </ScrollView>
 
