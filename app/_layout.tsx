@@ -1,11 +1,12 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import 'react-native-reanimated';
 
+import { logScreenView } from '@/src/analytics';
 import { AppProviders } from '@/src/AppProviders';
 import { t } from '@/src/i18n';
 import { ThemeProvider as ThemeModeProvider, useThemeMode } from '@/src/state/ThemeContext';
@@ -23,26 +24,34 @@ export const unstable_settings = {
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (loaded || error) {
+      setReady(true);
     }
-  }, [loaded]);
+  }, [loaded, error]);
 
-  if (!loaded) {
+  // Fallback: proceed after 1s even if useFonts never resolves (e.g. Expo reload)
+  useEffect(() => {
+    const timer = setTimeout(() => setReady(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (ready) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [ready]);
+
+  if (!ready) {
     return null;
   }
 
@@ -53,7 +62,53 @@ export default function RootLayout() {
   );
 }
 
+const SCREEN_NAMES: Record<string, string> = {
+  '/': 'Home',
+  '/profile': 'Profile',
+  '/list': 'StoreList',
+  '/map': 'Map',
+  '/collection': 'Collection',
+  '/everyone': 'Everyone',
+  '/shared': 'SharedMaps',
+  '/reminders': 'Reminders',
+  '/store/new': 'StoreNew',
+  '/travel/new': 'TravelNew',
+  '/travel/pref-list': 'TravelPrefList',
+  '/welcome': 'Welcome',
+  '/settings': 'Settings',
+  '/data-migration': 'DataMigration',
+  '/onboarding': 'Onboarding',
+  '/post-limit-info': 'PostLimitInfo',
+  '/hokkaido': 'Hokkaido',
+  '/tohoku': 'Tohoku',
+  '/kanto': 'Kanto',
+  '/chubu': 'Chubu',
+  '/kansai': 'Kansai',
+  '/chugoku': 'Chugoku',
+  '/shikoku': 'Shikoku',
+  '/kyushu': 'Kyushu',
+};
+
+function toScreenName(pathname: string): string {
+  if (SCREEN_NAMES[pathname]) return SCREEN_NAMES[pathname];
+  if (pathname.startsWith('/store/')) return 'StoreDetail';
+  if (pathname.startsWith('/shared/')) return 'SharedMapDetail';
+  if (pathname.startsWith('/collection/pref/')) return 'CollectionPref';
+  if (pathname.startsWith('/travel/pref/')) return 'TravelPref';
+  return pathname;
+}
+
 function RootLayoutNav() {
+  const pathname = usePathname();
+  const prevPathname = useRef(pathname);
+
+  useEffect(() => {
+    if (pathname !== prevPathname.current) {
+      prevPathname.current = pathname;
+      logScreenView(toScreenName(pathname));
+    }
+  }, [pathname]);
+
   const { themeMode } = useThemeMode();
   const theme =
     themeMode === 'navy'
@@ -101,8 +156,13 @@ function RootLayoutNav() {
           <Stack.Screen name="travel/new" options={{ title: t('nav.travelNew') }} />
           <Stack.Screen name="travel/pref-list" options={{ headerShown: false }} />
           <Stack.Screen name="travel/pref/[prefCode]" options={{ headerShown: false }} />
+          <Stack.Screen name="welcome" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
+          <Stack.Screen name="data-migration" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="onboarding" options={{ title: t('nav.onboarding') }} />
           <Stack.Screen name="post-limit-info" options={{ title: t('nav.postLimitInfo') }} />
+          <Stack.Screen name="privacy" options={{ title: t('nav.privacy') }} />
+          <Stack.Screen name="terms" options={{ title: t('nav.terms') }} />
         </Stack>
       </AppProviders>
     </ThemeProvider>

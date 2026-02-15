@@ -32,7 +32,10 @@
     "storeDetail": "ランチ候補",
     "travelNew": "思い出を追加",
     "onboarding": "はじめに",
-    "postLimitInfo": "投稿枠・課金について"
+    "postLimitInfo": "投稿枠・課金について",
+    "settings": "設定",
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約"
   },
   "onboarding": {
     "header": "はじめに",
@@ -258,7 +261,7 @@
   "home": {
     "title": "ランチマップ",
     "noticeTitle": "お知らせ",
-    "noticeBody": "投稿があると通知が届きます。",
+    "noticeBody": "登録店舗数: %{storeCount}件\nリマインダーON: %{reminderCount}件\n\n店舗の近くを通ると通知が届きます。",
     "settingsTitle": "設定",
     "settingsBody": "準備中です。",
     "collectionTitle": "旅のランチ記録",
@@ -281,7 +284,10 @@
     "loading": "読み込み中...",
     "empty": "まずは店舗を追加してください。",
     "radiusLabel": "半径 %{value}m",
-    "addPhoto": "写真追加"
+    "addPhoto": "写真追加",
+    "deleteTitle": "店舗を削除",
+    "deleteBody": "「%{name}」を削除しますか？この操作は元に戻せません。",
+    "deleteConfirm": "削除"
   },
   "list": {
     "filterButton": "≡ 絞り込み",
@@ -304,7 +310,10 @@
     "hint": "地図をタップして都道府県を選択できます。",
     "cardTitleRecent": "最近の思い出",
     "cardTitleSelected": "%{name}の思い出",
-    "emptyBody": "まだ投稿がありません。"
+    "emptyBody": "まだ投稿がありません。",
+    "deleteTitle": "思い出を削除しますか？",
+    "deleteBody": "「%{name}」を削除します。",
+    "deleteConfirm": "削除"
   },
   "pref": {
     "photoPermissionTitle": "写真へのアクセスが必要です",
@@ -352,7 +361,8 @@
     "locationLoading": "位置情報の取得中です…",
     "nearbyTitle": "近くの共有されているお店",
     "empty": "近くの共有店舗がまだありません。",
-    "loginRequired": "共有店舗を見るにはログインが必要です。"
+    "loginRequired": "共有店舗を見るにはログインが必要です。",
+    "filterComingSoon": "近日公開"
   },
   "album": {
     "title": "アルバム",
@@ -366,7 +376,10 @@
     "emptyForDate": "その日の写真がありません。",
     "empty": "まだ写真がありません。",
     "pickDate": "日付を選択",
-    "select": "選択"
+    "select": "選択",
+    "deleteTitle": "写真を削除しますか？",
+    "deleteBody": "この写真をアルバムから削除します。",
+    "deleteConfirm": "削除"
   },
   "locationDenied": {
     "title": "位置情報が利用できません",
@@ -376,7 +389,48 @@
   },
   "auth": {
     "anonymousDisabled": "匿名ログインが無効です。FirebaseでAnonymousを有効化してください。",
-    "loginFailed": "ログインに失敗しました。"
+    "loginFailed": "ログインに失敗しました。",
+    "welcomeTitle": "ランチマップへようこそ",
+    "welcomeSubtitle": "ログインするとデータをバックアップ・復元できます",
+    "continueWithApple": "Appleで続ける",
+    "continueWithGoogle": "Googleで続ける",
+    "continueAsGuest": "ゲストで始める",
+    "guestHint": "ゲストでも全機能を使えます。あとからログインも可能です。",
+    "linkApple": "Appleでログインして引き継ぐ",
+    "linkGoogle": "Googleでログインして引き継ぐ",
+    "accountTitle": "アカウント",
+    "statusGuest": "ゲスト",
+    "statusApple": "Appleでログイン中",
+    "statusGoogle": "Googleでログイン中",
+    "loginHint": "ログインすると、データのバックアップと復元ができます。",
+    "logout": "ログアウト",
+    "logoutConfirm": "ログアウトしますか？データはこの端末に残ります。",
+    "linkSuccess": "アカウントを連携しました。",
+    "linkFailed": "ログインに失敗しました。",
+    "deleteAccount": "アカウントを削除",
+    "deleteAccountConfirm": "アカウントを削除しますか？すべてのデータが削除され、元に戻すことはできません。",
+    "deleteAccountFinal": "本当に削除しますか？この操作は取り消せません。",
+    "deleteAccountSuccess": "アカウントを削除しました。",
+    "deleteAccountFailed": "アカウントの削除に失敗しました。"
+  },
+  "migration": {
+    "title": "データの引き継ぎ",
+    "body": "このアカウントにはデータが保存されています。",
+    "uploadChoice": "この端末のデータをアカウントに移す",
+    "uploadHint": "推奨",
+    "restoreChoice": "アカウントのデータで上書きして復元",
+    "success": "データを移行しました。",
+    "failed": "データの移行に失敗しました。",
+    "localCount": "この端末: %{count}件",
+    "cloudCount": "アカウント: %{count}件"
+  },
+  "settings": {
+    "title": "設定",
+    "restorePurchases": "購入を復元",
+    "restoreSuccess": "復元しました。",
+    "restoreNone": "復元できる購入がありません。",
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfService": "利用規約"
   },
   "loginBonus": {
     "title": "今日のログイン",

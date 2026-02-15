@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { maybeRequestReview } from '../domain/review';
 import { syncGeofencing } from '../geofencing';
 import type { Store } from '../models';
 import * as storage from '../storage';
@@ -57,6 +58,8 @@ export function StoresProvider({ children }: PropsWithChildren) {
     async (input: { name: string; placeId?: string; latitude: number; longitude: number }) => {
       const created = await storage.addStore(input);
       await refresh();
+      const count = await storage.getStoreCount();
+      maybeRequestReview(count).catch(() => {});
       return created;
     },
     [refresh]

@@ -5,11 +5,12 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { SETTING_KEYS, STORAGE_KEYS } from './constants';
 import { runMigrations } from './db/migrations';
 import { deletePlace, getAllPlaces, getPlaceById, insertPlace, updatePlace } from './db/placesRepo';
-import { getSetting, setSetting } from './db/settingsRepo';
+import { getAllSettings, getSetting, setSetting } from './db/settingsRepo';
 import { getDb } from './db/sqlite';
 import { addDays, formatYmd } from './domain/date';
 import { createId } from './id';
 import type { AlbumPhoto, Memo, PrefecturePhoto, Store, TravelLunchEntry } from './models';
+import { fireSyncDeleteMemo, fireSyncDeletePlace, fireSyncMemo, fireSyncPlace, fireSyncSetting, fireSyncTravelEntry } from './sync/syncHooks';
 import { t } from './i18n';
 
 type MemoRow = {
@@ -141,7 +142,10 @@ async function getReadyDb(): Promise<SQLiteDatabase> {
       await runMigrations(db);
       await migrateFromAsyncStorageIfNeeded(db);
       return db;
-    })();
+    })().catch((e) => {
+      dbReadyPromise = null;
+      throw e;
+    });
   }
   return dbReadyPromise;
 }
@@ -284,7 +288,18 @@ export async function addStore(input: {
 
   const db = await getReadyDb();
   await insertPlace(db, store);
+  fireSyncPlace(store);
   return store;
+}
+
+/** Insert a store with a specific ID (used for data migration/download). Skips post limit check. */
+export async function addStoreWithId(input: Store & { id: string }): Promise<void> {
+  const store: Store = {
+    ...input,
+    enabled: input.enabled ?? true,
+  };
+  const db = await getReadyDb();
+  await insertPlace(db, store);
 }
 
 export async function updateStore(
@@ -292,7 +307,9 @@ export async function updateStore(
   patch: Partial<Omit<Store, 'id' | 'createdAt'>>
 ): Promise<Store | null> {
   const db = await getReadyDb();
-  return updatePlace(db, storeId, patch);
+  const updated = await updatePlace(db, storeId, patch);
+  if (updated) fireSyncPlace(updated);
+  return updated;
 }
 
 export async function setStoreEnabled(storeId: string, enabled: boolean) {
@@ -306,6 +323,7 @@ export async function setStoreLastNotifiedAt(storeId: string, at: number) {
 export async function deleteStore(storeId: string): Promise<void> {
   const db = await getReadyDb();
   await deletePlace(db, storeId);
+  fireSyncDeletePlace(storeId);
 }
 
 export async function getMemos(storeId: string): Promise<Memo[]> {
@@ -339,6 +357,11 @@ export async function addAlbumPhoto(
     [id, uri, storeId ?? null, createdAt, safeTakenAt]
   );
   return { id, uri, storeId, createdAt, takenAt: safeTakenAt };
+}
+
+export async function deleteAlbumPhoto(photoId: string): Promise<void> {
+  const db = await getReadyDb();
+  await db.runAsync('DELETE FROM album_photos WHERE id = ?', photoId);
 }
 
 export async function getPrefecturePhotos(): Promise<PrefecturePhoto[]> {
@@ -397,7 +420,29 @@ export async function addTravelLunchEntry(input: {
       entry.createdAt,
     ]
   );
+  fireSyncTravelEntry(entry);
   return entry;
+}
+
+/** Insert a travel entry with a specific ID (used for data migration/download). */
+export async function addTravelLunchEntryWithId(entry: TravelLunchEntry): Promise<void> {
+  const db = await getReadyDb();
+  await db.runAsync(
+    `INSERT INTO travel_lunch_entries
+      (id, prefectureId, imageUri, restaurantName, genre, visitedAt, rating, memo, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      entry.id,
+      entry.prefectureId,
+      entry.imageUri ?? '',
+      entry.restaurantName,
+      entry.genre,
+      entry.visitedAt,
+      entry.rating,
+      entry.memo ?? null,
+      entry.createdAt,
+    ]
+  );
 }
 
 export async function getTravelLunchEntries(): Promise<TravelLunchEntry[]> {
@@ -406,6 +451,16 @@ export async function getTravelLunchEntries(): Promise<TravelLunchEntry[]> {
     'SELECT * FROM travel_lunch_entries ORDER BY createdAt DESC'
   );
   return rows.map(rowToTravelLunchEntry);
+}
+
+export async function deleteTravelLunchEntry(entryId: string): Promise<void> {
+  const db = await getReadyDb();
+  await db.runAsync('DELETE FROM travel_lunch_entries WHERE id = ?', entryId);
+}
+
+export async function updateTravelLunchEntryImage(entryId: string, imageUri: string): Promise<void> {
+  const db = await getReadyDb();
+  await db.runAsync('UPDATE travel_lunch_entries SET imageUri = ? WHERE id = ?', [imageUri, entryId]);
 }
 
 export async function getTravelLunchProgress(): Promise<number> {
@@ -462,7 +517,9 @@ export async function grantDailyRewardedSlot(): Promise<boolean> {
 
 export async function setPostLimitPurchased(purchased: boolean): Promise<void> {
   const db = await getReadyDb();
-  await setSetting(db, SETTING_KEYS.postLimitPurchased, purchased ? '1' : '0');
+  const val = purchased ? '1' : '0';
+  await setSetting(db, SETTING_KEYS.postLimitPurchased, val);
+  fireSyncSetting(SETTING_KEYS.postLimitPurchased, val);
 }
 
 export async function resetPostLimitState(): Promise<void> {
@@ -484,6 +541,7 @@ export async function addMemo(storeId: string, text: string): Promise<Memo> {
   };
   const db = await getReadyDb();
   await insertMemoRow(db, memo);
+  fireSyncMemo(memo);
   return memo;
 }
 
@@ -631,6 +689,7 @@ export async function deleteMemo(storeId: string, memoId: string) {
     await cancelScheduledIfNeeded(target.reminderNotificationId);
   }
   await db.runAsync('DELETE FROM memos WHERE id = ?', memoId);
+  fireSyncDeleteMemo(memoId);
 }
 
 export async function ensureSampleStore(): Promise<Store | null> {
@@ -665,6 +724,7 @@ export async function setNearbyRadiusM(value: number): Promise<void> {
   const db = await getReadyDb();
   const next = [100, 200, 300, 400, 500].includes(value) ? value : 300;
   await setSetting(db, SETTING_KEYS.nearbyRadiusM, String(next));
+  fireSyncSetting(SETTING_KEYS.nearbyRadiusM, String(next));
 }
 
 export async function getThemeMode(): Promise<ThemeMode> {
@@ -676,6 +736,7 @@ export async function getThemeMode(): Promise<ThemeMode> {
 export async function setThemeMode(mode: ThemeMode): Promise<void> {
   const db = await getReadyDb();
   await setSetting(db, SETTING_KEYS.themeMode, mode);
+  fireSyncSetting(SETTING_KEYS.themeMode, mode);
 }
 
 export async function getProfileName(): Promise<string> {
@@ -686,7 +747,9 @@ export async function getProfileName(): Promise<string> {
 
 export async function setProfileName(name: string): Promise<void> {
   const db = await getReadyDb();
-  await setSetting(db, SETTING_KEYS.profileName, name.trim());
+  const trimmed = name.trim();
+  await setSetting(db, SETTING_KEYS.profileName, trimmed);
+  fireSyncSetting(SETTING_KEYS.profileName, trimmed);
 }
 
 export async function getTravelEntryCountByPrefecture(prefId: string): Promise<number> {
@@ -724,6 +787,16 @@ export async function setHasSeenOnboarding(value: boolean): Promise<void> {
   await setSetting(db, SETTING_KEYS.hasSeenOnboarding, value ? '1' : '0');
 }
 
+export async function getHasSeenWelcome(): Promise<boolean> {
+  const db = await getReadyDb();
+  return (await getSetting(db, SETTING_KEYS.hasSeenWelcome)) === '1';
+}
+
+export async function setHasSeenWelcome(value: boolean): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.hasSeenWelcome, value ? '1' : '0');
+}
+
 export async function getProfileAvatarUri(): Promise<string | null> {
   const db = await getReadyDb();
   const stored = await getSetting(db, SETTING_KEYS.profileAvatarUri);
@@ -747,11 +820,9 @@ export async function getSelectedBadgeId(): Promise<string | null> {
 
 export async function setSelectedBadgeId(id: string | null): Promise<void> {
   const db = await getReadyDb();
-  if (!id) {
-    await setSetting(db, SETTING_KEYS.selectedBadgeId, '');
-    return;
-  }
-  await setSetting(db, SETTING_KEYS.selectedBadgeId, id);
+  const val = id ?? '';
+  await setSetting(db, SETTING_KEYS.selectedBadgeId, val);
+  fireSyncSetting(SETTING_KEYS.selectedBadgeId, val);
 }
 
 export async function recordNearbyShownIfNeeded(hasCandidates: boolean): Promise<void> {
@@ -809,3 +880,26 @@ export async function claimLoginBonusIfNeeded(): Promise<{ state: LoginBonusStat
     awarded: true,
   };
 }
+
+export async function getAllSettingsRaw(): Promise<Record<string, string>> {
+  const db = await getReadyDb();
+  return getAllSettings(db);
+}
+
+export async function getAllMemos(): Promise<Memo[]> {
+  const db = await getReadyDb();
+  const rows = await db.getAllAsync<MemoRow>('SELECT * FROM memos ORDER BY createdAt DESC');
+  return rows.map(rowToMemo);
+}
+
+export async function clearAllLocalData(): Promise<void> {
+  const db = await getReadyDb();
+  await db.runAsync('DELETE FROM places');
+  await db.runAsync('DELETE FROM memos');
+  await db.runAsync('DELETE FROM travel_lunch_entries');
+  await db.runAsync('DELETE FROM album_photos');
+  await db.runAsync('DELETE FROM prefecture_photos');
+  await db.runAsync('DELETE FROM settings');
+}
+
+export { getStoreCount };

@@ -32,7 +32,10 @@
     "storeDetail": "Lunch Spot",
     "travelNew": "Add memories",
     "onboarding": "Getting Started",
-    "postLimitInfo": "Post Limit & Purchase"
+    "postLimitInfo": "Post Limit & Purchase",
+    "settings": "Settings",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
   },
   "onboarding": {
     "header": "Getting Started",
@@ -258,7 +261,7 @@
   "home": {
     "title": "Lunch Map",
     "noticeTitle": "Notifications",
-    "noticeBody": "You'll be notified when there are new posts.",
+    "noticeBody": "Registered places: %{storeCount}\nReminders ON: %{reminderCount}\n\nYou'll be notified when you're near a registered place.",
     "settingsTitle": "Settings",
     "settingsBody": "Coming soon.",
     "collectionTitle": "Travel Lunch Log",
@@ -281,7 +284,10 @@
     "loading": "Loading...",
     "empty": "Add your first place.",
     "radiusLabel": "Radius %{value}m",
-    "addPhoto": "Add photo"
+    "addPhoto": "Add photo",
+    "deleteTitle": "Delete store",
+    "deleteBody": "Delete \"%{name}\"? This cannot be undone.",
+    "deleteConfirm": "Delete"
   },
   "list": {
     "filterButton": "≡ Filter",
@@ -304,7 +310,10 @@
     "hint": "Tap the map to select a prefecture.",
     "cardTitleRecent": "Recent memories",
     "cardTitleSelected": "Memories in %{name}",
-    "emptyBody": "No memories yet."
+    "emptyBody": "No memories yet.",
+    "deleteTitle": "Delete this memory?",
+    "deleteBody": "\"%{name}\" will be deleted.",
+    "deleteConfirm": "Delete"
   },
   "pref": {
     "photoPermissionTitle": "Photo access required",
@@ -401,7 +410,8 @@
     "locationLoading": "Getting location…",
     "nearbyTitle": "Nearby shared places",
     "empty": "No nearby shared places yet.",
-    "loginRequired": "Log in to see shared places."
+    "loginRequired": "Log in to see shared places.",
+    "filterComingSoon": "Coming soon"
   },
   "album": {
     "title": "Album",
@@ -415,7 +425,10 @@
     "emptyForDate": "No photos for that date.",
     "empty": "No photos yet.",
     "pickDate": "Select a date",
-    "select": "Select"
+    "select": "Select",
+    "deleteTitle": "Delete this photo?",
+    "deleteBody": "This photo will be removed from the album.",
+    "deleteConfirm": "Delete"
   },
   "locationDenied": {
     "title": "Location unavailable",
@@ -425,7 +438,48 @@
   },
   "auth": {
     "anonymousDisabled": "Anonymous sign-in is disabled. Enable Anonymous in Firebase.",
-    "loginFailed": "Sign-in failed."
+    "loginFailed": "Sign-in failed.",
+    "welcomeTitle": "Welcome to Lunch Map",
+    "welcomeSubtitle": "Sign in to backup & restore your data",
+    "continueWithApple": "Continue with Apple",
+    "continueWithGoogle": "Continue with Google",
+    "continueAsGuest": "Continue as Guest",
+    "guestHint": "All features available as guest. You can sign in later.",
+    "linkApple": "Sign in with Apple to backup",
+    "linkGoogle": "Sign in with Google to backup",
+    "accountTitle": "Account",
+    "statusGuest": "Guest",
+    "statusApple": "Signed in with Apple",
+    "statusGoogle": "Signed in with Google",
+    "loginHint": "Sign in to backup and restore your data.",
+    "logout": "Sign Out",
+    "logoutConfirm": "Sign out? Your data stays on this device.",
+    "linkSuccess": "Account linked successfully.",
+    "linkFailed": "Sign in failed.",
+    "deleteAccount": "Delete Account",
+    "deleteAccountConfirm": "Delete your account? All data will be permanently deleted and cannot be recovered.",
+    "deleteAccountFinal": "Are you sure? This action cannot be undone.",
+    "deleteAccountSuccess": "Account deleted.",
+    "deleteAccountFailed": "Failed to delete account."
+  },
+  "migration": {
+    "title": "Data Migration",
+    "body": "This account has existing data.",
+    "uploadChoice": "Upload this device's data to account",
+    "uploadHint": "Recommended",
+    "restoreChoice": "Restore from account data",
+    "success": "Data migrated successfully.",
+    "failed": "Data migration failed.",
+    "localCount": "This device: %{count}",
+    "cloudCount": "Account: %{count}"
+  },
+  "settings": {
+    "title": "Settings",
+    "restorePurchases": "Restore Purchases",
+    "restoreSuccess": "Purchases restored.",
+    "restoreNone": "No purchases to restore.",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
   },
   "loginBonus": {
     "title": "Today's login",
