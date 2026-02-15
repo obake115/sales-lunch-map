@@ -5,11 +5,15 @@ import Constants from 'expo-constants';
 import { getAdMobBannerUnitId } from '../admob';
 import { usePremium } from '../state/PremiumContext';
 
+// TODO: 広告を再度有効にするときはこのフラグを false に戻す
+const ADS_TEMPORARILY_DISABLED = true;
+
 export function BottomAdBanner() {
   const insets = useSafeAreaInsets();
   const unitId = useMemo(() => getAdMobBannerUnitId(), []);
   const { isPremium } = usePremium();
 
+  if (ADS_TEMPORARILY_DISABLED) return null;
   if (isPremium) return null;
 
   // Expo Go は AdMob 非対応
@@ -51,6 +55,7 @@ export function InlineAdBanner() {
   const unitId = useMemo(() => getAdMobBannerUnitId(), []);
   const { isPremium } = usePremium();
 
+  if (ADS_TEMPORARILY_DISABLED) return null;
   if (isPremium) return null;
 
   // Expo Go は AdMob 非対応

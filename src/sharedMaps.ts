@@ -60,7 +60,7 @@ async function uniqueCode() {
 }
 
 export function listenMyMaps(userId: string, onChange: (maps: SharedMap[]) => void): Unsubscribe {
-  const q = query(collection(firebaseDb, 'maps'), where('memberIds', 'array-contains', userId), orderBy('createdAt', 'desc'));
+  const q = query(collection(firebaseDb, 'maps'), where('memberIds', 'array-contains', userId));
   return onSnapshot(q, (snap) => {
     const maps = snap.docs.map((d) => {
       const data = d.data() as any;
@@ -73,6 +73,7 @@ export function listenMyMaps(userId: string, onChange: (maps: SharedMap[]) => vo
         createdAt: data?.createdAt?.toMillis?.() ?? undefined,
       } as SharedMap;
     });
+    maps.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     onChange(maps);
   });
 }

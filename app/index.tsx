@@ -309,7 +309,19 @@ export default function StoreListScreen() {
               <FontAwesome name="bell-o" size={18} color="#F59E0B" />
             </Pressable>
             <Pressable
-              onPress={() => Alert.alert(t('home.settingsTitle'), t('home.settingsBody'))}
+              onPress={() =>
+                Alert.alert(t('home.settingsTitle'), '', [
+                  {
+                    text: t('profile.settingsHowTo'),
+                    onPress: () => router.push({ pathname: '/onboarding', params: { mode: 'preview' } }),
+                  },
+                  {
+                    text: t('profile.settingsPostLimit'),
+                    onPress: () => router.push('/post-limit-info'),
+                  },
+                  { text: t('common.cancel'), style: 'cancel' },
+                ])
+              }
               style={UI.iconBtn}>
               <FontAwesome name="cog" size={18} color="#6B7280" />
             </Pressable>

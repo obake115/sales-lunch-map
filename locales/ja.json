@@ -530,6 +530,7 @@
     "freeContinue": "今は無料版を続ける",
     "prefLimitTitle": "無料版の制限です",
     "prefLimitBody": "無料版では各都道府県1件までです。\nプレミアムプランで無制限に記録できます。",
-    "homeAdFree": "広告なしで使う"
+    "homeAdFree": "広告なしで使う",
+    "purchasedLabel": "購入済み"
   }
 }

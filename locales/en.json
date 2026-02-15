@@ -530,6 +530,7 @@
     "freeContinue": "Continue with free version",
     "prefLimitTitle": "Free tier limit",
     "prefLimitBody": "Free users: 1 per prefecture.\nUpgrade to Premium for unlimited saves.",
-    "homeAdFree": "Go ad-free"
+    "homeAdFree": "Go ad-free",
+    "purchasedLabel": "Purchased"
   }
 }

@@ -401,20 +401,6 @@ export default function ProfileScreen() {
         </NeuCard>
 
         <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
-          <Text style={UI.sectionTitle}>{t('profile.settingsTitle')}</Text>
-          <Pressable
-            onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'preview' } })}
-            style={{ paddingTop: 10 }}>
-            <Text style={UI.settingLabel}>{t('profile.settingsHowTo')}</Text>
-            <Text style={UI.settingSub}>{t('profile.settingsHowToSub')}</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push('/post-limit-info')} style={UI.settingRow}>
-            <Text style={UI.settingLabel}>{t('profile.settingsPostLimit')}</Text>
-            <Text style={UI.settingSub}>{t('profile.settingsPostLimitSub')}</Text>
-          </Pressable>
-        </NeuCard>
-
-        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
           <Text style={UI.sectionTitle}>{t('profile.statusTitle')}</Text>
           <View style={UI.statRow}>
             <Text style={UI.statLabel}>{t('profile.statusStores')}</Text>
