@@ -4,11 +4,15 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Alert, Image, Pressable, Text, View, useWindowDimensions, type ImageStyle } from 'react-native';
 
+import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import { TravelLunchCard } from '@/components/TravelLunchCard';
+import { formatYmd } from '@/src/domain/date';
 import { t } from '@/src/i18n';
-import { getHasSeenOnboarding, getProfileAvatarUri, getTravelLunchProgress } from '@/src/storage';
+import { getHasSeenOnboarding, getLastPaywallShownAt, getProfileAvatarUri, getTravelLunchProgress, setLastPaywallShownAt } from '@/src/storage';
+import { usePremium } from '@/src/state/PremiumContext';
 import { useThemeMode } from '@/src/state/ThemeContext';
 import { InlineAdBanner } from '@/src/ui/AdBanner';
+import { NeuCard } from '@/src/ui/NeuCard';
 
 const QUICK_PADDING_H = 32;
 const QUICK_GAP = 8;
@@ -16,45 +20,40 @@ const QUICK_ICON_SIZE = 76;
 
 const UI = {
   card: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 10,
-    backgroundColor: '#FFFEF8',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    backgroundColor: '#E9E4DA',
   } as const,
   input: {
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E9E4DA',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   primaryBtn: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4F78FF',
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
   } as const,
   buttonText: {
     fontWeight: '500',
   } as const,
   secondaryBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E7E2D5',
+    backgroundColor: '#E9E4DA',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   dangerBtn: {
-    borderWidth: 1,
-    borderColor: '#FECACA',
     backgroundColor: '#FEF2F2',
     borderRadius: 12,
     paddingHorizontal: 10,
@@ -80,21 +79,25 @@ const UI = {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   profileBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#C8C3B9',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   } as const,
   profileImage: {
     width: 34,
@@ -128,7 +131,7 @@ const UI = {
     width: 88,
     height: 88,
     borderRadius: 14,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   storeImagePlaceholder: {
     alignItems: 'center',
@@ -149,7 +152,7 @@ const UI = {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#D5D0C6',
   } as const,
   tagText: {
     fontSize: 12,
@@ -194,7 +197,10 @@ export default function StoreListScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [travelProgress, setTravelProgress] = useState(0);
   const { themeMode } = useThemeMode();
+  const { isPremium } = usePremium();
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [adFreeShownToday, setAdFreeShownToday] = useState(false);
 
   const quickItemWidth = useMemo(
     () => (width - QUICK_PADDING_H * 2 - QUICK_GAP * 3) / 4,
@@ -260,10 +266,16 @@ export default function StoreListScreen() {
     useCallback(() => {
       let mounted = true;
       (async () => {
-        const [uri, progress] = await Promise.all([getProfileAvatarUri(), getTravelLunchProgress()]);
+        const [uri, progress, lastShown] = await Promise.all([
+          getProfileAvatarUri(),
+          getTravelLunchProgress(),
+          getLastPaywallShownAt(),
+        ]);
         if (mounted) {
           setAvatarUri(uri);
           setTravelProgress(progress);
+          const today = formatYmd(new Date());
+          setAdFreeShownToday(lastShown === today);
         }
       })();
       return () => {
@@ -271,6 +283,13 @@ export default function StoreListScreen() {
       };
     }, [])
   );
+
+  const handleAdFreePress = useCallback(async () => {
+    const today = formatYmd(new Date());
+    await setLastPaywallShownAt(today);
+    setAdFreeShownToday(true);
+    setPaywallVisible(true);
+  }, []);
 
   if (checkingOnboarding) {
     return <View style={{ flex: 1 }} />;
@@ -333,8 +352,29 @@ export default function StoreListScreen() {
 
         <InlineAdBanner />
 
+        {!isPremium && !adFreeShownToday && (
+          <Pressable
+            onPress={handleAdFreePress}
+            style={{
+              alignSelf: 'center',
+              paddingVertical: 8,
+              paddingHorizontal: 16,
+              marginTop: 4,
+            }}
+          >
+            <Text style={{ color: '#4F78FF', fontSize: 13, fontWeight: '600' }}>
+              {t('paywall.homeAdFree')}
+            </Text>
+          </Pressable>
+        )}
+
       </View>
+
+      <PremiumPaywall
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        trigger="homeAdFree"
+      />
     </View>
   );
 }
-

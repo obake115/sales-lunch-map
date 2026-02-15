@@ -3,10 +3,14 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { getAdMobBannerUnitId } from '../admob';
+import { usePremium } from '../state/PremiumContext';
 
 export function BottomAdBanner() {
   const insets = useSafeAreaInsets();
   const unitId = useMemo(() => getAdMobBannerUnitId(), []);
+  const { isPremium } = usePremium();
+
+  if (isPremium) return null;
 
   // Expo Go は AdMob 非対応
   if (Constants.appOwnership === 'expo') return null;
@@ -45,6 +49,9 @@ export function BottomAdBanner() {
 
 export function InlineAdBanner() {
   const unitId = useMemo(() => getAdMobBannerUnitId(), []);
+  const { isPremium } = usePremium();
+
+  if (isPremium) return null;
 
   // Expo Go は AdMob 非対応
   if (Constants.appOwnership === 'expo') return null;

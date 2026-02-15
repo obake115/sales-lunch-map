@@ -49,7 +49,7 @@
       "free": {
         "title": "Up to 10 for free",
         "body": "Once a day, watch an ad\nto add +1 post slot.",
-        "helper": "Unlimited with a one-time purchase (¥480)."
+        "helper": "Unlimited with a one-time purchase (¥500)."
       }
     }
   },
@@ -71,11 +71,11 @@
     "restoreFailed": "Restore failed",
     "restoreSuccess": "Restored. Saved.",
     "limitTitle": "Post limit reached",
-    "limitBody": "Free is up to 10 posts.\nWatch an ad to add +1, or\nunlock unlimited (¥480).",
+    "limitBody": "Free is up to 10 posts.\nWatch an ad to add +1, or\nunlock unlimited (¥500).",
     "valueTitle": "Unlimited forever",
-    "valueBody": "No limits, no ads for future posts",
+    "valueBody": "No limits, no ads for future posts. ¥500 (one-time)",
     "planName": "Unlimited (one-time)",
-    "priceLabel": "¥480",
+    "priceLabel": "¥500",
     "purchaseCta": "Unlock unlimited",
     "purchaseFailed": "Purchase failed",
     "purchaseSuccess": "Unlimited unlocked. Saved.",
@@ -296,7 +296,7 @@
     "section1Body": "You can register up to 10 for free.\nTo add more, choose a rewarded ad or a one-time purchase.",
     "section2Title": "Add +1 with an ad",
     "section2Body": "Once a day, watch a full video ad\nand your slots increase by +1 permanently.",
-    "section3Title": "One-time purchase (¥480)",
+    "section3Title": "One-time purchase (¥500)",
     "section3Body": "A one-time purchase unlocks unlimited posts.\nNo ads required."
   },
   "collection": {
@@ -514,5 +514,22 @@
     "title": "📍 Nearby lunch picks (%{radius}m)",
     "empty": "No nearby picks yet. Add one with +",
     "walkMinutes": "%{minutes} min walk"
+  },
+  "paywall": {
+    "title": "Premium Plan",
+    "subtitle": "Use all features without limits",
+    "feature1Title": "Unlimited Posts",
+    "feature1Body": "Register unlimited lunch spots",
+    "feature2Title": "Ad-Free",
+    "feature2Body": "No more banner ads",
+    "feature3Title": "Unlimited Prefecture Saves",
+    "feature3Body": "Save unlimited travel lunch memories",
+    "planName": "Premium (one-time)",
+    "priceLabel": "¥500",
+    "purchaseCta": "Purchase for ¥500",
+    "freeContinue": "Continue with free version",
+    "prefLimitTitle": "Free tier limit",
+    "prefLimitBody": "Free users: 1 per prefecture.\nUpgrade to Premium for unlimited saves.",
+    "homeAdFree": "Go ad-free"
   }
 }

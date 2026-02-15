@@ -29,5 +29,6 @@ export const SETTING_KEYS = {
   postLimitBonusSlots: 'postLimitBonusSlots',
   postLimitRewardedDate: 'postLimitRewardedDate',
   hasSeenOnboarding: 'hasSeenOnboarding',
+  lastPaywallShownAt: 'lastPaywallShownAt',
 };
 

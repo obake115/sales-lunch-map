@@ -6,11 +6,13 @@ import { LoginBonusModal } from './components/LoginBonusModal';
 import { configureNotifications, ensureAndroidDefaultChannel } from './notifications';
 import { syncPurchasedState } from './purchases';
 import { AuthProvider } from './state/AuthContext';
+import { usePremium, PremiumProvider } from './state/PremiumContext';
 import { StoresProvider } from './state/StoresContext';
 import { useAppBootstrap } from './state/useAppBootstrap';
 
-export function AppProviders({ children }: PropsWithChildren) {
+function AppProvidersInner({ children }: PropsWithChildren) {
   const { loginBonus, dismissLoginBonus } = useAppBootstrap();
+  const { refreshPremium } = usePremium();
 
   useEffect(() => {
     configureNotifications();
@@ -31,23 +33,30 @@ export function AppProviders({ children }: PropsWithChildren) {
     }
 
     // Sync purchase entitlement on app start (no-op in Expo Go).
-    syncPurchasedState();
-  }, []);
+    syncPurchasedState().then(() => refreshPremium());
+  }, [refreshPremium]);
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <StoresProvider>
-          {children}
-          <LoginBonusModal
-            visible={!!loginBonus?.awarded}
-            streak={loginBonus?.state.streak ?? 0}
-            totalDays={loginBonus?.state.totalDays ?? 0}
-            onClose={dismissLoginBonus}
-          />
-        </StoresProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <AuthProvider>
+      <StoresProvider>
+        {children}
+        <LoginBonusModal
+          visible={!!loginBonus?.awarded}
+          streak={loginBonus?.state.streak ?? 0}
+          totalDays={loginBonus?.state.totalDays ?? 0}
+          onClose={dismissLoginBonus}
+        />
+      </StoresProvider>
+    </AuthProvider>
   );
 }
 
+export function AppProviders({ children }: PropsWithChildren) {
+  return (
+    <SafeAreaProvider>
+      <PremiumProvider>
+        <AppProvidersInner>{children}</AppProvidersInner>
+      </PremiumProvider>
+    </SafeAreaProvider>
+  );
+}

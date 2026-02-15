@@ -49,7 +49,7 @@
       "free": {
         "title": "無料で10件まで",
         "body": "1日1回、広告を見ると\n投稿枠を＋1件追加できます。",
-        "helper": "買い切り（480円）で無制限になります。"
+        "helper": "買い切り（500円）で無制限になります。"
       }
     }
   },
@@ -71,11 +71,11 @@
     "restoreFailed": "復元に失敗しました",
     "restoreSuccess": "復元しました。保存しました",
     "limitTitle": "投稿枠の上限です",
-    "limitBody": "無料は10件までです。\n広告を見て＋1件、または\n買い切り（480円）で無制限にできます。",
+    "limitBody": "無料は10件までです。\n広告を見て＋1件、または\n買い切り（500円）で無制限にできます。",
     "valueTitle": "買い切りで、ずっと無制限",
-    "valueBody": "これから何件登録しても制限なし・広告なし",
+    "valueBody": "これから何件登録しても制限なし・広告なし。¥500（買い切り）",
     "planName": "無制限（買い切り）",
-    "priceLabel": "¥480",
+    "priceLabel": "¥500",
     "purchaseCta": "買い切りで無制限にする",
     "purchaseFailed": "購入に失敗しました",
     "purchaseSuccess": "無制限になりました。保存しました",
@@ -296,7 +296,7 @@
     "section1Body": "無料は10件まで登録できます。\n投稿枠を増やしたい場合は、広告視聴または買い切り購入を選べます。",
     "section2Title": "広告で＋1件",
     "section2Body": "1日1回、動画広告を最後まで視聴すると\n投稿枠が＋1件ずつ増えます（永続）。",
-    "section3Title": "買い切り（480円）",
+    "section3Title": "買い切り（500円）",
     "section3Body": "買い切り購入で投稿数が無制限になります。\n広告視聴は不要です。"
   },
   "collection": {
@@ -514,5 +514,22 @@
     "title": "📍 近くのランチ候補（%{radius}m）",
     "empty": "近くの候補はまだありません。＋で登録してみよう",
     "walkMinutes": "徒歩%{minutes}分"
+  },
+  "paywall": {
+    "title": "プレミアムプラン",
+    "subtitle": "すべての機能を制限なしで使えます",
+    "feature1Title": "投稿無制限",
+    "feature1Body": "ランチ候補の登録件数が無制限に",
+    "feature2Title": "広告なし",
+    "feature2Body": "バナー広告が非表示に",
+    "feature3Title": "都道府県記録無制限",
+    "feature3Body": "旅のランチ記録を各都道府県に何件でも",
+    "planName": "プレミアム（買い切り）",
+    "priceLabel": "¥500",
+    "purchaseCta": "¥500で購入する",
+    "freeContinue": "今は無料版を続ける",
+    "prefLimitTitle": "無料版の制限です",
+    "prefLimitBody": "無料版では各都道府県1件までです。\nプレミアムプランで無制限に記録できます。",
+    "homeAdFree": "広告なしで使う"
   }
 }

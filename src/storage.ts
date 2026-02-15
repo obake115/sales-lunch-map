@@ -689,6 +689,31 @@ export async function setProfileName(name: string): Promise<void> {
   await setSetting(db, SETTING_KEYS.profileName, name.trim());
 }
 
+export async function getTravelEntryCountByPrefecture(prefId: string): Promise<number> {
+  const db = await getReadyDb();
+  const row = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM travel_lunch_entries WHERE prefectureId = ?',
+    prefId
+  );
+  return row?.count ?? 0;
+}
+
+export async function isPremiumUser(): Promise<boolean> {
+  const db = await getReadyDb();
+  return (await getSetting(db, SETTING_KEYS.postLimitPurchased)) === '1';
+}
+
+export async function getLastPaywallShownAt(): Promise<string | null> {
+  const db = await getReadyDb();
+  const stored = await getSetting(db, SETTING_KEYS.lastPaywallShownAt);
+  return stored || null;
+}
+
+export async function setLastPaywallShownAt(date: string): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.lastPaywallShownAt, date);
+}
+
 export async function getHasSeenOnboarding(): Promise<boolean> {
   const db = await getReadyDb();
   return (await getSetting(db, SETTING_KEYS.hasSeenOnboarding)) === '1';

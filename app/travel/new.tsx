@@ -17,9 +17,11 @@ import {
   View,
 } from 'react-native';
 
+import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import { t } from '@/src/i18n';
 import { formatYmd } from '@/src/domain/date';
-import { addTravelLunchEntry } from '@/src/storage';
+import { addTravelLunchEntry, getTravelEntryCountByPrefecture } from '@/src/storage';
+import { usePremium } from '@/src/state/PremiumContext';
 import { useThemeMode } from '@/src/state/ThemeContext';
 
 const GENRES = [
@@ -89,6 +91,7 @@ const PREFECTURE_IDS = [
 export default function TravelLunchNewScreen() {
   const router = useRouter();
   const { themeMode } = useThemeMode();
+  const { isPremium } = usePremium();
   const params = useLocalSearchParams<{ prefecture?: string }>();
   const paramPrefecture = typeof params.prefecture === 'string' ? params.prefecture : undefined;
 
@@ -104,6 +107,7 @@ export default function TravelLunchNewScreen() {
   const [showGenreModal, setShowGenreModal] = useState(false);
   const [showPrefectureModal, setShowPrefectureModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
 
   const colors = useMemo(() => {
     if (themeMode === 'navy') {
@@ -113,18 +117,18 @@ export default function TravelLunchNewScreen() {
         text: '#E5E7EB',
         subText: '#9CA3AF',
         border: '#374151',
-        accent: '#2E5CE6',
+        accent: '#4F78FF',
         chip: '#1F2937',
       };
     }
     return {
-      background: '#FFF8EB',
-      card: '#F7F5F0',
+      background: '#E9E4DA',
+      card: '#E9E4DA',
       text: '#111',
       subText: '#666',
       border: '#D6D0C6',
-      accent: '#2E5CE6',
-      chip: '#EAE6DF',
+      accent: '#4F78FF',
+      chip: '#E9E4DA',
     };
   }, [themeMode]);
 
@@ -183,6 +187,13 @@ export default function TravelLunchNewScreen() {
       Alert.alert(t('travel.validationTitle'), t('travel.validationRating'));
       return;
     }
+    if (!isPremium && prefectureId) {
+      const count = await getTravelEntryCountByPrefecture(prefectureId);
+      if (count >= 1) {
+        setPaywallVisible(true);
+        return;
+      }
+    }
     setSaving(true);
     try {
       await addTravelLunchEntry({
@@ -218,7 +229,7 @@ export default function TravelLunchNewScreen() {
 
         <Pressable
           onPress={() => setShowPrefectureModal(true)}
-          style={[styles.prefectureChip, { backgroundColor: colors.chip }]}
+          style={[styles.prefectureChip, { backgroundColor: colors.chip, shadowColor: '#C8C3B9', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }]}
         >
           <Text style={[styles.prefectureText, { color: colors.text }]}>{prefectureLabel}</Text>
         </Pressable>
@@ -380,6 +391,13 @@ export default function TravelLunchNewScreen() {
           <Text style={styles.toastText}>{toastMessage}</Text>
         </View>
       ) : null}
+
+      <PremiumPaywall
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        onPurchased={() => handleSave()}
+        trigger="prefectureLimit"
+      />
     </SafeAreaView>
   );
 }
@@ -469,7 +487,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: 20,
     paddingVertical: 8,
     maxHeight: '70%',
   },
