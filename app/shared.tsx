@@ -228,11 +228,7 @@ export default function SharedMapsScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
         <View style={UI.headerRow}>
-          <Pressable onPress={() => router.back()} style={[UI.backBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
-            <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>‹</Text>
-          </Pressable>
           <Text style={[UI.headerTitle, { color: colors.text }]}>{t('shared.title')}</Text>
-          <View style={{ width: 36 }} />
         </View>
         <Text style={[UI.headerSub, { color: colors.subText }]}>{t('shared.subtitle')}</Text>
 
