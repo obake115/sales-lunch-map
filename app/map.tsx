@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -363,35 +364,27 @@ export default function MapScreen() {
       {/* Beige tone overlay */}
       <View pointerEvents="none" style={styles.overlay} />
 
-      {/* Floating back button (top-left) */}
-      <Pressable
-        onPress={() => router.replace('/')}
+      {/* iOS-style header bar */}
+      <View
         style={[
-          styles.floatingBtn,
+          styles.headerBar,
           {
-            top: insets.top + 8,
-            left: 16,
-            backgroundColor: colors.card,
-            shadowColor: colors.shadowDark,
+            height: insets.top + 48,
+            paddingTop: insets.top,
+            backgroundColor: colors.bg === '#0F172A'
+              ? 'rgba(15,23,42,0.92)'
+              : 'rgba(245,241,234,0.92)',
+            borderBottomColor: colors.chipBg,
           },
         ]}>
-        <Text style={{ fontSize: 20, color: colors.text, fontFamily: fonts.bold }}>＜</Text>
-      </Pressable>
-
-      {/* Floating current-location button (top-right) */}
-      <Pressable
-        onPress={handleGoToCurrent}
-        style={[
-          styles.floatingBtn,
-          {
-            top: insets.top + 8,
-            right: 16,
-            backgroundColor: colors.card,
-            shadowColor: colors.shadowDark,
-          },
-        ]}>
-        <Text style={{ fontSize: 18, color: colors.text }}>◎</Text>
-      </Pressable>
+        <Pressable onPress={() => router.back()} style={styles.headerBtn}>
+          <FontAwesome name="chevron-left" size={18} color={colors.text} />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('nav.map')}</Text>
+        <Pressable onPress={handleGoToCurrent} style={styles.headerBtn}>
+          <FontAwesome name="crosshairs" size={18} color={colors.text} />
+        </Pressable>
+      </View>
 
       {/* Custom BottomSheet */}
       <Animated.View
@@ -537,18 +530,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(232, 225, 216, 0.08)',
     zIndex: 1,
   },
-  floatingBtn: {
+  headerBar: {
     position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerBtn: {
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: fonts.bold,
+    fontSize: 16,
   },
   sheet: {
     position: 'absolute',

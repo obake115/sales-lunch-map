@@ -1,3 +1,4 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -387,13 +388,35 @@ export default function EveryoneScreen() {
       {/* Weather gradient (everyone only) */}
       <WeatherBackdrop tone={resolvedTone} />
 
-      {/* Hero overlay (top center) */}
+      {/* iOS-style header bar */}
+      <View
+        style={[
+          styles.headerBar,
+          {
+            height: insets.top + 48,
+            paddingTop: insets.top,
+            backgroundColor: isNavy
+              ? 'rgba(15,23,42,0.92)'
+              : 'rgba(245,241,234,0.92)',
+            borderBottomColor: colors.chipBg,
+          },
+        ]}>
+        <Pressable onPress={() => router.back()} style={styles.headerBtn}>
+          <FontAwesome name="chevron-left" size={18} color={colors.text} />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('nav.everyone')}</Text>
+        <Pressable onPress={handleGoToCurrent} style={styles.headerBtn}>
+          <FontAwesome name="crosshairs" size={18} color={colors.text} />
+        </Pressable>
+      </View>
+
+      {/* Hero overlay (below header) */}
       <View
         pointerEvents="none"
         style={[
           styles.heroOverlay,
           {
-            top: insets.top + 56,
+            top: insets.top + 48 + 8,
             backgroundColor: isNavy
               ? 'rgba(15, 23, 42, 0.75)'
               : 'rgba(233, 228, 218, 0.8)',
@@ -408,36 +431,6 @@ export default function EveryoneScreen() {
           color={colors.subText}
         />
       </View>
-
-      {/* Floating back button (top-left) */}
-      <Pressable
-        onPress={() => router.replace('/')}
-        style={[
-          styles.floatingBtn,
-          {
-            top: insets.top + 8,
-            left: 16,
-            backgroundColor: colors.card,
-            shadowColor: colors.shadowDark,
-          },
-        ]}>
-        <Text style={{ fontSize: 20, color: colors.text, fontFamily: fonts.bold }}>＜</Text>
-      </Pressable>
-
-      {/* Floating current-location button (top-right) */}
-      <Pressable
-        onPress={handleGoToCurrent}
-        style={[
-          styles.floatingBtn,
-          {
-            top: insets.top + 8,
-            right: 16,
-            backgroundColor: colors.card,
-            shadowColor: colors.shadowDark,
-          },
-        ]}>
-        <Text style={{ fontSize: 18, color: colors.text }}>◎</Text>
-      </Pressable>
 
       {/* BottomSheet */}
       <Animated.View
@@ -598,18 +591,27 @@ const styles = StyleSheet.create({
     zIndex: 2,
     alignItems: 'center',
   },
-  floatingBtn: {
+  headerBar: {
     position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerBtn: {
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: fonts.bold,
+    fontSize: 16,
   },
   sheet: {
     position: 'absolute',
