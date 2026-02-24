@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Image,
   Pressable,
@@ -12,8 +13,9 @@ import {
   View,
 } from 'react-native';
 
+import { fonts } from '@/src/ui/fonts';
 import { t } from '@/src/i18n';
-import { getTravelLunchEntries } from '@/src/storage';
+import { deleteTravelLunchEntry, getTravelLunchEntries } from '@/src/storage';
 import { useThemeMode } from '@/src/state/ThemeContext';
 import type { TravelLunchEntry } from '@/src/models';
 
@@ -106,6 +108,27 @@ export default function TravelPrefDetailScreen() {
                   {item.memo}
                 </Text>
               ) : null}
+              <Pressable
+                onPress={() => {
+                  Alert.alert(
+                    t('collection.deleteTitle'),
+                    t('collection.deleteBody', { name: item.restaurantName }),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('collection.deleteConfirm'),
+                        style: 'destructive',
+                        onPress: async () => {
+                          await deleteTravelLunchEntry(item.id);
+                          await refresh();
+                        },
+                      },
+                    ]
+                  );
+                }}
+                style={{ marginTop: 8, alignSelf: 'flex-end', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2' }}>
+                <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold }}>−</Text>
+              </Pressable>
             </View>
           </View>
         )}
@@ -131,7 +154,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   headerBackText: { fontSize: 18 },
-  headerTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
+  headerTitle: { fontSize: 18, fontFamily: fonts.bold, flex: 1 },
   headerSpacer: { width: 36 },
   listContent: {
     paddingHorizontal: 16,
@@ -153,7 +176,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     marginBottom: 4,
   },
   cardMeta: {

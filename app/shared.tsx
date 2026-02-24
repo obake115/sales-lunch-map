@@ -4,10 +4,13 @@ import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, Te
 import { CameraView, useCameraPermissions, type BarcodeScanningResult, scanFromURLAsync } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 
+import { logSharedMapCreated, logSharedMapJoined } from '@/src/analytics';
 import { t } from '@/src/i18n';
 import { createMap, joinMap, listenMyMaps, type SharedMap } from '@/src/sharedMaps';
 import { useAuth } from '@/src/state/AuthContext';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
@@ -73,7 +76,7 @@ const UI = {
   headerTitle: {
     flex: 1,
     textAlign: 'center',
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     fontSize: 16,
     color: '#111827',
   } as const,
@@ -118,7 +121,8 @@ const INPUT_PROPS = {
 export default function SharedMapsScreen() {
   const router = useRouter();
   const { code: deepLinkCode } = useLocalSearchParams<{ code?: string }>();
-  const { user, loading, retrySignIn } = useAuth();
+  const { user, loading, signInAsGuest } = useAuth();
+  const colors = useThemeColors();
   const [maps, setMaps] = useState<SharedMap[]>([]);
   const [createName, setCreateName] = useState('');
   const [joinCode, setJoinCode] = useState('');
@@ -140,7 +144,7 @@ export default function SharedMapsScreen() {
   const joinByCode = async (code: string) => {
     if (!code) return;
     setBusy(true);
-    const currentUser = user ?? (await retrySignIn());
+    const currentUser = user ?? (await signInAsGuest());
     if (!currentUser) {
       setBusy(false);
       return;
@@ -151,6 +155,7 @@ export default function SharedMapsScreen() {
         8000,
         t('shared.joinTimeout')
       );
+      logSharedMapJoined({ method: 'code' });
       setJoinCode('');
       setQrVisible(false);
       setQrMode('choice');
@@ -166,7 +171,7 @@ export default function SharedMapsScreen() {
   const handleLibraryScan = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 1,
       });
       if (result.canceled) return;
@@ -223,35 +228,37 @@ export default function SharedMapsScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
         <View style={UI.headerRow}>
-          <Pressable onPress={() => router.back()} style={UI.backBtn}>
-            <Text style={{ fontWeight: '900' }}>‹</Text>
+          <Pressable onPress={() => router.back()} style={[UI.backBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
+            <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>‹</Text>
           </Pressable>
-          <Text style={UI.headerTitle}>{t('shared.title')}</Text>
+          <Text style={[UI.headerTitle, { color: colors.text }]}>{t('shared.title')}</Text>
           <View style={{ width: 36 }} />
         </View>
-        <Text style={UI.headerSub}>{t('shared.subtitle')}</Text>
+        <Text style={[UI.headerSub, { color: colors.subText }]}>{t('shared.subtitle')}</Text>
 
-        <NeuCard style={UI.heroCard}>
+        <NeuCard style={[UI.heroCard, { backgroundColor: colors.card }]}>
           <Image source={require('@/assets/images/shared-hero.png')} style={UI.heroImage} />
-          <Text style={{ fontWeight: '900', fontSize: 16, marginTop: 12 }}>{t('shared.heroTitle')}</Text>
-          <Text style={{ color: '#6B7280', marginTop: 6 }}>{t('shared.heroBody')}</Text>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginTop: 12, color: colors.text }}>{t('shared.heroTitle')}</Text>
+          <Text style={{ color: colors.subText, marginTop: 6 }}>{t('shared.heroBody')}</Text>
           {loading ? (
             <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ActivityIndicator size="small" color="#F59E0B" />
-              <Text style={{ color: '#6B7280' }}>{t('shared.preparing')}</Text>
+              <Text style={{ color: colors.subText }}>{t('shared.preparing')}</Text>
             </View>
           ) : null}
           {canRetryAuth ? (
             <View style={{ marginTop: 10 }}>
-              <Text style={{ color: '#6B7280' }}>{t('shared.prepareFailed')}</Text>
+              <Text style={{ color: colors.subText }}>{t('shared.prepareFailed')}</Text>
               <Pressable
-                onPress={() => retrySignIn()}
+                onPress={() => signInAsGuest()}
                 style={{
                   marginTop: 8,
                   ...UI.secondaryBtn,
+                  backgroundColor: colors.card,
+                  shadowColor: colors.shadowDark,
                   paddingVertical: 10,
                 }}>
-                <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.retryPrepare')}</Text>
+                <Text style={{ color: colors.text, fontFamily: fonts.extraBold }}>{t('shared.retryPrepare')}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -261,7 +268,7 @@ export default function SharedMapsScreen() {
               onPress={async () => {
                 if (!canUseShared) return;
                 setBusy(true);
-                const currentUser = user ?? (await retrySignIn());
+                const currentUser = user ?? (await signInAsGuest());
                 if (!currentUser) {
                   setBusy(false);
                   return;
@@ -272,6 +279,7 @@ export default function SharedMapsScreen() {
                     8000,
                     t('shared.createTimeout')
                   );
+                  logSharedMapCreated();
                   setCreateName('');
                   router.push({ pathname: '/shared/[id]', params: { id, showInvite: '1' } });
                 } catch (e: any) {
@@ -285,7 +293,7 @@ export default function SharedMapsScreen() {
                 ...UI.primaryBtn,
                 backgroundColor: canUseShared ? UI.primaryBtn.backgroundColor : '#F8C27A',
               }}>
-              <Text style={{ color: 'white', fontWeight: '900' }}>{t('shared.createButton')}</Text>
+              <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('shared.createButton')}</Text>
             </Pressable>
           ) : null}
         </NeuCard>
@@ -293,23 +301,23 @@ export default function SharedMapsScreen() {
         {authReady ? (
           <>
             <View style={UI.infoRow}>
-              <View style={UI.infoDot}>
-                <Text style={{ fontWeight: '900', fontSize: 12 }}>i</Text>
+              <View style={[UI.infoDot, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
+                <Text style={{ fontFamily: fonts.extraBold, fontSize: 12, color: colors.text }}>i</Text>
               </View>
-              <Text style={UI.infoText}>{t('shared.infoOnlyInvite')}</Text>
+              <Text style={[UI.infoText, { color: colors.subText }]}>{t('shared.infoOnlyInvite')}</Text>
             </View>
 
             <View style={{ height: 16 }} />
 
-            <NeuCard style={UI.card}>
-              <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 8 }}>{t('shared.joinByCode')}</Text>
+            <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 8, color: colors.text }}>{t('shared.joinByCode')}</Text>
               <TextInput
                 value={joinCode}
                 onChangeText={(t) => setJoinCode(t.toUpperCase())}
                 {...INPUT_PROPS}
                 autoCapitalize="characters"
                 placeholder={t('shared.codePlaceholder')}
-                style={UI.input}
+                style={[UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
               />
               <Pressable
                 onPress={() => {
@@ -320,16 +328,18 @@ export default function SharedMapsScreen() {
                 style={{
                   marginTop: 10,
                   ...UI.secondaryBtn,
+                  backgroundColor: colors.card,
+                  shadowColor: colors.shadowDark,
                   paddingVertical: 10,
                 }}>
-                <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.joinByQr')}</Text>
+                <Text style={{ color: colors.text, fontFamily: fonts.extraBold }}>{t('shared.joinByQr')}</Text>
               </Pressable>
               <Pressable
                 disabled={!canUseShared}
                 onPress={async () => {
                   if (!canUseShared) return;
                   setBusy(true);
-                  const currentUser = user ?? (await retrySignIn());
+                  const currentUser = user ?? (await signInAsGuest());
                   if (!currentUser) {
                     setBusy(false);
                     return;
@@ -340,6 +350,7 @@ export default function SharedMapsScreen() {
                       8000,
                       t('shared.joinTimeout')
                     );
+                    logSharedMapJoined({ method: 'manual_code' });
                     setJoinCode('');
                     router.push({ pathname: '/shared/[id]', params: { id } });
                   } catch (e: any) {
@@ -351,29 +362,31 @@ export default function SharedMapsScreen() {
                 style={{
                   marginTop: 10,
                   ...UI.secondaryBtn,
+                  backgroundColor: colors.card,
+                  shadowColor: colors.shadowDark,
                   paddingVertical: 12,
                 }}>
-                <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.joinButton')}</Text>
+                <Text style={{ color: colors.text, fontFamily: fonts.extraBold }}>{t('shared.joinButton')}</Text>
               </Pressable>
             </NeuCard>
           </>
         ) : null}
 
         <View style={{ gap: 8, marginTop: 12 }}>
-          <Text style={{ fontWeight: '900' }}>{t('shared.myMaps')}</Text>
-          {!loading && maps.length === 0 && <Text style={{ color: '#6B7280' }}>{t('shared.empty')}</Text>}
+          <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('shared.myMaps')}</Text>
+          {!loading && maps.length === 0 && <Text style={{ color: colors.subText }}>{t('shared.empty')}</Text>}
           {maps.map((item) => (
             <Pressable
               key={item.id}
               onPress={() => router.push({ pathname: '/shared/[id]', params: { id: item.id } })}>
-              <NeuCard style={UI.card}>
-                <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
+              <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+                <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }} numberOfLines={1}>
                   {item.name}
                 </Text>
-                <Text style={{ color: '#6B7280', marginTop: 4 }}>
+                <Text style={{ color: colors.subText, marginTop: 4 }}>
                   {t('shared.inviteCodeLabel')} {item.code}
                 </Text>
-                <Text style={{ color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ color: colors.subText, marginTop: 2 }}>
                   {t('shared.membersLabel', { count: item.memberIds.length })}
                 </Text>
               </NeuCard>
@@ -397,10 +410,10 @@ export default function SharedMapsScreen() {
             style={{
               width: '100%',
               borderRadius: 20,
-              backgroundColor: '#E9E4DA',
+              backgroundColor: colors.card,
               padding: 16,
             }}>
-            <Text style={{ fontWeight: '900', fontSize: 16, textAlign: 'center', marginBottom: 10 }}>
+            <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, textAlign: 'center', marginBottom: 10, color: colors.text }}>
               {t('shared.scanTitle')}
             </Text>
 
@@ -415,23 +428,23 @@ export default function SharedMapsScreen() {
                     }
                   }}
                   style={{ ...UI.primaryBtn, backgroundColor: '#F59E0B', paddingVertical: 10 }}>
-                  <Text style={{ color: 'white', fontWeight: '900' }}>{t('shared.scanWithCamera')}</Text>
+                  <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('shared.scanWithCamera')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleLibraryScan}
-                  style={{ ...UI.secondaryBtn, paddingVertical: 10 }}>
-                  <Text style={{ color: '#111827', fontWeight: '900' }}>{t('shared.scanWithPhoto')}</Text>
+                  style={{ ...UI.secondaryBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, paddingVertical: 10 }}>
+                  <Text style={{ color: colors.text, fontFamily: fonts.extraBold }}>{t('shared.scanWithPhoto')}</Text>
                 </Pressable>
               </View>
             ) : !cameraPermission?.granted ? (
               <View style={{ gap: 8, alignItems: 'center' }}>
-                <Text style={{ color: '#6B7280', textAlign: 'center' }}>
+                <Text style={{ color: colors.subText, textAlign: 'center' }}>
                   {t('shared.cameraPermission')}
                 </Text>
                 <Pressable
                   onPress={() => requestCameraPermission()}
                   style={{ ...UI.primaryBtn, backgroundColor: '#F59E0B', paddingVertical: 10, paddingHorizontal: 16 }}>
-                  <Text style={{ color: 'white', fontWeight: '900' }}>{t('shared.allowCamera')}</Text>
+                  <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('shared.allowCamera')}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -456,7 +469,7 @@ export default function SharedMapsScreen() {
             )}
 
             <Pressable onPress={() => setQrVisible(false)} style={{ marginTop: 12, alignItems: 'center' }}>
-              <Text style={{ color: '#4F78FF', fontWeight: '800' }}>{t('common.close')}</Text>
+              <Text style={{ color: '#4F78FF', fontFamily: fonts.extraBold }}>{t('common.close')}</Text>
             </Pressable>
           </NeuCard>
         </View>

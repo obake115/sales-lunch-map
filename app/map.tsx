@@ -1,22 +1,41 @@
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  Image,
+  Linking,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from '@/src/i18n';
 import type { Store } from '@/src/models';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { useStores } from '@/src/state/StoresContext';
 import { getMemos } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   card: {
     borderRadius: 20,
     padding: 14,
-    backgroundColor: '#E9E4DA',
   } as const,
   primaryBtn: {
     backgroundColor: '#4F78FF',
@@ -26,45 +45,29 @@ const UI = {
     justifyContent: 'center',
   } as const,
   secondaryBtn: {
-    backgroundColor: '#E9E4DA',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
   } as const,
   dangerBtn: {
-    backgroundColor: '#FEF2F2',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 8,
-  } as const,
-  listBtn: {
-    marginTop: 6,
-    borderRadius: 14,
-    backgroundColor: '#F59E0B',
-    paddingVertical: 10,
-    alignItems: 'center',
-  } as const,
-  listBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   } as const,
   storeImage: {
     width: 88,
     height: 88,
     borderRadius: 14,
-    backgroundColor: '#D5D0C6',
   } as const,
   storeImagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
   storeImageText: {
-    color: '#6B7280',
-    fontWeight: '600',
+    fontFamily: fonts.bold,
     fontSize: 12,
   } as const,
   tagRow: {
@@ -77,18 +80,16 @@ const UI = {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#D5D0C6',
   } as const,
   tagText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
+    fontFamily: fonts.bold,
   } as const,
   titleText: {
-    fontWeight: '600',
+    fontFamily: fonts.bold,
   } as const,
   bodyText: {
-    fontWeight: '400',
+    fontFamily: fonts.regular,
   } as const,
 } as const;
 
@@ -109,19 +110,90 @@ async function openGoogleMaps(store: Store) {
   await Linking.openURL(url);
 }
 
+/* ── Marker colors ── */
+const PIN_COLOR = '#D8849F';
+const PIN_SELECTED_COLOR = '#C4748B';
+
+/* ── BottomSheet snap points ── */
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const SNAP_PEEK = SCREEN_HEIGHT * 0.18;
+const SNAP_HALF = SCREEN_HEIGHT * 0.45;
+const SNAP_FULL = SCREEN_HEIGHT * 0.85;
+const SNAPS = [SNAP_PEEK, SNAP_HALF, SNAP_FULL];
+
+function closestSnap(y: number): number {
+  let best = SNAPS[0];
+  let bestDist = Math.abs(y - best);
+  for (const s of SNAPS) {
+    const d = Math.abs(y - s);
+    if (d < bestDist) {
+      best = s;
+      bestDist = d;
+    }
+  }
+  return best;
+}
+
+const SPRING_CONFIG = { damping: 20, stiffness: 180, mass: 0.8 };
+
 export default function MapScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
   const { stores, updateStore, deleteStore, loading } = useStores();
   const markerPressRef = useRef(false);
+  const mapRef = useRef<MapView>(null);
   const [deviceLatLng, setDeviceLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [memoPreviewByStoreId, setMemoPreviewByStoreId] = useState<Record<string, string>>({});
+  const [scrollEnabled, setScrollEnabled] = useState(false);
   const storesSorted = useMemo(
     () => stores.slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)),
     [stores]
   );
 
+  /* ── BottomSheet animation ── */
+  const sheetHeight = useSharedValue(SNAP_PEEK);
+  const currentSnap = useRef(SNAP_PEEK);
+  const dragStartHeight = useRef(SNAP_PEEK);
+
+  const snapTo = useCallback((target: number) => {
+    'worklet';
+    sheetHeight.value = withSpring(target, SPRING_CONFIG);
+    runOnJS(setScrollEnabled)(target >= SNAP_FULL);
+  }, [sheetHeight]);
+
+  const snapToIndex = useCallback((index: number) => {
+    const target = SNAPS[index] ?? SNAP_PEEK;
+    currentSnap.current = target;
+    sheetHeight.value = withSpring(target, SPRING_CONFIG);
+    setScrollEnabled(target >= SNAP_FULL);
+  }, [sheetHeight]);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
+    onPanResponderGrant: () => {
+      dragStartHeight.current = currentSnap.current;
+    },
+    onPanResponderMove: (_, g) => {
+      const next = Math.max(SNAP_PEEK, Math.min(SNAP_FULL, dragStartHeight.current - g.dy));
+      sheetHeight.value = next;
+    },
+    onPanResponderRelease: (_, g) => {
+      const projected = dragStartHeight.current - g.dy - g.vy * 150;
+      const target = closestSnap(projected);
+      currentSnap.current = target;
+      snapTo(target);
+    },
+  }), [sheetHeight, snapTo]);
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    height: sheetHeight.value,
+  }));
+
+  /* ── Photo picker ── */
   const handlePickStorePhoto = async (storeId: string) => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -129,17 +201,21 @@ export default function MapScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 5,
       quality: 0.8,
     });
     if (result.canceled) return;
-    const uri = result.assets?.[0]?.uri;
-    if (!uri) return;
-    await updateStore(storeId, { photoUri: uri });
+    const newUris = result.assets?.map((a) => a.uri).filter(Boolean) ?? [];
+    if (newUris.length === 0) return;
+    const store = stores.find((s) => s.id === storeId);
+    const existing = store?.photoUris ?? (store?.photoUri ? [store.photoUri] : []);
+    const merged = [...existing, ...newUris].slice(0, 10);
+    await updateStore(storeId, { photoUri: merged[0], photoUris: merged });
   };
 
+  /* ── Location effects ── */
   useEffect(() => {
     (async () => {
       let fg = await Location.getForegroundPermissionsAsync();
@@ -199,6 +275,7 @@ export default function MapScreen() {
     () => (selectedStoreId ? stores.find((s) => s.id === selectedStoreId) ?? null : null),
     [stores, selectedStoreId]
   );
+
   const tagLabel = (tag: string) => {
     if (tag === 'サクッと') return t('storeDetail.mood.quick');
     if (tag === 'ゆっくり') return t('storeDetail.mood.relaxed');
@@ -208,78 +285,148 @@ export default function MapScreen() {
     return tag;
   };
 
+  const handleMarkerPress = useCallback((store: Store) => {
+    markerPressRef.current = true;
+    setSelectedStoreId(store.id);
+    snapToIndex(1); // snap to 45%
+    setTimeout(() => {
+      markerPressRef.current = false;
+    }, 0);
+  }, [snapToIndex]);
+
+  const handleCardPress = useCallback((store: Store) => {
+    setSelectedStoreId(store.id);
+    mapRef.current?.animateToRegion(toRegion(store.latitude, store.longitude), 400);
+    snapToIndex(1); // snap to 45%
+  }, [snapToIndex]);
+
+  const handleGoToCurrent = useCallback(() => {
+    if (!deviceLatLng) return;
+    mapRef.current?.animateToRegion(toRegion(deviceLatLng.latitude, deviceLatLng.longitude), 400);
+  }, [deviceLatLng]);
+
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110, gap: 12 }}>
+      {/* Full-screen MapView */}
+      {mapRegion ? (
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFill}
+          region={mapRegion}
+          onRegionChangeComplete={setMapRegion}
+          showsUserLocation
+          showsMyLocationButton={false}
+          onPress={(e) => {
+            if (markerPressRef.current) {
+              markerPressRef.current = false;
+              return;
+            }
+            if ((e as any)?.nativeEvent?.action === 'marker-press') return;
+            const { latitude, longitude } = e.nativeEvent.coordinate;
+            setSelectedStoreId(null);
+            router.push({ pathname: '/store/new', params: { lat: String(latitude), lng: String(longitude) } });
+          }}>
+          {stores.map((s) => {
+            const isSelected = s.id === selectedStoreId;
+            return (
+              <Marker
+                key={s.id}
+                coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+                onPress={() => handleMarkerPress(s)}>
+                <View style={styles.markerWrap}>
+                  <View
+                    style={[
+                      styles.markerDot,
+                      {
+                        backgroundColor: isSelected ? PIN_SELECTED_COLOR : PIN_COLOR,
+                        width: isSelected ? 16 : 12,
+                        height: isSelected ? 16 : 12,
+                        borderRadius: isSelected ? 8 : 6,
+                        ...(isSelected
+                          ? { shadowOpacity: 0.5, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } }
+                          : { shadowOpacity: 0.3, shadowRadius: 3, shadowOffset: { width: 0, height: 2 } }),
+                      },
+                    ]}
+                  />
+                  {isSelected && <View style={styles.markerRing} />}
+                </View>
+              </Marker>
+            );
+          })}
+        </MapView>
+      ) : (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+          <Text style={{ color: colors.subText }}>{t('map.locationLoading')}</Text>
+        </View>
+      )}
 
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Pressable
-            onPress={() => router.replace('/')}
-            style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-            <Text style={{ fontWeight: '800', color: '#111827' }}>{t('map.backToList')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              if (!deviceLatLng) return;
-              setMapRegion(toRegion(deviceLatLng.latitude, deviceLatLng.longitude));
-            }}
-            style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-            <Text style={{ fontWeight: '800', color: '#111827' }}>{t('map.toCurrent')}</Text>
-          </Pressable>
+      {/* Beige tone overlay */}
+      <View pointerEvents="none" style={styles.overlay} />
+
+      {/* Floating back button (top-left) */}
+      <Pressable
+        onPress={() => router.replace('/')}
+        style={[
+          styles.floatingBtn,
+          {
+            top: insets.top + 8,
+            left: 16,
+            backgroundColor: colors.card,
+            shadowColor: colors.shadowDark,
+          },
+        ]}>
+        <Text style={{ fontSize: 20, color: colors.text, fontFamily: fonts.bold }}>＜</Text>
+      </Pressable>
+
+      {/* Floating current-location button (top-right) */}
+      <Pressable
+        onPress={handleGoToCurrent}
+        style={[
+          styles.floatingBtn,
+          {
+            top: insets.top + 8,
+            right: 16,
+            backgroundColor: colors.card,
+            shadowColor: colors.shadowDark,
+          },
+        ]}>
+        <Text style={{ fontSize: 18, color: colors.text }}>◎</Text>
+      </Pressable>
+
+      {/* Custom BottomSheet */}
+      <Animated.View
+        style={[
+          styles.sheet,
+          { backgroundColor: colors.card },
+          sheetAnimStyle,
+        ]}>
+        {/* Drag handle */}
+        <View {...panResponder.panHandlers} style={styles.handleArea}>
+          <View style={[styles.handle, { backgroundColor: colors.chipBg }]} />
         </View>
 
-        <View style={{ gap: 10 }}>
-          <View
-            style={{
-              height: 240,
-              borderRadius: 16,
-              overflow: 'hidden',
-              backgroundColor: '#E9E4DA',
-            }}>
-            {mapRegion ? (
-              <MapView
-                style={{ flex: 1 }}
-                region={mapRegion}
-                onRegionChangeComplete={setMapRegion}
-                showsUserLocation
-                showsMyLocationButton
-                onPress={(e) => {
-                  if (markerPressRef.current) {
-                    markerPressRef.current = false;
-                    return;
-                  }
-                  if ((e as any)?.nativeEvent?.action === 'marker-press') return;
-                  const { latitude, longitude } = e.nativeEvent.coordinate;
-                  setSelectedStoreId(null);
-                  router.push({ pathname: '/store/new', params: { lat: String(latitude), lng: String(longitude) } });
-                }}>
-                {stores.map((s) => (
-                  <Marker
-                    key={s.id}
-                    coordinate={{ latitude: s.latitude, longitude: s.longitude }}
-                    onPress={() => {
-                      markerPressRef.current = true;
-                      setSelectedStoreId(s.id);
-                      setTimeout(() => {
-                        markerPressRef.current = false;
-                      }, 0);
-                    }}
-                  />
-                ))}
-              </MapView>
-            ) : (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#6B7280' }}>{t('map.locationLoading')}</Text>
-              </View>
-            )}
+        <ScrollView
+          scrollEnabled={scrollEnabled}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+          showsVerticalScrollIndicator={false}>
+
+          {/* Title bar */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }}>
+              {t('map.yourMap')}
+            </Text>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: colors.subText }}>
+              {storesSorted.length}{t('map.storeCount')}
+            </Text>
           </View>
 
+          {/* Selected store card */}
           {selectedStore && (
-            <NeuCard style={{ ...UI.card, gap: 8 }}>
-              <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
+            <NeuCard style={{ ...UI.card, backgroundColor: colors.card, gap: 8 }}>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }} numberOfLines={1}>
                 {selectedStore.name}
               </Text>
-              <Text style={{ color: '#6B7280' }} numberOfLines={2}>
+              <Text style={{ color: colors.subText }} numberOfLines={2}>
                 {memoPreviewByStoreId[selectedStore.id]
                   ? t('map.memoWithText', { text: memoPreviewByStoreId[selectedStore.id] })
                   : t('map.memoEmpty')}
@@ -289,75 +436,160 @@ export default function MapScreen() {
                 <Pressable
                   onPress={() => router.push({ pathname: '/store/[id]', params: { id: selectedStore.id } })}
                   style={{ flex: 1, ...UI.primaryBtn }}>
-                  <Text style={{ color: 'white', fontWeight: '900' }}>{t('map.detail')}</Text>
+                  <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('map.detail')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => openGoogleMaps(selectedStore)}
-                  style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-                  <Text style={{ fontWeight: '800', color: '#111827' }}>{t('map.openGoogleMaps')}</Text>
+                  style={{ flex: 1, ...UI.secondaryBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, paddingVertical: 12 }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('map.openGoogleMaps')}</Text>
                 </Pressable>
               </View>
             </NeuCard>
           )}
-        </View>
-        <View style={{ marginTop: 4 }}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 6 }}>{t('map.yourMap')}</Text>
-          <Pressable onPress={() => router.push('/list')} style={UI.listBtn}>
-            <Text style={UI.listBtnText}>{t('map.showList')}</Text>
-          </Pressable>
-        </View>
 
-        {loading && <Text style={[UI.bodyText, { color: '#6B7280' }]}>{t('map.loading')}</Text>}
-        {!loading && storesSorted.length === 0 && (
-          <Text style={[UI.bodyText, { color: '#6B7280' }]}>{t('map.empty')}</Text>
-        )}
+          {/* Loading state */}
+          {loading && <Text style={[UI.bodyText, { color: colors.subText }]}>{t('map.loading')}</Text>}
 
-        {storesSorted.map((item) => (
-          <NeuCard key={item.id} style={{ borderRadius: 20 }}>
-            <Pressable
-              onPress={() => router.push({ pathname: '/store/[id]', params: { id: item.id } })}
-              style={{ padding: 14 }}>
-              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                <Pressable onPress={() => handlePickStorePhoto(item.id)}>
-                  {item.photoUri ? (
-                    <Image source={{ uri: item.photoUri }} style={UI.storeImage} />
-                  ) : (
-                    <View style={[UI.storeImage, UI.storeImagePlaceholder]}>
-                      <Text style={UI.storeImageText}>{t('map.addPhoto')}</Text>
-                    </View>
-                  )}
+          {/* Empty state */}
+          {!loading && storesSorted.length === 0 && (
+            <View style={{ alignItems: 'center', paddingVertical: 30, gap: 8 }}>
+              <Text style={{ fontSize: 40 }}>📍</Text>
+              <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: colors.text }}>{t('map.emptyTitle')}</Text>
+              <Text style={{ fontSize: 13, color: colors.subText, textAlign: 'center' }}>{t('map.emptyBody')}</Text>
+            </View>
+          )}
+
+          {/* Store list */}
+          {storesSorted.map((item) => (
+            <NeuCard key={item.id} style={{ borderRadius: 20 }}>
+              <View style={{ position: 'relative' }}>
+                <Pressable
+                  onPress={() => {
+                    Alert.alert(
+                      t('map.deleteTitle'),
+                      t('map.deleteBody', { name: item.name }),
+                      [
+                        { text: t('common.cancel'), style: 'cancel' },
+                        { text: t('map.deleteConfirm'), style: 'destructive', onPress: () => deleteStore(item.id) },
+                      ]
+                    );
+                  }}
+                  style={{ position: 'absolute', top: 6, right: 6, zIndex: 1, ...UI.dangerBtn, backgroundColor: colors.dangerBg }}>
+                  <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold, fontSize: 18 }}>−</Text>
                 </Pressable>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
-                      <Text style={[UI.titleText, { fontSize: 16 }]} numberOfLines={1}>
+                <Pressable
+                  onPress={() => handleCardPress(item)}
+                  style={{ padding: 14 }}>
+                  <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                    <Pressable onPress={() => handlePickStorePhoto(item.id)}>
+                      {(item.photoUris?.length ?? 0) > 0 ? (
+                        <View style={{ flexDirection: 'row', gap: 4 }}>
+                          {(item.photoUris ?? []).slice(0, 3).map((uri, i) => (
+                            <Image key={i} source={{ uri }} style={[UI.storeImage, { backgroundColor: colors.chipBg, width: 44, height: 44 }]} />
+                          ))}
+                          {(item.photoUris?.length ?? 0) > 3 && (
+                            <View style={[UI.storeImage, UI.storeImagePlaceholder, { backgroundColor: colors.chipBg, width: 44, height: 44 }]}>
+                              <Text style={{ color: colors.subText, fontFamily: fonts.extraBold, fontSize: 11 }}>+{(item.photoUris?.length ?? 0) - 3}</Text>
+                            </View>
+                          )}
+                        </View>
+                      ) : item.photoUri ? (
+                        <Image source={{ uri: item.photoUri }} style={[UI.storeImage, { backgroundColor: colors.chipBg }]} />
+                      ) : (
+                        <View style={[UI.storeImage, UI.storeImagePlaceholder, { backgroundColor: colors.chipBg }]}>
+                          <Text style={[UI.storeImageText, { color: colors.subText }]}>{t('map.addPhoto')}</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                    <View style={{ flex: 1, paddingRight: 28 }}>
+                      <Text style={[UI.titleText, { fontSize: 16, color: colors.text }]} numberOfLines={1}>
                         {item.name}
                       </Text>
-                      <Text style={[UI.bodyText, { color: '#6B7280', marginTop: 2 }]}>
-                        {t('map.radiusLabel', { value: 200 })}
+                      <Text style={[UI.bodyText, { color: colors.subText, marginTop: 2 }]}>
+                        {t('map.radiusLabel', { value: item.remindRadiusM ?? 200 })}
                       </Text>
                       {item.moodTags?.length || item.sceneTags?.length ? (
                         <View style={UI.tagRow}>
                           {[...(item.moodTags ?? []), ...(item.sceneTags ?? [])].map((tag) => (
-                            <View key={tag} style={UI.tagChip}>
-                              <Text style={UI.tagText}>{tagLabel(tag)}</Text>
+                            <View key={tag} style={[UI.tagChip, { backgroundColor: colors.chipBg }]}>
+                              <Text style={[UI.tagText, { color: colors.subText }]}>{tagLabel(tag)}</Text>
                             </View>
                           ))}
                         </View>
                       ) : null}
                     </View>
-                    <Pressable onPress={() => deleteStore(item.id)} style={UI.dangerBtn}>
-                      <Text style={{ color: '#B91C1C', fontWeight: '700' }}>{t('storeDetail.deleteConfirm')}</Text>
-                    </Pressable>
                   </View>
-                </View>
+                </Pressable>
               </View>
-            </Pressable>
-          </NeuCard>
-        ))}
-      </ScrollView>
+            </NeuCard>
+          ))}
+        </ScrollView>
+      </Animated.View>
 
       <BottomAdBanner />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(232, 225, 216, 0.08)',
+    zIndex: 1,
+  },
+  floatingBtn: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 16,
+  },
+  handleArea: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  handle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+  },
+  markerWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 28,
+    height: 28,
+  },
+  markerDot: {
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+  },
+  markerRing: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(200, 116, 139, 0.4)',
+  },
+});

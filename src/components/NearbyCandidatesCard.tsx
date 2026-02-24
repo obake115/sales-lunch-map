@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { fonts } from '@/src/ui/fonts';
 import { t } from '@/src/i18n';
 import { NeuCard } from '@/src/ui/NeuCard';
 
@@ -24,7 +25,7 @@ const UI = {
     backgroundColor: '#E9E4DA',
   } as const,
   title: {
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     fontSize: 16,
     marginBottom: 8,
     color: '#111827',
@@ -39,14 +40,14 @@ const UI = {
     paddingVertical: 6,
   } as const,
   itemName: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     flexShrink: 1,
     paddingRight: 8,
   } as const,
   itemMeta: {
     color: '#6B7280',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
   favorite: {
     marginLeft: 6,

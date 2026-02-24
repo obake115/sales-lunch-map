@@ -7,11 +7,16 @@ import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from 'reac
 import MapView, { Marker, type Region } from 'react-native-maps';
 
 import { getAdMobRewardedUnitId } from '@/src/admob';
+import { logAdRewardWatched, logPremiumPurchased, logPurchaseRestored, logStoreRegistered } from '@/src/analytics';
+import { maybeShowInterstitial, preloadInterstitial } from '@/src/interstitialAd';
 import { t } from '@/src/i18n';
 import { purchaseUnlimited, restorePurchases } from '@/src/purchases';
 import { useStores } from '@/src/state/StoresContext';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { getPostLimitState, grantDailyRewardedSlot, type PostLimitState } from '@/src/storage';
+import { usePremium } from '@/src/state/PremiumContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
@@ -56,7 +61,7 @@ const UI = {
     marginBottom: 10,
   } as const,
   paywallTitle: {
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     fontSize: 19,
     color: '#111827',
     marginBottom: 6,
@@ -77,7 +82,7 @@ const UI = {
     shadowRadius: 4,
   } as const,
   paywallValueTitle: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     marginBottom: 4,
   } as const,
@@ -93,11 +98,11 @@ const UI = {
     paddingVertical: 4,
   } as const,
   planName: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
   } as const,
   priceLabel: {
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     color: '#111827',
   } as const,
   primaryCta: {
@@ -109,7 +114,7 @@ const UI = {
   } as const,
   primaryCtaText: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
   } as const,
   adCta: {
     borderRadius: 12,
@@ -126,7 +131,7 @@ const UI = {
   } as const,
   adCtaText: {
     color: '#111827',
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
   } as const,
   adUsedText: {
     color: '#6B7280',
@@ -143,13 +148,13 @@ const UI = {
     paddingVertical: 4,
   } as const,
   paywallIconText: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
   } as const,
   restoreText: {
     fontSize: 12,
     color: '#6B7280',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
   toast: {
     position: 'absolute',
@@ -164,7 +169,7 @@ const UI = {
   toastText: {
     color: '#FFFFFF',
     textAlign: 'center',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
 } as const;
 
@@ -190,6 +195,12 @@ export default function StoreNewScreen() {
   const router = useRouter();
   const { lat, lng } = useLocalSearchParams<{ lat?: string; lng?: string }>();
   const { addStore, stores } = useStores();
+  const colors = useThemeColors();
+  const { isPremium } = usePremium();
+
+  useEffect(() => {
+    preloadInterstitial();
+  }, []);
 
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
@@ -270,6 +281,7 @@ export default function StoreNewScreen() {
       try {
         setSaving(true);
         await addStore(draft);
+        logStoreRegistered({ store_name: draft.name });
         showToast(message);
         setTimeout(() => {
           router.back();
@@ -325,39 +337,39 @@ export default function StoreNewScreen() {
   }, []);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 110 }}>
-        <NeuCard style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeNew.nameLabel')}</Text>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeNew.nameLabel')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
             placeholder={t('storeNew.namePlaceholder')}
-            style={UI.input}
+            style={[UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
             {...INPUT_PROPS}
           />
         </NeuCard>
 
-        <NeuCard style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 10 }}>{t('storeNew.memoLabel')}</Text>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeNew.memoLabel')}</Text>
           <TextInput
             value={note}
             onChangeText={setNote}
             placeholder={t('storeNew.memoPlaceholder')}
-            style={UI.input}
+            style={[UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
             multiline
             {...INPUT_PROPS}
           />
         </NeuCard>
 
-        <NeuCard style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 6 }}>{t('storeNew.locationTitle')}</Text>
-          <Text style={{ color: '#6B7280', marginBottom: 10 }}>{t('storeNew.locationHelp')}</Text>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 6, color: colors.text }}>{t('storeNew.locationTitle')}</Text>
+          <Text style={{ color: colors.subText, marginBottom: 10 }}>{t('storeNew.locationHelp')}</Text>
           <View
             style={{
               borderRadius: 16,
               overflow: 'hidden',
-              backgroundColor: '#E9E4DA',
+              backgroundColor: colors.card,
               height: 240,
             }}>
             {region ? (
@@ -390,7 +402,7 @@ export default function StoreNewScreen() {
               </MapView>
             ) : (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#6B7280' }}>{t('storeNew.locationLoading')}</Text>
+                <Text style={{ color: colors.subText }}>{t('storeNew.locationLoading')}</Text>
               </View>
             )}
           </View>
@@ -417,12 +429,15 @@ export default function StoreNewScreen() {
             }
             try {
               setSaving(true);
+              const storeName = name.trim() || t('storeNew.unnamed');
               await addStore({
-                name: name.trim() || t('storeNew.unnamed'),
+                name: storeName,
                 latitude: latitude as number,
                 longitude: longitude as number,
                 note: note.trim() || undefined,
               });
+              logStoreRegistered({ store_name: storeName });
+              await maybeShowInterstitial(isPremium);
               router.back();
             } catch (e: any) {
               Alert.alert(t('common.saveFailed'), e?.message ?? t('common.tryAgain'));
@@ -432,9 +447,9 @@ export default function StoreNewScreen() {
           }}
           style={{
             ...UI.primaryBtn,
-            backgroundColor: canSave ? UI.primaryBtn.backgroundColor : '#D5D0C6',
+            backgroundColor: canSave ? UI.primaryBtn.backgroundColor : colors.chipBg,
           }}>
-          <Text style={{ color: canSave ? 'white' : '#6B7280', fontWeight: '900' }}>
+          <Text style={{ color: canSave ? 'white' : colors.subText, fontFamily: fonts.extraBold }}>
             {t('storeNew.saveButton')}
           </Text>
         </Pressable>
@@ -442,10 +457,10 @@ export default function StoreNewScreen() {
       <BottomAdBanner />
       <Modal visible={paywallVisible} transparent animationType="slide" onRequestClose={() => {}}>
         <View style={UI.paywallOverlay}>
-          <View style={UI.paywallSheet}>
+          <View style={[UI.paywallSheet, { backgroundColor: colors.card }]}>
             <View style={UI.paywallHeader}>
               <Pressable onPress={() => setPaywallVisible(false)} style={UI.paywallIconBtn} disabled={isProcessingUnlock}>
-                <Text style={[UI.paywallIconText, { fontSize: 18 }]}>×</Text>
+                <Text style={[UI.paywallIconText, { fontSize: 18, color: colors.text }]}>×</Text>
               </Pressable>
               <Pressable
                 onPress={async () => {
@@ -458,25 +473,26 @@ export default function StoreNewScreen() {
                     showToast(result.message ?? t('storeNew.restoreFailed'));
                     return;
                   }
+                  logPurchaseRestored();
                   await refreshLimit();
                   setPaywallVisible(false);
                   await autoSavePending(t('storeNew.restoreSuccess'));
                 }}
                 disabled={isProcessingUnlock}
                 style={UI.paywallIconBtn}>
-                <Text style={UI.restoreText}>{t('storeNew.restore')}</Text>
+                <Text style={[UI.restoreText, { color: colors.subText }]}>{t('storeNew.restore')}</Text>
               </Pressable>
             </View>
-            <Text style={UI.paywallTitle}>{t('storeNew.limitTitle')}</Text>
-            <Text style={UI.paywallSubtitle}>
+            <Text style={[UI.paywallTitle, { color: colors.text }]}>{t('storeNew.limitTitle')}</Text>
+            <Text style={[UI.paywallSubtitle, { color: colors.subText }]}>
               {t('storeNew.limitBody')}
             </Text>
-            <View style={UI.valueCard}>
-              <Text style={UI.paywallValueTitle}>{t('storeNew.valueTitle')}</Text>
-              <Text style={UI.paywallValueSub}>{t('storeNew.valueBody')}</Text>
+            <View style={[UI.valueCard, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
+              <Text style={[UI.paywallValueTitle, { color: colors.text }]}>{t('storeNew.valueTitle')}</Text>
+              <Text style={[UI.paywallValueSub, { color: colors.subText }]}>{t('storeNew.valueBody')}</Text>
               <View style={UI.planRow}>
-                <Text style={UI.planName}>{t('storeNew.planName')}</Text>
-                <Text style={UI.priceLabel}>{t('storeNew.priceLabel')}</Text>
+                <Text style={[UI.planName, { color: colors.text }]}>{t('storeNew.planName')}</Text>
+                <Text style={[UI.priceLabel, { color: colors.text }]}>{t('storeNew.priceLabel')}</Text>
               </View>
             </View>
             <Pressable
@@ -491,6 +507,7 @@ export default function StoreNewScreen() {
                   showToast(result.message ?? t('storeNew.purchaseFailed'));
                   return;
                 }
+                logPremiumPurchased();
                 await refreshLimit();
                 setPaywallVisible(false);
                 await autoSavePending(t('storeNew.purchaseSuccess'));
@@ -504,6 +521,7 @@ export default function StoreNewScreen() {
                 if (isProcessingUnlock || !limitState?.canWatchRewardAd) return;
                 setIsProcessingUnlock(true);
                 const rewarded = await showRewardedAd();
+                logAdRewardWatched({ result: rewarded ? 'rewarded' : 'failed' });
                 if (!rewarded) {
                   setIsProcessingUnlock(false);
                   showToast(t('storeNew.rewardFailed'));
@@ -519,17 +537,17 @@ export default function StoreNewScreen() {
                 setPaywallVisible(false);
                 await autoSavePending(t('storeNew.rewardSuccess'));
               }}
-              style={[UI.adCta, !limitState?.canWatchRewardAd ? UI.adCtaDisabled : null]}>
-              <Text style={UI.adCtaText}>{t('storeNew.rewardCta')}</Text>
+              style={[UI.adCta, { backgroundColor: colors.card, shadowColor: colors.shadowDark }, !limitState?.canWatchRewardAd ? [UI.adCtaDisabled, { backgroundColor: colors.chipBg }] : null]}>
+              <Text style={[UI.adCtaText, { color: colors.text }]}>{t('storeNew.rewardCta')}</Text>
             </Pressable>
-            {!limitState?.canWatchRewardAd ? <Text style={UI.adUsedText}>{t('storeNew.rewardUsed')}</Text> : null}
-            <Text style={UI.assureText}>{t('storeNew.assureKeep')}</Text>
-            <Text style={UI.assureText}>{t('storeNew.assureRestore')}</Text>
+            {!limitState?.canWatchRewardAd ? <Text style={[UI.adUsedText, { color: colors.subText }]}>{t('storeNew.rewardUsed')}</Text> : null}
+            <Text style={[UI.assureText, { color: colors.subText }]}>{t('storeNew.assureKeep')}</Text>
+            <Text style={[UI.assureText, { color: colors.subText }]}>{t('storeNew.assureRestore')}</Text>
             <Pressable
               onPress={() => setPaywallVisible(false)}
               disabled={isProcessingUnlock}
               style={{ marginTop: 10, alignItems: 'center' }}>
-              <Text style={{ color: '#4F78FF', fontWeight: '800' }}>{t('common.cancel')}</Text>
+              <Text style={{ color: '#4F78FF', fontFamily: fonts.extraBold }}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </View>

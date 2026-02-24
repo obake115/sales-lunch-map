@@ -4,9 +4,12 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+import { logPhotoAdded } from '@/src/analytics';
 import i18n, { t } from '@/src/i18n';
-import { addAlbumPhoto, getAlbumPhotos } from '@/src/storage';
+import { useThemeColors } from '@/src/state/ThemeContext';
+import { addAlbumPhoto, deleteAlbumPhoto, getAlbumPhotos } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 import { formatYmd } from '@/src/domain/date';
 
@@ -18,7 +21,7 @@ const UI = {
   } as const,
   header: {
     fontSize: 18,
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     marginBottom: 8,
   } as const,
@@ -34,7 +37,7 @@ const UI = {
   } as const,
   addBtnText: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
   } as const,
   controlRow: {
     flexDirection: 'row',
@@ -56,7 +59,7 @@ const UI = {
     backgroundColor: '#FEF3C7',
   } as const,
   controlText: {
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: '#374151',
   } as const,
   controlTextActive: {
@@ -75,7 +78,7 @@ const UI = {
   imageText: {
     fontSize: 12,
     color: '#9CA3AF',
-    fontWeight: '600',
+    fontFamily: fonts.bold,
   } as const,
   gridImage: {
     width: '100%',
@@ -85,7 +88,7 @@ const UI = {
   dateText: {
     fontSize: 12,
     color: '#6B7280',
-    fontWeight: '600',
+    fontFamily: fonts.bold,
   } as const,
   modalBackdrop: {
     flex: 1,
@@ -100,7 +103,7 @@ const UI = {
   } as const,
   modalTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     marginBottom: 12,
   } as const,
@@ -121,7 +124,7 @@ const UI = {
   } as const,
   modalBtnText: {
     color: '#374151',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
   modalBtnTextPrimary: {
     color: '#FFFFFF',
@@ -130,6 +133,7 @@ const UI = {
 
 export default function AlbumScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const [loading, setLoading] = useState(true);
   const [photos, setPhotos] = useState<Awaited<ReturnType<typeof getAlbumPhotos>>>([]);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -174,7 +178,7 @@ export default function AlbumScreen() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, padding: 16, paddingBottom: 110 }}>
-        <Text style={UI.header}>{t('album.title')}</Text>
+        <Text style={[UI.header, { color: colors.text }]}>{t('album.title')}</Text>
         <Pressable
           onPress={async () => {
             const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -183,7 +187,7 @@ export default function AlbumScreen() {
               return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'],
               allowsEditing: true,
               aspect: [1, 1],
               quality: 0.8,
@@ -201,12 +205,12 @@ export default function AlbumScreen() {
         <View style={UI.controlRow}>
           <Pressable
             onPress={() => setSortOrder('desc')}
-            style={[UI.controlBtn, sortOrder === 'desc' && UI.controlBtnActive]}>
+            style={[UI.controlBtn, { backgroundColor: colors.card }, sortOrder === 'desc' && UI.controlBtnActive]}>
             <Text style={[UI.controlText, sortOrder === 'desc' && UI.controlTextActive]}>{t('album.sortNew')}</Text>
           </Pressable>
           <Pressable
             onPress={() => setSortOrder('asc')}
-            style={[UI.controlBtn, sortOrder === 'asc' && UI.controlBtnActive]}>
+            style={[UI.controlBtn, { backgroundColor: colors.card }, sortOrder === 'asc' && UI.controlBtnActive]}>
             <Text style={[UI.controlText, sortOrder === 'asc' && UI.controlTextActive]}>{t('album.sortOld')}</Text>
           </Pressable>
           <Pressable
@@ -214,19 +218,26 @@ export default function AlbumScreen() {
               setFilterPendingDate(filterDate ? new Date(filterDate) : new Date());
               setFilterPickerVisible(true);
             }}
-            style={UI.controlBtn}>
+            style={[UI.controlBtn, { backgroundColor: colors.card }]}>
             <Text style={UI.controlText}>{filterDate ? `${filterDate}` : t('album.filterByDate')}</Text>
           </Pressable>
         </View>
         {filterDate && (
           <Pressable
             onPress={() => setFilterDate(null)}
-            style={[UI.controlBtn, { marginBottom: 12 }]}>
+            style={[UI.controlBtn, { marginBottom: 12, backgroundColor: colors.card }]}>
             <Text style={UI.controlText}>{t('album.clearDateFilter')}</Text>
           </Pressable>
         )}
-        {empty && (
-          <Text style={UI.subText}>{filterDate ? t('album.emptyForDate') : t('album.empty')}</Text>
+        {empty && !filterDate && (
+          <View style={{ alignItems: 'center', paddingVertical: 30, gap: 8 }}>
+            <Text style={{ fontSize: 40 }}>📷</Text>
+            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: colors.text }}>{t('album.emptyTitle')}</Text>
+            <Text style={{ fontSize: 13, color: colors.subText, textAlign: 'center' }}>{t('album.emptyBody')}</Text>
+          </View>
+        )}
+        {empty && filterDate && (
+          <Text style={[UI.subText, { color: colors.subText }]}>{t('album.emptyForDate')}</Text>
         )}
 
         <FlatList
@@ -244,7 +255,26 @@ export default function AlbumScreen() {
               style={{ flex: 1 }}>
               <View style={{ gap: 6 }}>
                 <Image source={{ uri: item.uri }} style={UI.gridImage} />
-                <Text style={UI.dateText}>{formatYmd(new Date(item.takenAt))}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={[UI.dateText, { color: colors.subText }]}>{formatYmd(new Date(item.takenAt))}</Text>
+                  <Pressable
+                    onPress={() => {
+                      Alert.alert(t('album.deleteTitle'), t('album.deleteBody'), [
+                        { text: t('common.cancel'), style: 'cancel' },
+                        {
+                          text: t('album.deleteConfirm'),
+                          style: 'destructive',
+                          onPress: async () => {
+                            await deleteAlbumPhoto(item.id);
+                            await refresh();
+                          },
+                        },
+                      ]);
+                    }}
+                    style={{ paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold, fontSize: 16 }}>−</Text>
+                  </Pressable>
+                </View>
               </View>
             </Pressable>
           )}
@@ -255,8 +285,8 @@ export default function AlbumScreen() {
 
       <Modal transparent visible={pickerVisible} animationType="fade">
         <View style={UI.modalBackdrop}>
-          <NeuCard style={UI.modalCard}>
-            <Text style={UI.modalTitle}>{t('album.pickDate')}</Text>
+          <NeuCard style={[UI.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[UI.modalTitle, { color: colors.text }]}>{t('album.pickDate')}</Text>
             <DateTimePicker
               value={pendingDate}
               mode="date"
@@ -277,13 +307,14 @@ export default function AlbumScreen() {
                   setPickerVisible(false);
                   setPendingUri(null);
                 }}
-                style={UI.modalBtn}>
+                style={[UI.modalBtn, { backgroundColor: colors.chipBg }]}>
                 <Text style={UI.modalBtnText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable
                 onPress={async () => {
                   if (!pendingUri) return;
                   await addAlbumPhoto(pendingUri, undefined, pendingDate.getTime());
+                  logPhotoAdded({ context: 'album' });
                   await refresh();
                   setPickerVisible(false);
                   setPendingUri(null);
@@ -298,8 +329,8 @@ export default function AlbumScreen() {
 
       <Modal transparent visible={filterPickerVisible} animationType="fade">
         <View style={UI.modalBackdrop}>
-          <NeuCard style={UI.modalCard}>
-            <Text style={UI.modalTitle}>{t('album.pickDate')}</Text>
+          <NeuCard style={[UI.modalCard, { backgroundColor: colors.card }]}>
+            <Text style={[UI.modalTitle, { color: colors.text }]}>{t('album.pickDate')}</Text>
             <DateTimePicker
               value={filterPendingDate}
               mode="date"
@@ -316,7 +347,7 @@ export default function AlbumScreen() {
             <View style={UI.modalActions}>
               <Pressable
                 onPress={() => setFilterPickerVisible(false)}
-                style={UI.modalBtn}>
+                style={[UI.modalBtn, { backgroundColor: colors.chipBg }]}>
                 <Text style={UI.modalBtnText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable

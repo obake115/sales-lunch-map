@@ -5,8 +5,7 @@ import Constants from 'expo-constants';
 import { getAdMobBannerUnitId } from '../admob';
 import { usePremium } from '../state/PremiumContext';
 
-// TODO: 広告を再度有効にするときはこのフラグを false に戻す
-const ADS_TEMPORARILY_DISABLED = true;
+const ADS_TEMPORARILY_DISABLED = false;
 
 export function BottomAdBanner() {
   const insets = useSafeAreaInsets();

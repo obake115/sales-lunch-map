@@ -21,6 +21,7 @@ type PlaceRow = {
   remindEnabled: number;
   remindRadiusM: number | null;
   photoUri: string | null;
+  photoUris: string | null;
   createdAt: string;
   updatedAt: string;
   lastNotifiedAt: string | null;
@@ -67,6 +68,7 @@ const rowToStore = (row: PlaceRow): Store => ({
   remindEnabled: row.remindEnabled === 1,
   remindRadiusM: row.remindRadiusM ?? undefined,
   photoUri: row.photoUri ?? undefined,
+  photoUris: safeJsonParse(row.photoUris),
   createdAt: toMillis(row.createdAt) ?? Date.now(),
   updatedAt: toMillis(row.updatedAt) ?? Date.now(),
   lastNotifiedAt: toMillis(row.lastNotifiedAt) ?? undefined,
@@ -101,6 +103,7 @@ export async function insertPlace(
         | 'remindRadiusM'
         | 'enabled'
         | 'photoUri'
+        | 'photoUris'
         | 'createdAt'
         | 'updatedAt'
         | 'lastNotifiedAt'
@@ -113,8 +116,8 @@ export async function insertPlace(
   await db.runAsync(
     `INSERT INTO places (
       id, name, note, lat, lng, placeId, enabled, timeBand, moodTags, sceneTags, parking, smoking, seating,
-      isFavorite, shareToEveryone, remindEnabled, remindRadiusM, photoUri, createdAt, updatedAt, lastNotifiedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      isFavorite, shareToEveryone, remindEnabled, remindRadiusM, photoUri, photoUris, createdAt, updatedAt, lastNotifiedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.name ?? '',
@@ -134,6 +137,7 @@ export async function insertPlace(
       input.remindEnabled ? 1 : 0,
       input.remindRadiusM ?? null,
       input.photoUri ?? null,
+      input.photoUris ? JSON.stringify(input.photoUris) : null,
       createdAt,
       updatedAt,
       lastNotifiedAt,
@@ -152,7 +156,7 @@ export async function updatePlace(
   await db.runAsync(
     `UPDATE places SET
       name = ?, note = ?, lat = ?, lng = ?, placeId = ?, enabled = ?, timeBand = ?, moodTags = ?, sceneTags = ?, parking = ?, smoking = ?, seating = ?,
-      isFavorite = ?, shareToEveryone = ?, remindEnabled = ?, remindRadiusM = ?, photoUri = ?, updatedAt = ?, lastNotifiedAt = ?
+      isFavorite = ?, shareToEveryone = ?, remindEnabled = ?, remindRadiusM = ?, photoUri = ?, photoUris = ?, updatedAt = ?, lastNotifiedAt = ?
     WHERE id = ?`,
     [
       next.name ?? '',
@@ -172,6 +176,7 @@ export async function updatePlace(
       next.remindEnabled ? 1 : 0,
       next.remindRadiusM ?? null,
       next.photoUri ?? null,
+      next.photoUris ? JSON.stringify(next.photoUris) : null,
       toDbDate(next.updatedAt),
       next.lastNotifiedAt ? toDbDate(next.lastNotifiedAt) : null,
       id,

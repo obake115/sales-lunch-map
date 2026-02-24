@@ -32,5 +32,6 @@ export const SETTING_KEYS = {
   hasSeenWelcome: 'hasSeenWelcome',
   lastPaywallShownAt: 'lastPaywallShownAt',
   reviewPrompted: 'reviewPrompted',
+  reviewPromptedCount: 'reviewPromptedCount',
 };
 

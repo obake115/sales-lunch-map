@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Text, View, Pressable } from 'react-native';
+import { fonts } from '@/src/ui/fonts';
 import { t } from '@/src/i18n';
 import { getPermissionState, requestAllNeededPermissions, type PermissionState } from '../permissions';
 import { NeuCard } from './NeuCard';
@@ -41,7 +42,7 @@ export function PermissionNotice() {
 
   return (
     <NeuCard style={UI.card}>
-      <Text style={{ fontWeight: '900', marginBottom: 6 }}>{t('permissionNotice.title')}</Text>
+      <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6 }}>{t('permissionNotice.title')}</Text>
       {lines.map((t) => (
         <Text key={t} style={{ color: '#374151', marginBottom: 4 }}>
           {t}
@@ -53,7 +54,7 @@ export function PermissionNotice() {
           setState(next);
         }}
         style={UI.primaryBtn}>
-        <Text style={{ color: 'white', fontWeight: '900' }}>{t('permissionNotice.allow')}</Text>
+        <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('permissionNotice.allow')}</Text>
       </Pressable>
     </NeuCard>
   );

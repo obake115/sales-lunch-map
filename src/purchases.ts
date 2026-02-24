@@ -10,6 +10,15 @@ type PurchaseOutcome = {
   message?: string;
 };
 
+export type PlanPackage = {
+  identifier: string;
+  packageType: string;
+  priceString: string;
+  product: { title: string; description: string; price: number; currencyCode: string };
+  /** The raw RevenueCat package object for purchasing */
+  _raw: any;
+};
+
 let configured = false;
 
 function getPurchasesModule() {
@@ -69,6 +78,57 @@ export async function syncPurchasedState(): Promise<boolean> {
   return active;
 }
 
+/** Fetch available packages from the current offering. */
+export async function getAvailablePackages(): Promise<PlanPackage[]> {
+  const ok = await ensureConfigured();
+  if (!ok) return [];
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return [];
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    const offeringId = getOfferingId();
+    const offering = offeringId ? offerings?.all?.[offeringId] : offerings?.current;
+    const pkgs: any[] = offering?.availablePackages ?? [];
+    return pkgs.map((pkg: any) => ({
+      identifier: pkg.identifier ?? '',
+      packageType: pkg.packageType ?? '',
+      priceString: pkg.product?.priceString ?? '',
+      product: {
+        title: pkg.product?.title ?? '',
+        description: pkg.product?.description ?? '',
+        price: pkg.product?.price ?? 0,
+        currencyCode: pkg.product?.currencyCode ?? '',
+      },
+      _raw: pkg,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Purchase a specific package by its raw reference. */
+export async function purchasePackage(pkg: PlanPackage): Promise<PurchaseOutcome> {
+  const ok = await ensureConfigured();
+  if (!ok) {
+    return { success: false, message: t('purchases.configMissing') };
+  }
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return { success: false, message: t('purchases.unavailable') };
+
+  try {
+    await Purchases.purchasePackage(pkg._raw);
+    const active = await syncPurchasedState();
+    return active ? { success: true } : { success: false, message: t('purchases.verifyFailed') };
+  } catch (error: any) {
+    if (error?.userCancelled) {
+      return { success: false, cancelled: true };
+    }
+    return { success: false, message: t('purchases.failed') };
+  }
+}
+
+/** Legacy: purchase first available package (kept for backward compatibility). */
 export async function purchaseUnlimited(): Promise<PurchaseOutcome> {
   const ok = await ensureConfigured();
   if (!ok) {
@@ -93,6 +153,30 @@ export async function purchaseUnlimited(): Promise<PurchaseOutcome> {
       return { success: false, cancelled: true };
     }
     return { success: false, message: t('purchases.failed') };
+  }
+}
+
+export async function identifyUser(uid: string): Promise<void> {
+  const ok = await ensureConfigured();
+  if (!ok) return;
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return;
+  try {
+    await Purchases.logIn(uid);
+  } catch {
+    // ignore
+  }
+}
+
+export async function logOutPurchases(): Promise<void> {
+  const ok = await ensureConfigured();
+  if (!ok) return;
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return;
+  try {
+    await Purchases.logOut();
+  } catch {
+    // ignore
   }
 }
 

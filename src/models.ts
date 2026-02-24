@@ -7,6 +7,7 @@ export type Store = {
   enabled: boolean;
   backgroundImageUri?: string;
   photoUri?: string;
+  photoUris?: string[];
   note?: string;
   timeBand?: '10' | '20' | '30' | '30+';
   moodTags?: string[];

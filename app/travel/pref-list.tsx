@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { fonts } from '@/src/ui/fonts';
 import { t } from '@/src/i18n';
 import { getTravelLunchEntries } from '@/src/storage';
 import { useThemeMode } from '@/src/state/ThemeContext';
@@ -200,8 +201,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   headerBackText: { fontSize: 18 },
-  headerTitle: { fontSize: 18, fontWeight: '700', flex: 1 },
-  headerProgress: { fontSize: 14, fontWeight: '600' },
+  headerTitle: { fontSize: 18, fontFamily: fonts.bold, flex: 1 },
+  headerProgress: { fontSize: 14, fontFamily: fonts.bold },
   progressWrap: {
     paddingHorizontal: 16,
     paddingBottom: 10,
@@ -231,6 +232,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 10,
   },
-  rowTitle: { flex: 1, fontSize: 15, fontWeight: '600' },
+  rowTitle: { flex: 1, fontSize: 15, fontFamily: fonts.bold },
   rowCount: { fontSize: 13, marginRight: 8 },
 });

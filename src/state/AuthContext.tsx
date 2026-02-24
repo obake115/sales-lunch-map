@@ -8,6 +8,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Platform } from 'react-native';
 
 import { setAnalyticsUserId } from '@/src/analytics';
 import { getAppleCredential } from '@/src/auth/appleAuth';
@@ -78,17 +79,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const signInWithApple = useCallback(async (): Promise<User | null> => {
     setError(null);
     try {
-      console.log('[AUTH] signInWithApple: getting credential...');
+      console.log('[Firebase] signInWithApple: getting credential...');
       const credential = await getAppleCredential();
-      console.log('[AUTH] signInWithApple: signing in with Firebase...');
+      console.log('[Firebase] signInWithApple: calling signInWithCredential...');
       const result = await signInWithCredential(firebaseAuth, credential);
-      console.log('[AUTH] signInWithApple: SUCCESS uid=', result.user?.uid?.slice(0, 8));
+      console.log('[Firebase] signInWithCredential success', result.user?.uid);
       return result.user;
     } catch (e: any) {
-      console.error('[AUTH] signInWithApple FAILED', {
+      console.error('[Apple/Firebase] sign-in failed', {
         code: e?.code,
         message: e?.message,
         stack: e?.stack?.split('\n').slice(0, 3).join('\n'),
+        platform: Platform.OS,
+        osVersion: Platform.Version,
+        isPad: Platform.OS === 'ios' && (Platform as any).isPad,
+        currentUser: !!firebaseAuth.currentUser,
       });
       const isCancelled =
         e?.code === 'ERR_REQUEST_CANCELED' ||
@@ -96,9 +101,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
         e?.message?.includes('canceled') ||
         e?.message?.includes('cancelled');
       if (!isCancelled) {
-        // Show detailed error in dev, generic in prod
-        const detail = __DEV__ ? `\n(${e?.code ?? ''}: ${e?.message ?? ''})` : '';
-        setError(t('auth.loginFailed') + detail);
+        // 本番でも必ずエラー詳細を表示（審査対策）
+        const msg = e?.code
+          ? `${e.code}\n${e.message ?? ''}`
+          : (e?.message ?? String(e));
+        setError(msg);
       }
       return null;
     }
@@ -124,8 +131,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
         e?.message?.includes('canceled') ||
         e?.message?.includes('cancelled');
       if (!isCancelled) {
-        const detail = __DEV__ ? `\n(${e?.code ?? ''}: ${e?.message ?? ''})` : '';
-        setError(t('auth.loginFailed') + detail);
+        const msg = e?.code
+          ? `${e.code}\n${e.message ?? ''}`
+          : (e?.message ?? String(e));
+        setError(msg);
       }
       return null;
     }
@@ -192,8 +201,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
             return { success: false, uidChanged: false, error: t('auth.linkFailed') };
           }
         }
-        const detail = __DEV__ ? `\n(${linkError?.code ?? ''}: ${linkError?.message ?? ''})` : '';
-        return { success: false, uidChanged: false, error: t('auth.linkFailed') + detail };
+        const msg = linkError?.code
+          ? `${linkError.code}: ${linkError.message ?? ''}`
+          : (linkError?.message ?? String(linkError));
+        return { success: false, uidChanged: false, error: t('auth.linkFailed') + '\n(' + msg + ')' };
       }
     },
     []

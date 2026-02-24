@@ -5,6 +5,7 @@ import { maybeRequestReview } from '../domain/review';
 import { syncGeofencing } from '../geofencing';
 import type { Store } from '../models';
 import * as storage from '../storage';
+import { pushWidgetData } from '../widgetData';
 
 type StoresContextValue = {
   loading: boolean;
@@ -52,6 +53,8 @@ export function StoresProvider({ children }: PropsWithChildren) {
     if (loading) return;
     // keep geofencing regions in sync with enabled stores
     syncGeofencing(stores);
+    // push data to iOS widget
+    pushWidgetData(stores);
   }, [stores, loading]);
 
   const addStore = useCallback(

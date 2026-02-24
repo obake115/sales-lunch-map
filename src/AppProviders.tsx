@@ -3,12 +3,32 @@ import { PropsWithChildren, useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LoginBonusModal } from './components/LoginBonusModal';
-import { configureNotifications, ensureAndroidDefaultChannel } from './notifications';
-import { syncPurchasedState } from './purchases';
-import { AuthProvider } from './state/AuthContext';
+import { configureNotifications, ensureAndroidDefaultChannel, registerPushToken } from './notifications';
+import { identifyUser, syncPurchasedState } from './purchases';
+import { AuthProvider, useAuth } from './state/AuthContext';
 import { usePremium, PremiumProvider } from './state/PremiumContext';
 import { StoresProvider } from './state/StoresContext';
 import { useAppBootstrap } from './state/useAppBootstrap';
+
+function PurchaseIdentifier() {
+  const { user, authMethod } = useAuth();
+  const { refreshPremium } = usePremium();
+
+  useEffect(() => {
+    if (!user) return;
+    if (authMethod !== 'anonymous') {
+      identifyUser(user.uid).then(() => syncPurchasedState().then(() => refreshPremium()));
+    }
+  }, [user?.uid, authMethod, refreshPremium]);
+
+  // Register push token when user is available
+  useEffect(() => {
+    if (!user) return;
+    registerPushToken(user.uid).catch(() => {});
+  }, [user?.uid]);
+
+  return null;
+}
 
 function AppProvidersInner({ children }: PropsWithChildren) {
   const { loginBonus, dismissLoginBonus } = useAppBootstrap();
@@ -39,6 +59,7 @@ function AppProvidersInner({ children }: PropsWithChildren) {
   return (
     <AuthProvider>
       <StoresProvider>
+        <PurchaseIdentifier />
         {children}
         <LoginBonusModal
           visible={!!loginBonus?.awarded}

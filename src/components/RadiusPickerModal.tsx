@@ -1,6 +1,7 @@
 import { Picker } from '@react-native-picker/picker';
 import { Modal, Pressable, Text, View } from 'react-native';
 
+import { fonts } from '@/src/ui/fonts';
 import { t } from '@/src/i18n';
 
 const OPTIONS = [100, 200, 300, 400, 500] as const;
@@ -25,13 +26,13 @@ const UI = {
     paddingBottom: 8,
   } as const,
   title: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     fontSize: 16,
     color: '#111827',
   } as const,
   actionText: {
     color: '#4F78FF',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
 };
 

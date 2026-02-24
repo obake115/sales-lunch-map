@@ -2,23 +2,28 @@ import * as Location from 'expo-location';
 import type { Store } from './models';
 import { GEOFENCE_RADIUS_METERS, GEOFENCE_TASK_NAME } from './constants';
 
-export async function syncGeofencing(stores: Store[]) {
-  const bg = await Location.getBackgroundPermissionsAsync();
-  if (!bg.granted) {
+async function stopGeofencingSafe() {
+  try {
     const started = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK_NAME);
     if (started) {
       await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
     }
+  } catch (e) {
+    console.warn('stopGeofencingSafe failed:', e);
+  }
+}
+
+export async function syncGeofencing(stores: Store[]) {
+  const bg = await Location.getBackgroundPermissionsAsync();
+  if (!bg.granted) {
+    await stopGeofencingSafe();
     return;
   }
 
   const enabledStores = stores.filter((s) => s.enabled);
 
   if (enabledStores.length === 0) {
-    const started = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK_NAME);
-    if (started) {
-      await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
-    }
+    await stopGeofencingSafe();
     return;
   }
 
@@ -31,6 +36,10 @@ export async function syncGeofencing(stores: Store[]) {
     notifyOnExit: false,
   }));
 
-  await Location.startGeofencingAsync(GEOFENCE_TASK_NAME, regions);
+  try {
+    await Location.startGeofencingAsync(GEOFENCE_TASK_NAME, regions);
+  } catch (e) {
+    console.warn('startGeofencingAsync failed (background location may not be configured):', e);
+  }
 }
 

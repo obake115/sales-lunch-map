@@ -1,6 +1,7 @@
 import type { Unsubscribe } from 'firebase/firestore';
 import {
     addDoc,
+    arrayRemove,
     arrayUnion,
     collection,
     deleteDoc,
@@ -75,6 +76,8 @@ export function listenMyMaps(userId: string, onChange: (maps: SharedMap[]) => vo
     });
     maps.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     onChange(maps);
+  }, (error) => {
+    console.warn('listenMyMaps error:', error);
   });
 }
 
@@ -117,6 +120,8 @@ export function listenMap(mapId: string, onChange: (map: SharedMap | null) => vo
       isReadOnly: !!data?.isReadOnly,
       createdAt: data?.createdAt?.toMillis?.() ?? undefined,
     });
+  }, (error) => {
+    console.warn('listenMap error:', error);
   });
 }
 
@@ -138,6 +143,8 @@ export function listenMapStores(mapId: string, onChange: (stores: SharedStore[])
       } as SharedStore;
     });
     onChange(stores);
+  }, (error) => {
+    console.warn('listenMapStores error:', error);
   });
 }
 
@@ -153,16 +160,19 @@ export async function addMapStore(
     createdBy: string;
   }
 ) {
-  await addDoc(collection(firebaseDb, 'maps', mapId, 'stores'), {
+  const data: Record<string, any> = {
     name: input.name.trim(),
-    placeId: input.placeId?.trim() || undefined,
     latitude: input.latitude,
     longitude: input.longitude,
-    memo: input.memo?.trim() || undefined,
     tag: input.tag ?? null,
     createdBy: input.createdBy,
     createdAt: serverTimestamp(),
-  });
+  };
+  const placeId = input.placeId?.trim();
+  if (placeId) data.placeId = placeId;
+  const memo = input.memo?.trim();
+  if (memo) data.memo = memo;
+  await addDoc(collection(firebaseDb, 'maps', mapId, 'stores'), data);
 }
 
 export async function deleteMapStore(mapId: string, storeId: string) {
@@ -179,4 +189,71 @@ export async function updateMapStoreTag(
 
 export async function setMapReadOnly(mapId: string, isReadOnly: boolean) {
   await updateDoc(doc(firebaseDb, 'maps', mapId), { isReadOnly });
+}
+
+export async function leaveMap(mapId: string, userId: string) {
+  await updateDoc(doc(firebaseDb, 'maps', mapId), {
+    memberIds: arrayRemove(userId),
+  });
+}
+
+// ── Comments ──
+
+export type StoreComment = {
+  id: string;
+  text: string;
+  authorId: string;
+  authorName?: string;
+  createdAt?: number;
+};
+
+export function listenStoreComments(
+  mapId: string,
+  storeId: string,
+  onChange: (comments: StoreComment[]) => void
+): Unsubscribe {
+  const q = query(
+    collection(firebaseDb, 'maps', mapId, 'stores', storeId, 'comments'),
+    orderBy('createdAt', 'asc')
+  );
+  return onSnapshot(q, (snap) => {
+    const comments = snap.docs.map((d) => {
+      const data = d.data() as any;
+      return {
+        id: d.id,
+        text: data?.text ?? '',
+        authorId: data?.authorId ?? '',
+        authorName: data?.authorName ?? undefined,
+        createdAt: data?.createdAt?.toMillis?.() ?? undefined,
+      } as StoreComment;
+    });
+    onChange(comments);
+  }, (error) => {
+    console.warn('listenStoreComments error:', error);
+  });
+}
+
+export async function addStoreComment(
+  mapId: string,
+  storeId: string,
+  input: { text: string; authorId: string; authorName?: string }
+) {
+  const data: Record<string, any> = {
+    text: input.text.trim(),
+    authorId: input.authorId,
+    createdAt: serverTimestamp(),
+  };
+  if (input.authorName) data.authorName = input.authorName;
+  await addDoc(collection(firebaseDb, 'maps', mapId, 'stores', storeId, 'comments'), data);
+}
+
+export async function deleteStoreComment(mapId: string, storeId: string, commentId: string) {
+  await deleteDoc(doc(firebaseDb, 'maps', mapId, 'stores', storeId, 'comments', commentId));
+}
+
+export async function deleteMap(mapId: string) {
+  const storesSnap = await getDocs(collection(firebaseDb, 'maps', mapId, 'stores'));
+  const deletes = storesSnap.docs.map((d) => deleteDoc(d.ref));
+  await Promise.all(deletes);
+  await deleteDoc(doc(firebaseDb, 'maps', mapId));
 }

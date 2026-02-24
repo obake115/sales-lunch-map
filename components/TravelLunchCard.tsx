@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Image,
   Pressable,
@@ -8,7 +8,10 @@ import {
   type ImageSourcePropType,
   type PressableProps,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
+import { useThemeColors } from '@/src/state/ThemeContext';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 type Props = {
@@ -30,24 +33,35 @@ export function TravelLunchCard({
   onPress,
   onAdd,
 }: Props) {
+  const colors = useThemeColors();
   const progressRatio = Math.min(Math.max(visitedCount / 47, 0), 1);
+  const animatedWidth = useSharedValue(0);
+
+  useEffect(() => {
+    animatedWidth.value = withTiming(progressRatio * 100, { duration: 800 });
+  }, [progressRatio, animatedWidth]);
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${animatedWidth.value}%`,
+  }));
+
   return (
-    <NeuCard style={styles.card}>
+    <NeuCard style={[styles.card, { backgroundColor: colors.card }]}>
       <Pressable onPress={onPress}>
         <View style={styles.titleRow}>
           <View style={styles.iconWrap}>
             <Image source={iconSource} style={styles.icon} resizeMode="cover" />
           </View>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
             {title}
           </Text>
-          <Text style={styles.progress}>{visitedCount}/47</Text>
+          <Text style={[styles.progress, { color: colors.subText }]}>{visitedCount}/47</Text>
         </View>
-        <Text style={styles.sub} numberOfLines={2}>
+        <Text style={[styles.sub, { color: colors.subText }]} numberOfLines={2}>
           {subtitle}
         </Text>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progressRatio * 100}%` }]} />
+        <View style={[styles.progressBar, { backgroundColor: colors.chipBg }]}>
+          <Animated.View style={[styles.progressFill, progressStyle]} />
         </View>
       </Pressable>
       <Pressable
@@ -70,7 +84,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 16,
     borderRadius: 20,
-    backgroundColor: '#E9E4DA',
   },
   titleRow: {
     flexDirection: 'row',
@@ -92,25 +105,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    fontFamily: fonts.bold,
     marginRight: 8,
     flex: 1,
   },
   progress: {
     fontSize: 14,
-    color: '#6B7280',
   },
   sub: {
     marginTop: 6,
     fontSize: 14,
-    color: '#6B7280',
   },
   progressBar: {
     marginTop: 8,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D5D0C6',
     overflow: 'hidden',
   },
   progressFill: {
@@ -128,7 +137,7 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: fonts.bold,
     fontSize: 16,
   },
 });

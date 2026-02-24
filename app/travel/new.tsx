@@ -17,6 +17,8 @@ import {
   View,
 } from 'react-native';
 
+import { fonts } from '@/src/ui/fonts';
+import { logPhotoAdded, logTravelLunchRecorded } from '@/src/analytics';
 import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import { t } from '@/src/i18n';
 import { formatYmd } from '@/src/domain/date';
@@ -156,12 +158,13 @@ export default function TravelLunchNewScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.9,
     });
     if (!result.canceled && result.assets[0]?.uri) {
       setImageUri(result.assets[0].uri);
+      logPhotoAdded({ context: 'travel' });
     }
   };
 
@@ -205,6 +208,7 @@ export default function TravelLunchNewScreen() {
         rating,
         memo,
       });
+      logTravelLunchRecorded({ prefecture_id: prefectureId, genre, rating });
       showToast(t('travel.savedToast', { name: restaurantName.trim() }));
       setTimeout(() => router.back(), 600);
     } catch (error) {
@@ -418,7 +422,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerBackText: { fontSize: 20 },
-  headerTitle: { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 18, fontFamily: fonts.bold, flex: 1, textAlign: 'center' },
   headerSpacer: { width: 40 },
   headerIcon: {
     width: 40,
@@ -433,7 +437,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 16,
   },
-  prefectureText: { fontSize: 14, fontWeight: '600' },
+  prefectureText: { fontSize: 14, fontFamily: fonts.bold },
   photoBox: {
     borderWidth: 1,
     borderStyle: 'dashed',
@@ -452,9 +456,9 @@ const styles = StyleSheet.create({
   photoText: { fontSize: 14 },
   photoPreview: { width: '100%', height: '100%' },
   section: { marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  sectionTitle: { fontSize: 16, fontFamily: fonts.bold, marginBottom: 8 },
   field: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  label: { fontSize: 13, fontFamily: fonts.bold, marginBottom: 6 },
   input: {
     borderWidth: 1,
     borderRadius: 14,
@@ -477,7 +481,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: '#FFF', fontSize: 16, fontFamily: fonts.bold },
   modalBackdrop: {
     flex: 1,
     justifyContent: 'center',

@@ -93,6 +93,11 @@ export async function runMigrations(db: SQLiteDatabase) {
     await db.execAsync('ALTER TABLE places ADD COLUMN shareToEveryone INTEGER NOT NULL DEFAULT 0');
   }
 
+  const hasPhotoUris = columns.some((col) => col.name === 'photoUris');
+  if (!hasPhotoUris) {
+    await db.execAsync('ALTER TABLE places ADD COLUMN photoUris TEXT');
+  }
+
   const albumColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(album_photos)');
   const hasTakenAt = albumColumns.some((col) => col.name === 'takenAt');
   if (!hasTakenAt) {

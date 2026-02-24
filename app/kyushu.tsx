@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { t } from '@/src/i18n';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { getPrefecturePhotos } from '@/src/storage';
+import { fonts } from '@/src/ui/fonts';
 
 const UI = {
   bg: {
@@ -25,7 +26,7 @@ const UI = {
   } as const,
   title: {
     fontSize: 18,
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     marginBottom: 10,
   } as const,
@@ -52,7 +53,7 @@ const UI = {
     padding: 10,
   } as const,
   cardTitle: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
   } as const,
   hint: {

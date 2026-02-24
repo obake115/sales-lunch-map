@@ -1,24 +1,33 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as ExpoLinking from 'expo-linking';
-import { Alert, Image, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import * as Clipboard from 'expo-clipboard';
 
 import { t } from '@/src/i18n';
 import {
   addMapStore,
+  addStoreComment,
+  deleteMap,
   deleteMapStore,
+  deleteStoreComment,
+  leaveMap,
   listenMap,
   listenMapStores,
+  listenStoreComments,
   setMapReadOnly,
   updateMapStoreTag,
   type SharedMap,
   type SharedStore,
+  type StoreComment,
 } from '@/src/sharedMaps';
 import { useAuth } from '@/src/state/AuthContext';
+import { getProfileName } from '@/src/storage';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
@@ -80,6 +89,113 @@ function toRegion(latitude: number, longitude: number): Region {
   };
 }
 
+function StoreCommentSection({
+  mapId,
+  storeId,
+  userId,
+  userName,
+  colors,
+}: {
+  mapId: string;
+  storeId: string;
+  userId: string;
+  userName?: string;
+  colors: any;
+}) {
+  const [comments, setComments] = useState<StoreComment[]>([]);
+  const [expanded, setExpanded] = useState(false);
+  const [text, setText] = useState('');
+  const [posting, setPosting] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const unsub = listenStoreComments(mapId, storeId, setComments);
+    return () => unsub();
+  }, [mapId, storeId, expanded]);
+
+  const handlePost = useCallback(async () => {
+    if (!text.trim() || posting) return;
+    setPosting(true);
+    try {
+      await addStoreComment(mapId, storeId, { text, authorId: userId, authorName: userName });
+      setText('');
+    } catch (e: any) {
+      Alert.alert(t('sharedDetail.commentFailedTitle'), e?.message ?? t('shared.tryLater'));
+    } finally {
+      setPosting(false);
+    }
+  }, [text, posting, mapId, storeId, userId, userName]);
+
+  return (
+    <View style={{ marginTop: 8 }}>
+      <Pressable onPress={() => setExpanded((v) => !v)}>
+        <Text style={{ fontFamily: fonts.extraBold, fontSize: 12, color: '#4F78FF' }}>
+          {expanded ? t('sharedDetail.hideComments') : t('sharedDetail.showComments')}
+        </Text>
+      </Pressable>
+      {expanded && (
+        <View style={{ marginTop: 6, gap: 6 }}>
+          {comments.length === 0 && (
+            <Text style={{ color: colors.subText, fontSize: 12 }}>{t('sharedDetail.noComments')}</Text>
+          )}
+          {comments.map((c) => (
+            <View key={c.id} style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: fonts.extraBold, fontSize: 11, color: colors.subText }}>
+                  {c.authorName || t('sharedDetail.anonymousUser')}
+                </Text>
+                <Text style={{ fontSize: 13, color: colors.text }}>{c.text}</Text>
+              </View>
+              {c.authorId === userId && (
+                <Pressable
+                  onPress={async () => {
+                    try {
+                      await deleteStoreComment(mapId, storeId, c.id);
+                    } catch {}
+                  }}>
+                  <Text style={{ color: '#B91C1C', fontSize: 11, fontFamily: fonts.extraBold }}>
+                    {t('storeDetail.deleteConfirm')}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          ))}
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+            <TextInput
+              value={text}
+              onChangeText={setText}
+              placeholder={t('sharedDetail.commentPlaceholder')}
+              placeholderTextColor={colors.subText}
+              style={{
+                flex: 1,
+                borderRadius: 10,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                backgroundColor: colors.inputBg,
+                color: colors.text,
+                fontSize: 13,
+              }}
+            />
+            <Pressable
+              disabled={!text.trim() || posting}
+              onPress={handlePost}
+              style={{
+                backgroundColor: text.trim() ? '#4F78FF' : '#9BB8FF',
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                justifyContent: 'center',
+              }}>
+              <Text style={{ color: 'white', fontFamily: fonts.extraBold, fontSize: 12 }}>
+                {t('sharedDetail.postComment')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 async function openGoogleMaps(store: { name: string; latitude: number; longitude: number; placeId?: string }) {
   const query = store.placeId ? store.name : `${store.latitude},${store.longitude}`;
   const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}${
@@ -93,6 +209,7 @@ export default function SharedMapDetailScreen() {
   const { id, showInvite } = useLocalSearchParams<{ id: string; showInvite?: string }>();
   const mapId = id ?? '';
   const { user } = useAuth();
+  const colors = useThemeColors();
 
   const [map, setMap] = useState<SharedMap | null>(null);
   const [stores, setStores] = useState<SharedStore[]>([]);
@@ -105,6 +222,7 @@ export default function SharedMapDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [deviceLatLng, setDeviceLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
 
+  const [profileName, setProfileName] = useState('');
   const [inviteVisible, setInviteVisible] = useState(false);
   const [filterTag, setFilterTag] = useState<'all' | 'favorite' | 'want' | 'again'>('all');
   const [readOnlyUpdating, setReadOnlyUpdating] = useState(false);
@@ -137,6 +255,10 @@ export default function SharedMapDetailScreen() {
     })();
   }, []);
 
+  useEffect(() => {
+    getProfileName().then(setProfileName).catch(() => {});
+  }, []);
+
   const isOwner = !!user?.uid && user.uid === map?.ownerId;
   const isReadOnly = !!map?.isReadOnly;
   const canEdit = !isReadOnly || isOwner;
@@ -163,7 +285,7 @@ export default function SharedMapDetailScreen() {
   if (!mapId) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text style={{ color: '#6B7280' }}>{t('sharedDetail.notFound')}</Text>
+        <Text style={{ color: colors.subText }}>{t('sharedDetail.notFound')}</Text>
       </View>
     );
   }
@@ -174,19 +296,19 @@ export default function SharedMapDetailScreen() {
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable
             onPress={() => router.back()}
-            style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-            <Text style={{ fontWeight: '800', color: '#111827' }}>{t('common.back')}</Text>
+            style={{ flex: 1, ...UI.secondaryBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, paddingVertical: 12 }}>
+            <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('common.back')}</Text>
           </Pressable>
         </View>
 
-        <NeuCard style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }} numberOfLines={1}>
             {map?.name ?? t('sharedDetail.defaultName')}
           </Text>
-          <Text style={{ color: '#6B7280', marginTop: 6 }}>
+          <Text style={{ color: colors.subText, marginTop: 6 }}>
             {t('shared.inviteCodeLabel')} {map?.code ?? '-'}
           </Text>
-          <Text style={{ color: '#6B7280', marginTop: 2 }}>
+          <Text style={{ color: colors.subText, marginTop: 2 }}>
             {t('shared.membersLabel', { count: map?.memberIds?.length ?? 0 })}
           </Text>
           {isOwner ? (
@@ -201,37 +323,87 @@ export default function SharedMapDetailScreen() {
                   setReadOnlyUpdating(false);
                 }
               }}
-              style={{ marginTop: 10, ...UI.secondaryBtn, paddingVertical: 8 }}>
-              <Text style={{ fontWeight: '800', color: '#111827' }}>
+              style={{ marginTop: 10, ...UI.secondaryBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, paddingVertical: 8 }}>
+              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>
                 {isReadOnly ? t('sharedDetail.readOnlyOff') : t('sharedDetail.readOnlyOn')}
               </Text>
             </Pressable>
           ) : isReadOnly ? (
-            <Text style={{ color: '#B45309', marginTop: 8, fontWeight: '800' }}>
+            <Text style={{ color: '#B45309', marginTop: 8, fontFamily: fonts.extraBold }}>
               {t('sharedDetail.readOnlyNotice')}
             </Text>
           ) : null}
+          <Pressable
+            onPress={() => {
+              if (isOwner) {
+                Alert.alert(
+                  t('sharedDetail.deleteMapTitle'),
+                  t('sharedDetail.deleteMapBody'),
+                  [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('storeDetail.deleteConfirm'),
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await deleteMap(mapId);
+                          router.back();
+                        } catch (e: any) {
+                          Alert.alert(t('sharedDetail.deleteFailedTitle'), e?.message ?? t('shared.tryLater'));
+                        }
+                      },
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  t('sharedDetail.leaveMapTitle'),
+                  t('sharedDetail.leaveMapBody'),
+                  [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('sharedDetail.leaveMapConfirm'),
+                      style: 'destructive',
+                      onPress: async () => {
+                        if (!user) return;
+                        try {
+                          await leaveMap(mapId, user.uid);
+                          router.back();
+                        } catch (e: any) {
+                          Alert.alert(t('sharedDetail.leaveFailedTitle'), e?.message ?? t('shared.tryLater'));
+                        }
+                      },
+                    },
+                  ]
+                );
+              }
+            }}
+            style={{ marginTop: 10, ...UI.dangerBtn, backgroundColor: colors.dangerBg, alignItems: 'center' }}>
+            <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold }}>
+              {isOwner ? t('sharedDetail.deleteMapButton') : t('sharedDetail.leaveMapButton')}
+            </Text>
+          </Pressable>
         </NeuCard>
 
-        <NeuCard style={UI.card}>
-          <Text style={{ fontWeight: '900', fontSize: 16, marginBottom: 8 }}>{t('sharedDetail.addStore')}</Text>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 8, color: colors.text }}>{t('sharedDetail.addStore')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
             placeholder={t('sharedDetail.storeNamePlaceholder')}
-            style={UI.input}
+            style={[UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
             {...INPUT_PROPS}
           />
           <TextInput
             value={memo}
             onChangeText={setMemo}
             placeholder={t('sharedDetail.memoPlaceholder')}
-            style={{ marginTop: 8, ...UI.input }}
+            style={[{ marginTop: 8 }, UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
             {...INPUT_PROPS}
           />
 
           <View style={{ marginTop: 10 }}>
-            <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('sharedDetail.location')}</Text>
+            <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('sharedDetail.location')}</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Pressable
                 onPress={async () => {
@@ -253,24 +425,24 @@ export default function SharedMapDetailScreen() {
                   setDeviceLatLng({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                   setMapRegion(toRegion(pos.coords.latitude, pos.coords.longitude));
                 }}
-                style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 12 }}>
-                <Text style={{ fontWeight: '800', color: '#111827' }}>{t('sharedDetail.getCurrent')}</Text>
+                style={{ flex: 1, ...UI.secondaryBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, paddingVertical: 12 }}>
+                <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('sharedDetail.getCurrent')}</Text>
               </Pressable>
             </View>
-            <Text style={{ color: '#6B7280', marginTop: 6 }}>
+            <Text style={{ color: colors.subText, marginTop: 6 }}>
               {t('sharedDetail.latLabel', { value: latitude ?? '-' })} /{' '}
               {t('sharedDetail.lngLabel', { value: longitude ?? '-' })}
             </Text>
           </View>
 
           <View style={{ marginTop: 10 }}>
-            <Text style={{ fontWeight: '800', marginBottom: 6 }}>{t('sharedDetail.pickOnMap')}</Text>
-            <Text style={{ color: '#6B7280', marginBottom: 8 }}>{t('sharedDetail.pickOnMapHelp')}</Text>
+            <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('sharedDetail.pickOnMap')}</Text>
+            <Text style={{ color: colors.subText, marginBottom: 8 }}>{t('sharedDetail.pickOnMapHelp')}</Text>
             <View
               style={{
                 borderRadius: 16,
                 overflow: 'hidden',
-                backgroundColor: '#E9E4DA',
+                backgroundColor: colors.card,
                 height: 220,
               }}>
               {mapRegion ? (
@@ -291,14 +463,14 @@ export default function SharedMapDetailScreen() {
                 </MapView>
               ) : (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#6B7280' }}>{t('sharedDetail.locationLoading')}</Text>
+                  <Text style={{ color: colors.subText }}>{t('sharedDetail.locationLoading')}</Text>
                 </View>
               )}
             </View>
           </View>
 
           <View style={{ marginTop: 10 }}>
-            <Text style={{ color: '#6B7280' }}>{t('sharedDetail.placeId', { value: placeId || '-' })}</Text>
+            <Text style={{ color: colors.subText }}>{t('sharedDetail.placeId', { value: placeId || '-' })}</Text>
           </View>
 
           <Pressable
@@ -332,14 +504,14 @@ export default function SharedMapDetailScreen() {
               ...UI.primaryBtn,
               backgroundColor: canSave ? UI.primaryBtn.backgroundColor : '#9BB8FF',
             }}>
-            <Text style={{ color: 'white', fontWeight: '900' }}>
+            <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>
               {saving ? t('sharedDetail.saving') : t('common.save')}
             </Text>
           </Pressable>
         </NeuCard>
 
         <View style={{ gap: 8 }}>
-          <Text style={{ fontWeight: '900' }}>{t('sharedDetail.storeList')}</Text>
+          <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('sharedDetail.storeList')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             {(['all', 'favorite', 'want', 'again'] as const).map((tag) => {
               const active = filterTag === tag;
@@ -356,33 +528,33 @@ export default function SharedMapDetailScreen() {
                   key={tag}
                   onPress={() => setFilterTag(tag)}
                   style={{
-                    backgroundColor: active ? '#FFF7E6' : '#E9E4DA',
+                    backgroundColor: active ? '#FFF7E6' : colors.card,
                     borderRadius: 999,
                     paddingHorizontal: 10,
                     paddingVertical: 6,
-                    shadowColor: '#C8C3B9',
+                    shadowColor: colors.shadowDark,
                     shadowOffset: { width: 2, height: 2 },
                     shadowOpacity: 0.4,
                     shadowRadius: 4,
                   }}>
-                  <Text style={{ color: active ? '#B45309' : '#6B7280', fontWeight: '800', fontSize: 12 }}>
+                  <Text style={{ color: active ? '#B45309' : colors.subText, fontFamily: fonts.extraBold, fontSize: 12 }}>
                     {label}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
-          {stores.length === 0 && <Text style={{ color: '#6B7280' }}>{t('sharedDetail.empty')}</Text>}
+          {stores.length === 0 && <Text style={{ color: colors.subText }}>{t('sharedDetail.empty')}</Text>}
           <View style={{ gap: 10 }}>
             {(filterTag === 'all' ? stores : stores.filter((s) => s.tag === filterTag)).map((item) => {
               const canDelete = user?.uid && user.uid === item.createdBy && canEdit;
               return (
-                <NeuCard key={item.id} style={UI.card}>
-                  <Text style={{ fontWeight: '900', fontSize: 16 }} numberOfLines={1}>
+                <NeuCard key={item.id} style={[UI.card, { backgroundColor: colors.card }]}>
+                  <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }} numberOfLines={1}>
                     {item.name}
                   </Text>
                   {item.tag ? (
-                    <Text style={{ color: '#B45309', marginTop: 4, fontWeight: '800' }}>
+                    <Text style={{ color: '#B45309', marginTop: 4, fontFamily: fonts.extraBold }}>
                       {item.tag === 'favorite'
                         ? t('sharedDetail.tags.favorite')
                         : item.tag === 'want'
@@ -391,7 +563,7 @@ export default function SharedMapDetailScreen() {
                     </Text>
                   ) : null}
                   {!!item.memo && (
-                    <Text style={{ color: '#6B7280', marginTop: 4 }} numberOfLines={2}>
+                    <Text style={{ color: colors.subText, marginTop: 4 }} numberOfLines={2}>
                       {t('sharedDetail.memoLabel')} {item.memo}
                     </Text>
                   )}
@@ -417,16 +589,16 @@ export default function SharedMapDetailScreen() {
                             }
                           }}
                           style={{
-                            backgroundColor: active ? '#FFF7E6' : '#E9E4DA',
+                            backgroundColor: active ? '#FFF7E6' : colors.card,
                             borderRadius: 999,
                             paddingHorizontal: 10,
                             paddingVertical: 6,
-                            shadowColor: '#C8C3B9',
+                            shadowColor: colors.shadowDark,
                             shadowOffset: { width: 2, height: 2 },
                             shadowOpacity: 0.4,
                             shadowRadius: 4,
                           }}>
-                          <Text style={{ color: active ? '#B45309' : '#6B7280', fontWeight: '800', fontSize: 12 }}>
+                          <Text style={{ color: active ? '#B45309' : colors.subText, fontFamily: fonts.extraBold, fontSize: 12 }}>
                             {label}
                           </Text>
                         </Pressable>
@@ -436,8 +608,8 @@ export default function SharedMapDetailScreen() {
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                     <Pressable
                       onPress={() => openGoogleMaps(item)}
-                      style={{ flex: 1, ...UI.secondaryBtn, paddingVertical: 10 }}>
-                      <Text style={{ fontWeight: '800', color: '#111827' }}>{t('sharedDetail.openGoogleMaps')}</Text>
+                      style={{ flex: 1, ...UI.secondaryBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, paddingVertical: 10 }}>
+                      <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('sharedDetail.openGoogleMaps')}</Text>
                     </Pressable>
                     {canDelete && (
                       <Pressable
@@ -448,11 +620,20 @@ export default function SharedMapDetailScreen() {
                             Alert.alert(t('sharedDetail.deleteFailedTitle'), e?.message ?? t('shared.tryLater'));
                           }
                         }}
-                        style={UI.dangerBtn}>
-                        <Text style={{ color: '#B91C1C', fontWeight: '800' }}>{t('storeDetail.deleteConfirm')}</Text>
+                        style={[UI.dangerBtn, { backgroundColor: colors.dangerBg }]}>
+                        <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold }}>{t('storeDetail.deleteConfirm')}</Text>
                       </Pressable>
                     )}
                   </View>
+                  {user?.uid && (
+                    <StoreCommentSection
+                      mapId={mapId}
+                      storeId={item.id}
+                      userId={user.uid}
+                      userName={profileName || undefined}
+                      colors={colors}
+                    />
+                  )}
                 </NeuCard>
               );
             })}
@@ -475,17 +656,17 @@ export default function SharedMapDetailScreen() {
             style={{
               width: '100%',
               borderRadius: 20,
-              backgroundColor: '#E9E4DA',
+              backgroundColor: colors.card,
               padding: 16,
             }}>
             <Pressable onPress={() => setInviteVisible(false)} style={{ alignSelf: 'flex-end' }}>
-              <Text style={{ fontWeight: '900', fontSize: 18 }}>×</Text>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 18, color: colors.text }}>×</Text>
             </Pressable>
 
-            <Text style={{ fontWeight: '900', fontSize: 16, textAlign: 'center', marginTop: 4 }}>
+            <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, textAlign: 'center', marginTop: 4, color: colors.text }}>
               {t('sharedDetail.inviteTitle')}
             </Text>
-            <Text style={{ color: '#6B7280', textAlign: 'center', marginTop: 6 }}>
+            <Text style={{ color: colors.subText, textAlign: 'center', marginTop: 6 }}>
               {t('sharedDetail.inviteBody')}
             </Text>
 
@@ -499,12 +680,12 @@ export default function SharedMapDetailScreen() {
                 backgroundColor: '#FFF7E6',
                 alignItems: 'center',
               }}>
-              <Text style={{ fontSize: 22, fontWeight: '900', color: '#B45309' }}>{inviteCode || '------'}</Text>
+              <Text style={{ fontSize: 22, fontFamily: fonts.extraBold, color: '#B45309' }}>{inviteCode || '------'}</Text>
             </Pressable>
 
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               {inviteCode ? <Image source={{ uri: inviteQrUrl }} style={{ width: 140, height: 140 }} /> : null}
-              <Text style={{ color: '#6B7280', marginTop: 8 }}>{t('sharedDetail.inviteQr')}</Text>
+              <Text style={{ color: colors.subText, marginTop: 8 }}>{t('sharedDetail.inviteQr')}</Text>
             </View>
 
             <Pressable
@@ -516,26 +697,39 @@ export default function SharedMapDetailScreen() {
                 paddingVertical: 12,
                 alignItems: 'center',
               }}>
-              <Text style={{ color: 'white', fontWeight: '900' }}>{t('sharedDetail.copyCode')}</Text>
+              <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('sharedDetail.copyCode')}</Text>
             </Pressable>
             <Pressable
               onPress={copyInviteLink}
               style={{
                 marginTop: 10,
-                backgroundColor: '#E9E4DA',
+                backgroundColor: colors.card,
                 borderRadius: 14,
                 paddingVertical: 12,
                 alignItems: 'center',
-                shadowColor: '#C8C3B9',
+                shadowColor: colors.shadowDark,
                 shadowOffset: { width: 2, height: 2 },
                 shadowOpacity: 0.4,
                 shadowRadius: 4,
               }}>
-              <Text style={{ color: '#111827', fontWeight: '900' }}>{t('sharedDetail.copyLink')}</Text>
+              <Text style={{ color: colors.text, fontFamily: fonts.extraBold }}>{t('sharedDetail.copyLink')}</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={async () => {
+                const message = t('sharedDetail.shareInviteMessage', { name: map?.name ?? '', code: inviteCode });
+                await Share.share({ message });
+              }}
+              style={{
+                marginTop: 10,
+                ...UI.primaryBtn,
+                backgroundColor: '#4F78FF',
+              }}>
+              <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('sharedDetail.shareInvite')}</Text>
             </Pressable>
 
             <Pressable onPress={() => setInviteVisible(false)} style={{ marginTop: 10, alignItems: 'center' }}>
-              <Text style={{ color: '#4F78FF', fontWeight: '800' }}>{t('common.close')}</Text>
+              <Text style={{ color: '#4F78FF', fontFamily: fonts.extraBold }}>{t('common.close')}</Text>
             </Pressable>
           </NeuCard>
         </View>

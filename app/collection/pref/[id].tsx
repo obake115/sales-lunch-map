@@ -4,12 +4,13 @@ import { Alert, Image, Pressable, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { t } from '@/src/i18n';
+import { fonts } from '@/src/ui/fonts';
 import { getPrefecturePhotos, setPrefecturePhoto } from '@/src/storage';
 
 const UI = {
   title: {
     fontSize: 18,
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     marginBottom: 12,
   } as const,
@@ -28,7 +29,7 @@ const UI = {
   } as const,
   btnText: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
   } as const,
   secondaryBtn: {
     marginTop: 12,
@@ -73,7 +74,7 @@ export default function PrefectureDetailScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,

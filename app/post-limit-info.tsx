@@ -4,6 +4,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import { t } from '@/src/i18n';
 import { usePremium } from '@/src/state/PremiumContext';
+import { useThemeColors } from '@/src/state/ThemeContext';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
@@ -13,7 +15,7 @@ const UI = {
     backgroundColor: '#E9E4DA',
   } as const,
   title: {
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
     fontSize: 16,
     marginBottom: 8,
     color: '#111827',
@@ -32,7 +34,7 @@ const UI = {
   purchaseBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
   premiumBadge: {
     backgroundColor: '#D1FAE5',
@@ -44,28 +46,29 @@ const UI = {
   premiumBadgeText: {
     color: '#065F46',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
 } as const;
 
 export default function PostLimitInfoScreen() {
   const { isPremium } = usePremium();
+  const colors = useThemeColors();
   const [paywallVisible, setPaywallVisible] = useState(false);
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 120 }}>
-        <NeuCard style={UI.card}>
-          <Text style={UI.title}>{t('postLimitInfo.section1Title')}</Text>
-          <Text style={UI.body}>{t('postLimitInfo.section1Body')}</Text>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={[UI.title, { color: colors.text }]}>{t('postLimitInfo.section1Title')}</Text>
+          <Text style={[UI.body, { color: colors.subText }]}>{t('postLimitInfo.section1Body')}</Text>
         </NeuCard>
-        <NeuCard style={UI.card}>
-          <Text style={UI.title}>{t('postLimitInfo.section2Title')}</Text>
-          <Text style={UI.body}>{t('postLimitInfo.section2Body')}</Text>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={[UI.title, { color: colors.text }]}>{t('postLimitInfo.section2Title')}</Text>
+          <Text style={[UI.body, { color: colors.subText }]}>{t('postLimitInfo.section2Body')}</Text>
         </NeuCard>
-        <NeuCard style={UI.card}>
-          <Text style={UI.title}>{t('postLimitInfo.section3Title')}</Text>
-          <Text style={UI.body}>{t('postLimitInfo.section3Body')}</Text>
+        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <Text style={[UI.title, { color: colors.text }]}>{t('postLimitInfo.section3Title')}</Text>
+          <Text style={[UI.body, { color: colors.subText }]}>{t('postLimitInfo.section3Body')}</Text>
           {isPremium ? (
             <View style={UI.premiumBadge}>
               <Text style={UI.premiumBadgeText}>{t('paywall.purchasedLabel')}</Text>

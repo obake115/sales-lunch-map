@@ -1,4 +1,10 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import {
+  MPLUSRounded1c_400Regular,
+  MPLUSRounded1c_500Medium,
+  MPLUSRounded1c_700Bold,
+  MPLUSRounded1c_800ExtraBold,
+} from '@expo-google-fonts/m-plus-rounded-1c';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, usePathname } from 'expo-router';
@@ -9,6 +15,7 @@ import 'react-native-reanimated';
 import { logScreenView } from '@/src/analytics';
 import { AppProviders } from '@/src/AppProviders';
 import { t } from '@/src/i18n';
+import { fonts } from '@/src/ui/fonts';
 import { ThemeProvider as ThemeModeProvider, useThemeMode } from '@/src/state/ThemeContext';
 
 // Register background geofencing task (side-effect import).
@@ -29,6 +36,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    MPLUSRounded1c_400Regular,
+    MPLUSRounded1c_500Medium,
+    MPLUSRounded1c_700Bold,
+    MPLUSRounded1c_800ExtraBold,
     ...FontAwesome.font,
   });
   const [ready, setReady] = useState(false);
@@ -76,6 +87,8 @@ const SCREEN_NAMES: Record<string, string> = {
   '/travel/pref-list': 'TravelPrefList',
   '/welcome': 'Welcome',
   '/settings': 'Settings',
+  '/guide': 'Guide',
+  '/stats': 'Stats',
   '/data-migration': 'DataMigration',
   '/onboarding': 'Onboarding',
   '/post-limit-info': 'PostLimitInfo',
@@ -132,11 +145,15 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={theme}>
       <AppProviders>
-        <Stack screenOptions={{ contentStyle: { backgroundColor: theme.colors.background } }}>
+        <Stack screenOptions={{
+          contentStyle: { backgroundColor: theme.colors.background },
+          headerTitleStyle: { fontFamily: fonts.bold },
+          headerBackButtonDisplayMode: 'minimal',
+        }}>
           <Stack.Screen name="index" options={{ title: t('nav.home') }} />
           <Stack.Screen name="profile" options={{ title: t('nav.profile') }} />
           <Stack.Screen name="list" options={{ title: t('nav.list') }} />
-          <Stack.Screen name="map" options={{ title: t('nav.map') }} />
+          <Stack.Screen name="map" options={{ headerShown: false }} />
           <Stack.Screen name="collection" options={{ headerShown: false }} />
           <Stack.Screen name="collection/pref/[id]" options={{ title: t('nav.collectionPref') }} />
           <Stack.Screen name="chubu" options={{ title: t('nav.chubu') }} />
@@ -147,7 +164,7 @@ function RootLayoutNav() {
           <Stack.Screen name="kansai" options={{ title: t('nav.kansai') }} />
           <Stack.Screen name="kyushu" options={{ title: t('nav.kyushu') }} />
           <Stack.Screen name="shikoku" options={{ title: t('nav.shikoku') }} />
-          <Stack.Screen name="everyone" options={{ title: t('nav.everyone') }} />
+          <Stack.Screen name="everyone" options={{ headerShown: false }} />
           <Stack.Screen name="shared" options={{ title: t('nav.shared') }} />
           <Stack.Screen name="shared/[id]" options={{ title: t('nav.shared') }} />
           <Stack.Screen name="reminders" options={{ title: t('nav.reminders') }} />
@@ -160,6 +177,8 @@ function RootLayoutNav() {
           <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
           <Stack.Screen name="data-migration" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="onboarding" options={{ title: t('nav.onboarding') }} />
+          <Stack.Screen name="guide" options={{ title: t('nav.guide') }} />
+          <Stack.Screen name="stats" options={{ title: t('nav.stats') }} />
           <Stack.Screen name="post-limit-info" options={{ title: t('nav.postLimitInfo') }} />
           <Stack.Screen name="privacy" options={{ title: t('nav.privacy') }} />
           <Stack.Screen name="terms" options={{ title: t('nav.terms') }} />

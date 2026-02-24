@@ -3,10 +3,11 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { logBadgeEarned, logThemeChanged } from '@/src/analytics';
 import { getAchievedBadges, getNextBadge } from '@/src/domain/badges';
 import { t } from '@/src/i18n';
 import { useStores } from '@/src/state/StoresContext';
-import { useThemeMode } from '@/src/state/ThemeContext';
+import { useThemeColors, useThemeMode } from '@/src/state/ThemeContext';
 import {
     getLoginBonusState,
     getNearbyShownCount,
@@ -19,12 +20,13 @@ import {
     type LoginBonusState,
 } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 const UI = {
   headerTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     letterSpacing: 0.2,
   } as const,
@@ -40,15 +42,15 @@ const UI = {
   } as const,
   statLabel: {
     color: '#6B7280',
-    fontWeight: '600',
+    fontFamily: fonts.bold,
   } as const,
   statValue: {
     color: '#111827',
-    fontWeight: '900',
+    fontFamily: fonts.extraBold,
   } as const,
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
     marginBottom: 8,
   } as const,
@@ -61,7 +63,7 @@ const UI = {
     marginBottom: 10,
   } as const,
   badgeText: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#92400E',
   } as const,
   styleSub: {
@@ -86,7 +88,7 @@ const UI = {
     backgroundColor: '#DBEAFE',
   } as const,
   themeBtnText: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
   } as const,
   profileAvatar: {
@@ -100,7 +102,7 @@ const UI = {
     marginBottom: 10,
   } as const,
   profileAvatarText: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#92400E',
   } as const,
   profileAvatarImage: {
@@ -115,7 +117,7 @@ const UI = {
   } as const,
   profileName: {
     textAlign: 'center',
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     fontSize: 16,
     color: '#111827',
   } as const,
@@ -144,7 +146,7 @@ const UI = {
   } as const,
   profileBadgeText: {
     color: '#7C3AED',
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
   } as const,
   profileSaveBtn: {
     marginTop: 10,
@@ -159,7 +161,7 @@ const UI = {
   } as const,
   profileSaveText: {
     color: '#111827',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   } as const,
   nameInput: {
     borderRadius: 12,
@@ -182,7 +184,7 @@ const UI = {
     paddingVertical: 10,
   } as const,
   settingLabel: {
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#111827',
   } as const,
   settingSub: {
@@ -210,17 +212,81 @@ function requirementText(
   return t('profile.badges.next', { label: badge.label });
 }
 
+function getWeekDayLabels(): string[] {
+  return [
+    t('profile.weekdayMon'),
+    t('profile.weekdayTue'),
+    t('profile.weekdayWed'),
+    t('profile.weekdayThu'),
+    t('profile.weekdayFri'),
+    t('profile.weekdaySat'),
+    t('profile.weekdaySun'),
+  ];
+}
+
+function WeeklyActivityChart({ stores, colors }: { stores: { createdAt?: number }[]; colors: ReturnType<typeof useThemeColors> }) {
+  const data = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayOfWeek = today.getDay(); // 0=Sun
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(today.getTime() - mondayOffset * 86400000);
+
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    for (const s of stores) {
+      if (!s.createdAt) continue;
+      const d = new Date(s.createdAt);
+      const storeDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const diff = Math.floor((storeDay.getTime() - monday.getTime()) / 86400000);
+      if (diff >= 0 && diff < 7) counts[diff]++;
+    }
+    return counts;
+  }, [stores]);
+
+  const weekTotal = data.reduce((a, b) => a + b, 0);
+  const maxCount = Math.max(...data, 1);
+  const labels = getWeekDayLabels();
+  const BAR_MAX_HEIGHT = 60;
+
+  return (
+    <View>
+      <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: colors.text, marginBottom: 8 }}>
+        {t('profile.activitySummary', { count: weekTotal })}
+      </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: BAR_MAX_HEIGHT + 20 }}>
+        {data.map((count, i) => {
+          const barHeight = Math.max(count > 0 ? (count / maxCount) * BAR_MAX_HEIGHT : 2, 2);
+          return (
+            <View key={i} style={{ alignItems: 'center', flex: 1 }}>
+              <View
+                style={{
+                  width: 16,
+                  height: barHeight,
+                  borderRadius: 4,
+                  backgroundColor: count > 0 ? '#4F78FF' : colors.chipBg,
+                }}
+              />
+              <Text style={{ fontSize: 10, color: colors.subText, marginTop: 4 }}>{labels[i]}</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { stores, loading } = useStores();
   const { themeMode, setThemeMode } = useThemeMode();
+  const colors = useThemeColors();
   const [loginState, setLoginState] = useState<LoginBonusState | null>(null);
   const [nearbyShownCount, setNearbyShownCount] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [profileName, setProfileNameState] = useState('');
   const [selectedBadgeId, setSelectedBadgeIdState] = useState<string | null>(null);
 
-  const initials = profileName.trim() ? profileName.trim().slice(0, 2) : 'T.K.';
+  const initials = profileName.trim() ? profileName.trim().slice(0, 2) : '👤';
 
   useEffect(() => {
     let mounted = true;
@@ -280,13 +346,13 @@ export default function ProfileScreen() {
   }, [selectedBadgeId, stats]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
         <View style={{ marginBottom: 14 }}>
-          <Text style={UI.headerTitle}>{t('profile.title')}</Text>
+          <Text style={[UI.headerTitle, { color: colors.text }]}>{t('profile.title')}</Text>
         </View>
 
-        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
+        <NeuCard style={{ ...UI.card, marginBottom: 16, backgroundColor: colors.card }}>
           <Pressable
             onPress={async () => {
               const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -295,7 +361,7 @@ export default function ProfileScreen() {
                 return;
               }
               const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: true,
                 aspect: [1, 1],
                 quality: 0.8,
@@ -313,27 +379,27 @@ export default function ProfileScreen() {
               <Text style={UI.profileAvatarText}>{initials}</Text>
             )}
           </Pressable>
-          <Text style={UI.profileAvatarHint}>{t('profile.changePhoto')}</Text>
+          <Text style={[UI.profileAvatarHint, { color: colors.subText }]}>{t('profile.changePhoto')}</Text>
           <TextInput
             value={profileName}
             onChangeText={setProfileNameState}
             placeholder={t('profile.namePlaceholder')}
-            style={UI.nameInput}
+            style={[UI.nameInput, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
           />
-          <Text style={UI.nameHint}>{t('profile.nameHint')}</Text>
+          <Text style={[UI.nameHint, { color: colors.subText }]}>{t('profile.nameHint')}</Text>
 
           <View style={UI.profileStats}>
             <View style={UI.profileStatRow}>
-              <Text style={UI.statLabel}>{t('profile.stats.helpful')}</Text>
-              <Text style={UI.statValue}>{t('profile.countTimes', { count: nearbyShownCount })}</Text>
+              <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.stats.helpful')}</Text>
+              <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countTimes', { count: nearbyShownCount })}</Text>
             </View>
             <View style={UI.profileStatRow}>
-              <Text style={UI.statLabel}>{t('profile.stats.registered')}</Text>
-              <Text style={UI.statValue}>{t('profile.countItems', { count: stores.length })}</Text>
+              <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.stats.registered')}</Text>
+              <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countItems', { count: stores.length })}</Text>
             </View>
             <View style={UI.profileStatRow}>
-              <Text style={UI.statLabel}>{t('profile.stats.favorite')}</Text>
-              <Text style={UI.statValue}>{t('profile.countItems', { count: stats.favoritesCount })}</Text>
+              <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.stats.favorite')}</Text>
+              <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countItems', { count: stats.favoritesCount })}</Text>
             </View>
           </View>
 
@@ -353,6 +419,7 @@ export default function ProfileScreen() {
                     onPress: async () => {
                       setSelectedBadgeIdState(badge.id);
                       await setSelectedBadgeId(badge.id);
+                      logBadgeEarned({ badge_id: badge.id });
                     },
                   })),
                   {
@@ -378,56 +445,61 @@ export default function ProfileScreen() {
               setProfileName(profileName);
               Alert.alert(t('profile.saved'));
             }}
-            style={UI.profileSaveBtn}>
-            <Text style={UI.profileSaveText}>{t('common.save')}</Text>
+            style={[UI.profileSaveBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
+            <Text style={[UI.profileSaveText, { color: colors.text }]}>{t('common.save')}</Text>
           </Pressable>
         </NeuCard>
 
-        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
-          <Text style={UI.sectionTitle}>{t('profile.themeTitle')}</Text>
-          <Text style={UI.styleSub}>{t('profile.themeSub')}</Text>
+        <NeuCard style={{ ...UI.card, marginBottom: 16, backgroundColor: colors.card }}>
+          <Text style={[UI.sectionTitle, { color: colors.text }]}>{t('profile.themeTitle')}</Text>
+          <Text style={[UI.styleSub, { color: colors.subText }]}>{t('profile.themeSub')}</Text>
           <View style={UI.themeRow}>
             <Pressable
-              onPress={() => setThemeMode('warm')}
-              style={{ ...UI.themeBtn, ...(themeMode === 'warm' ? UI.themeBtnActive : null) }}>
-              <Text style={UI.themeBtnText}>{t('profile.themeWarm')}</Text>
+              onPress={() => { setThemeMode('warm'); logThemeChanged({ theme: 'warm' }); }}
+              style={{ ...UI.themeBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(themeMode === 'warm' ? UI.themeBtnActive : null) }}>
+              <Text style={[UI.themeBtnText, { color: colors.text }]}>{t('profile.themeWarm')}</Text>
             </Pressable>
             <Pressable
-              onPress={() => setThemeMode('navy')}
-              style={{ ...UI.themeBtn, ...(themeMode === 'navy' ? UI.themeBtnActive : null) }}>
-              <Text style={UI.themeBtnText}>{t('profile.themeNavy')}</Text>
+              onPress={() => { setThemeMode('navy'); logThemeChanged({ theme: 'navy' }); }}
+              style={{ ...UI.themeBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(themeMode === 'navy' ? UI.themeBtnActive : null) }}>
+              <Text style={[UI.themeBtnText, { color: colors.text }]}>{t('profile.themeNavy')}</Text>
             </Pressable>
           </View>
         </NeuCard>
 
-        <NeuCard style={{ ...UI.card, marginBottom: 16 }}>
-          <Text style={UI.sectionTitle}>{t('profile.statusTitle')}</Text>
+        <NeuCard style={{ ...UI.card, marginBottom: 16, backgroundColor: colors.card }}>
+          <Text style={[UI.sectionTitle, { color: colors.text }]}>{t('profile.statusTitle')}</Text>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>{t('profile.statusStores')}</Text>
-            <Text style={UI.statValue}>{t('profile.countItems', { count: stores.length })}</Text>
+            <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.statusStores')}</Text>
+            <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countItems', { count: stores.length })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>{t('profile.statusFavorites')}</Text>
-            <Text style={UI.statValue}>{t('profile.countItems', { count: stats.favoritesCount })}</Text>
+            <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.statusFavorites')}</Text>
+            <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countItems', { count: stats.favoritesCount })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>{t('profile.statusTotalLogin')}</Text>
-            <Text style={UI.statValue}>{t('profile.countDays', { count: loginState?.totalDays ?? 0 })}</Text>
+            <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.statusTotalLogin')}</Text>
+            <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countDays', { count: loginState?.totalDays ?? 0 })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>{t('profile.statusStreak')}</Text>
-            <Text style={UI.statValue}>{t('profile.countDays', { count: loginState?.streak ?? 0 })}</Text>
+            <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.statusStreak')}</Text>
+            <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countDays', { count: loginState?.streak ?? 0 })}</Text>
           </View>
           <View style={UI.statRow}>
-            <Text style={UI.statLabel}>{t('profile.statusNearby')}</Text>
-            <Text style={UI.statValue}>{t('profile.countTimes', { count: nearbyShownCount })}</Text>
+            <Text style={[UI.statLabel, { color: colors.subText }]}>{t('profile.statusNearby')}</Text>
+            <Text style={[UI.statValue, { color: colors.text }]}>{t('profile.countTimes', { count: nearbyShownCount })}</Text>
           </View>
         </NeuCard>
 
-        <NeuCard style={UI.card}>
-          <Text style={UI.sectionTitle}>{t('profile.badges.title')}</Text>
+        <NeuCard style={{ ...UI.card, marginBottom: 16, backgroundColor: colors.card }}>
+          <Text style={[UI.sectionTitle, { color: colors.text }]}>{t('profile.activityTitle')}</Text>
+          <WeeklyActivityChart stores={stores} colors={colors} />
+        </NeuCard>
+
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Text style={[UI.sectionTitle, { color: colors.text }]}>{t('profile.badges.title')}</Text>
           {achievedBadges.length === 0 ? (
-            <Text style={{ color: '#6B7280' }}>{t('profile.badges.empty')}</Text>
+            <Text style={{ color: colors.subText }}>{t('profile.badges.empty')}</Text>
           ) : (
             achievedBadges.map((badge) => (
               <View key={badge.id} style={UI.badgePill}>
@@ -435,7 +507,7 @@ export default function ProfileScreen() {
               </View>
             ))
           )}
-          <Text style={{ color: '#6B7280' }}>{requirementText(nextBadge, stats)}</Text>
+          <Text style={{ color: colors.subText }}>{requirementText(nextBadge, stats)}</Text>
         </NeuCard>
       </ScrollView>
 
