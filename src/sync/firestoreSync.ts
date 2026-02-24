@@ -9,7 +9,8 @@ import {
 } from 'firebase/firestore';
 
 import { firebaseDb } from '../firebase';
-import type { Memo, Store, TravelLunchEntry } from '../models';
+import type { AlbumPhoto, Memo, PrefecturePhoto, Store, TravelLunchEntry } from '../models';
+import type { PhotoSyncProgress } from './storageSync';
 
 // --- Data conversion (strip local-only fields) ---
 
@@ -73,23 +74,27 @@ export async function checkCloudDataExists(uid: string): Promise<boolean> {
 
 // --- Get cloud data counts ---
 
-export async function getCloudDataCounts(uid: string): Promise<{ places: number; memos: number; travelEntries: number }> {
-  const [placesSnap, memosSnap, travelSnap] = await Promise.all([
+export async function getCloudDataCounts(uid: string): Promise<{ places: number; memos: number; travelEntries: number; albumPhotos: number; prefecturePhotos: number }> {
+  const [placesSnap, memosSnap, travelSnap, albumSnap, prefSnap] = await Promise.all([
     getDocs(collection(firebaseDb, 'users', uid, 'places')),
     getDocs(collection(firebaseDb, 'users', uid, 'memos')),
     getDocs(collection(firebaseDb, 'users', uid, 'travelEntries')),
+    getDocs(collection(firebaseDb, 'users', uid, 'albumPhotos')),
+    getDocs(collection(firebaseDb, 'users', uid, 'prefecturePhotos')),
   ]);
   return {
     places: placesSnap.size,
     memos: memosSnap.size,
     travelEntries: travelSnap.size,
+    albumPhotos: albumSnap.size,
+    prefecturePhotos: prefSnap.size,
   };
 }
 
 // --- Delete all cloud data ---
 
 export async function deleteAllCloudData(uid: string): Promise<void> {
-  const collections = ['places', 'memos', 'travelEntries'];
+  const collections = ['places', 'memos', 'travelEntries', 'albumPhotos', 'prefecturePhotos'];
   for (const col of collections) {
     const snap = await getDocs(collection(firebaseDb, 'users', uid, col));
     for (const d of snap.docs) {
@@ -102,11 +107,14 @@ export async function deleteAllCloudData(uid: string): Promise<void> {
   } catch {
     // settings doc may not exist
   }
+  // Delete Firebase Storage files
+  const { deleteAllUserStorage } = await import('./storageSync');
+  await deleteAllUserStorage(uid);
 }
 
 // --- Upload all local data to Firestore ---
 
-export async function uploadAllData(uid: string): Promise<void> {
+export async function uploadAllData(uid: string, onProgress?: (p: PhotoSyncProgress) => void): Promise<void> {
   const storage = await getStorage();
   const [stores, memos, entries, settings] = await Promise.all([
     storage.getStores(),
@@ -141,11 +149,15 @@ export async function uploadAllData(uid: string): Promise<void> {
       travelEntryToFirestore(entry)
     );
   }
+
+  // Upload photos to Firebase Storage
+  const { uploadAllPhotos } = await import('./storageSync');
+  await uploadAllPhotos(uid, onProgress);
 }
 
 // --- Download all data from Firestore to local ---
 
-export async function downloadAllData(uid: string): Promise<void> {
+export async function downloadAllData(uid: string, onProgress?: (p: PhotoSyncProgress) => void): Promise<void> {
   // 1. Download all cloud data first (before touching local data)
   const [settingsDoc, placesSnap, memosSnap, travelSnap] = await Promise.all([
     getDoc(doc(firebaseDb, 'users', uid, 'data', 'settings')),
@@ -218,6 +230,10 @@ export async function downloadAllData(uid: string): Promise<void> {
       createdAt: e.createdAt ?? Date.now(),
     });
   }
+
+  // Download photos from Firebase Storage
+  const { downloadAllPhotos } = await import('./storageSync');
+  await downloadAllPhotos(uid, onProgress);
 }
 
 // --- Single-item sync helpers ---
@@ -257,4 +273,8 @@ export async function syncSettingToCloud(uid: string, key: string, value: string
   } catch {
     await setDoc(doc(firebaseDb, 'users', uid, 'data', 'settings'), { [key]: value }, { merge: true });
   }
+}
+
+export async function syncDeleteAlbumPhotoFromCloud(uid: string, photoId: string): Promise<void> {
+  await deleteDoc(doc(firebaseDb, 'users', uid, 'albumPhotos', photoId));
 }

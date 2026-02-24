@@ -10,7 +10,7 @@ import { getDb } from './db/sqlite';
 import { addDays, formatYmd } from './domain/date';
 import { createId } from './id';
 import type { AlbumPhoto, Memo, PrefecturePhoto, Store, TravelLunchEntry } from './models';
-import { fireSyncDeleteMemo, fireSyncDeletePlace, fireSyncMemo, fireSyncPlace, fireSyncSetting, fireSyncTravelEntry } from './sync/syncHooks';
+import { fireSyncAlbumPhoto, fireSyncDeleteAlbumPhoto, fireSyncDeleteMemo, fireSyncDeletePlace, fireSyncMemo, fireSyncPlace, fireSyncPlacePhotos, fireSyncPrefecturePhoto, fireSyncSetting, fireSyncTravelEntry, fireSyncTravelEntryPhoto } from './sync/syncHooks';
 import { t } from './i18n';
 
 type MemoRow = {
@@ -308,7 +308,12 @@ export async function updateStore(
 ): Promise<Store | null> {
   const db = await getReadyDb();
   const updated = await updatePlace(db, storeId, patch);
-  if (updated) fireSyncPlace(updated);
+  if (updated) {
+    fireSyncPlace(updated);
+    if (patch.photoUri !== undefined || patch.photoUris !== undefined) {
+      fireSyncPlacePhotos(updated);
+    }
+  }
   return updated;
 }
 
@@ -356,12 +361,15 @@ export async function addAlbumPhoto(
     'INSERT INTO album_photos (id, uri, storeId, createdAt, takenAt) VALUES (?, ?, ?, ?, ?)',
     [id, uri, storeId ?? null, createdAt, safeTakenAt]
   );
-  return { id, uri, storeId, createdAt, takenAt: safeTakenAt };
+  const photo: AlbumPhoto = { id, uri, storeId, createdAt, takenAt: safeTakenAt };
+  fireSyncAlbumPhoto(photo);
+  return photo;
 }
 
 export async function deleteAlbumPhoto(photoId: string): Promise<void> {
   const db = await getReadyDb();
   await db.runAsync('DELETE FROM album_photos WHERE id = ?', photoId);
+  fireSyncDeleteAlbumPhoto(photoId);
 }
 
 export async function getPrefecturePhotos(): Promise<PrefecturePhoto[]> {
@@ -380,6 +388,7 @@ export async function setPrefecturePhoto(prefectureId: string, photoUri: string)
      DO UPDATE SET photoUri = excluded.photoUri, updatedAt = excluded.updatedAt`,
     [prefectureId, photoUri, updatedAt]
   );
+  fireSyncPrefecturePhoto(prefectureId, photoUri);
 }
 
 export async function addTravelLunchEntry(input: {
@@ -421,6 +430,9 @@ export async function addTravelLunchEntry(input: {
     ]
   );
   fireSyncTravelEntry(entry);
+  if (entry.imageUri) {
+    fireSyncTravelEntryPhoto(entry);
+  }
   return entry;
 }
 

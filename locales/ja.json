@@ -34,8 +34,10 @@
     "onboarding": "はじめに",
     "postLimitInfo": "投稿枠・課金について",
     "settings": "設定",
+    "guide": "機能ガイド",
     "privacy": "プライバシーポリシー",
-    "terms": "利用規約"
+    "terms": "利用規約",
+    "stats": "統計"
   },
   "onboarding": {
     "header": "はじめに",
@@ -43,16 +45,16 @@
     "slides": {
       "welcome": {
         "title": "ランチマップへようこそ",
-        "body": "行ったお店・行きたいお店を\n地図にメモとして残せます。"
+        "body": "少しずつ増えていく、\nあなただけのランチ記録。"
       },
       "easy": {
-        "title": "かんたん登録",
-        "body": "地図をタップしてピンを追加。\n写真・メモ・タグも保存できます。"
+        "title": "タップして記録",
+        "body": "写真・メモ・タグを\nかんたんに保存できます。"
       },
       "free": {
-        "title": "無料で10件まで",
-        "body": "1日1回、広告を見ると\n投稿枠を＋1件追加できます。",
-        "helper": "買い切り（500円）で無制限になります。"
+        "title": "まずは無料で10件まで",
+        "body": "1日1回、広告を見ると\n+1件追加できます。",
+        "premium": "プレミアムで無制限に。"
       }
     }
   },
@@ -74,12 +76,12 @@
     "restoreFailed": "復元に失敗しました",
     "restoreSuccess": "復元しました。保存しました",
     "limitTitle": "投稿枠の上限です",
-    "limitBody": "無料は10件までです。\n広告を見て＋1件、または\n買い切り（500円）で無制限にできます。",
-    "valueTitle": "買い切りで、ずっと無制限",
-    "valueBody": "これから何件登録しても制限なし・広告なし。¥500（買い切り）",
-    "planName": "無制限（買い切り）",
-    "priceLabel": "¥500",
-    "purchaseCta": "買い切りで無制限にする",
+    "limitBody": "無料は10件までです。\n広告を見て＋1件、または\nプレミアムで無制限にできます。",
+    "valueTitle": "プレミアムで、ずっと無制限",
+    "valueBody": "これから何件登録しても制限なし・広告なし。",
+    "planName": "プレミアム（買い切り）",
+    "priceLabel": "¥5,800",
+    "purchaseCta": "プレミアムにする",
     "purchaseFailed": "購入に失敗しました",
     "purchaseSuccess": "無制限になりました。保存しました",
     "rewardFailed": "広告の視聴に失敗しました",
@@ -132,6 +134,8 @@
     "remindTitle": "リマインド設定（詳細内）",
     "remindOn": "ON",
     "remindOff": "OFF",
+    "shareButton": "友達にシェア",
+    "shareAppMessage": "「ランチマップ」で見つけたお店です！",
     "saveBack": "保存して戻る",
     "deleteTitle": "削除しますか？",
     "deleteBody": "このランチ候補を削除します。",
@@ -209,7 +213,24 @@
     "inviteBody": "コードを入力するだけで簡単に参加できます",
     "inviteQr": "QRコードでも参加できます",
     "copyCode": "コードをコピー",
-    "copyLink": "招待リンクをコピー"
+    "copyLink": "招待リンクをコピー",
+    "deleteMapTitle": "マップを削除しますか？",
+    "deleteMapBody": "このマップと全ての店舗データが削除されます。この操作は元に戻せません。",
+    "deleteMapButton": "このマップを削除",
+    "leaveMapTitle": "マップから退出しますか？",
+    "leaveMapBody": "この共同マップから退出します。再参加するには招待コードが必要です。",
+    "leaveMapConfirm": "退出する",
+    "leaveMapButton": "このマップから退出",
+    "leaveFailedTitle": "退出できませんでした",
+    "showComments": "コメントを見る",
+    "hideComments": "コメントを閉じる",
+    "noComments": "まだコメントがありません。",
+    "anonymousUser": "匿名ユーザー",
+    "commentPlaceholder": "コメントを入力...",
+    "postComment": "送信",
+    "commentFailedTitle": "コメントの投稿に失敗しました",
+    "shareInvite": "友達に招待を送る",
+    "shareInviteMessage": "「%{name}」の共同ランチマップに参加しよう！\n招待コード: %{code}\n\n「ランチマップ」アプリで参加できます。"
   },
   "profile": {
     "title": "プロフィール",
@@ -248,7 +269,9 @@
     "themeNavy": "ネイビー",
     "settingsTitle": "設定",
     "settingsHowTo": "使い方を見る",
-    "settingsHowToSub": "オンボーディングを再表示します",
+    "settingsGuide": "各機能のアイコンと使い方",
+    "settingsOnboarding": "オンボーディングを再表示",
+    "settingsHowToSub": "はじめにの画面をもう一度見ます",
     "settingsPostLimit": "投稿枠・課金について",
     "settingsPostLimitSub": "上限・広告・買い切りの説明",
     "statusTitle": "ステータス",
@@ -256,10 +279,26 @@
     "statusFavorites": "次回候補数",
     "statusTotalLogin": "累計ログイン",
     "statusStreak": "連続ログイン",
-    "statusNearby": "徒歩圏内表示"
+    "statusNearby": "徒歩圏内表示",
+    "activityTitle": "今週のアクティビティ",
+    "activitySummary": "新規 %{count}店舗",
+    "weekdayMon": "月",
+    "weekdayTue": "火",
+    "weekdayWed": "水",
+    "weekdayThu": "木",
+    "weekdayFri": "金",
+    "weekdaySat": "土",
+    "weekdaySun": "日"
   },
   "home": {
     "title": "ランチマップ",
+    "greetingMorning": "おはようございます",
+    "greetingLunch": "ランチタイム！",
+    "greetingAfternoon": "こんにちは",
+    "greetingEvening": "こんばんは",
+    "streakBadge": "%{count}日連続",
+    "todayPick": "今日のおすすめ",
+    "todayPickEmpty": "まずはお店を登録しましょう",
     "noticeTitle": "お知らせ",
     "noticeBody": "登録店舗数: %{storeCount}件\nリマインダーON: %{reminderCount}件\n\n店舗の近くを通ると通知が届きます。",
     "settingsTitle": "設定",
@@ -283,33 +322,46 @@
     "showList": "リストを表示",
     "loading": "読み込み中...",
     "empty": "まずは店舗を追加してください。",
+    "emptyTitle": "まだお店がありません",
+    "emptyBody": "地図をタップしてピンを追加しましょう",
     "radiusLabel": "半径 %{value}m",
     "addPhoto": "写真追加",
     "deleteTitle": "店舗を削除",
     "deleteBody": "「%{name}」を削除しますか？この操作は元に戻せません。",
-    "deleteConfirm": "削除"
+    "deleteConfirm": "削除",
+    "storeCount": "件"
   },
   "list": {
     "filterButton": "≡ 絞り込み",
     "searchPlaceholder": "店舗名で検索",
     "loading": "読み込み中...",
     "empty": "一致する店舗がありません。",
+    "emptyTitle": "お店が見つかりません",
+    "emptyBody": "マップでお店を追加してみましょう",
+    "emptyCta": "マップでお店を追加",
     "filterTitle": "絞り込み",
-    "apply": "適用"
+    "apply": "適用",
+    "sortNewest": "新しい順",
+    "sortFavorites": "お気に入り",
+    "sortNearest": "近い順",
+    "distanceM": "%{value}m",
+    "distanceKm": "%{value}km"
   },
   "postLimitInfo": {
     "section1Title": "投稿枠について",
     "section1Body": "無料は10件まで登録できます。\n投稿枠を増やしたい場合は、広告視聴または買い切り購入を選べます。",
     "section2Title": "広告で＋1件",
     "section2Body": "1日1回、動画広告を最後まで視聴すると\n投稿枠が＋1件ずつ増えます（永続）。",
-    "section3Title": "買い切り（500円）",
-    "section3Body": "買い切り購入で投稿数が無制限になります。\n広告視聴は不要です。"
+    "section3Title": "プレミアムプラン",
+    "section3Body": "月額・年額・買い切りプランで投稿数が無制限になります。\n広告も非表示になります。"
   },
   "collection": {
     "title": "あなたのコレクション",
     "hint": "地図をタップして都道府県を選択できます。",
     "cardTitleRecent": "最近の思い出",
     "cardTitleSelected": "%{name}の思い出",
+    "legendVisited": "思い出あり",
+    "memoryCount": "思い出 %{count}件",
     "emptyBody": "まだ投稿がありません。",
     "deleteTitle": "思い出を削除しますか？",
     "deleteBody": "「%{name}」を削除します。",
@@ -355,14 +407,24 @@
   "everyone": {
     "title": "みんなのランチマップ",
     "subtitle": "みんなが共有したランチのお店",
-    "filterArea": "渋谷",
-    "filterGenre": "ジャンル",
-    "filterPopular": "人気順",
+    "heroTitle": "いま共有されているランチ",
+    "heroCount": "このエリアで %{count} 件の投稿",
+    "filterNearest": "近く",
+    "filterNewest": "新着",
+    "filterPopular": "人気",
     "locationLoading": "位置情報の取得中です…",
-    "nearbyTitle": "近くの共有されているお店",
-    "empty": "近くの共有店舗がまだありません。",
+    "storeCount": "%{count} 件",
+    "emptyTitle": "このエリアはまだ静かです。",
+    "emptyBody": "最初の1件を共有しませんか？",
+    "emptyCta": "みんなに共有する",
     "loginRequired": "共有店舗を見るにはログインが必要です。",
-    "filterComingSoon": "近日公開"
+    "timeJustNow": "たった今",
+    "timeMinutesAgo": "%{count}分前",
+    "timeHoursAgo": "%{count}時間前",
+    "timeDaysAgo": "%{count}日前",
+    "weatherSunny": "晴れ",
+    "weatherCloudy": "曇り",
+    "weatherRain": "雨"
   },
   "album": {
     "title": "アルバム",
@@ -375,6 +437,8 @@
     "clearDateFilter": "日付フィルタを解除",
     "emptyForDate": "その日の写真がありません。",
     "empty": "まだ写真がありません。",
+    "emptyTitle": "まだ写真がありません",
+    "emptyBody": "ランチの思い出を写真で残しましょう",
     "pickDate": "日付を選択",
     "select": "選択",
     "deleteTitle": "写真を削除しますか？",
@@ -422,7 +486,10 @@
     "success": "データを移行しました。",
     "failed": "データの移行に失敗しました。",
     "localCount": "この端末: %{count}件",
-    "cloudCount": "アカウント: %{count}件"
+    "cloudCount": "アカウント: %{count}件",
+    "uploading": "写真をアップロード中... (%{current}/%{total})",
+    "downloading": "写真をダウンロード中... (%{current}/%{total})",
+    "photoSyncFailed": "一部の写真の同期に失敗しました（%{count}件）"
   },
   "settings": {
     "title": "設定",
@@ -430,7 +497,9 @@
     "restoreSuccess": "復元しました。",
     "restoreNone": "復元できる購入がありません。",
     "privacyPolicy": "プライバシーポリシー",
-    "termsOfService": "利用規約"
+    "termsOfService": "利用規約",
+    "backupTitle": "データバックアップ",
+    "backupManage": "バックアップを管理"
   },
   "loginBonus": {
     "title": "今日のログイン",
@@ -531,6 +600,11 @@
       "description": "プロフィールを育てて称号を獲得しよう"
     }
   },
+  "shareCard": {
+    "minutes": "分",
+    "favorite": "お気に入り",
+    "watermark": "ランチマップ"
+  },
   "storage": {
     "postLimitReached": "投稿数の上限に達しています。",
     "memoEmpty": "メモが空です",
@@ -560,6 +634,25 @@
     "missingApiKey": "Google Places APIキーが設定されていません。",
     "searchFailed": "検索に失敗しました。"
   },
+  "guide": {
+    "intro": "各アイコンの機能と使い方を紹介します。",
+    "mapTitle": "マップ",
+    "mapBody": "地図をタップしてピンを追加し、ランチ候補を登録できます。写真・メモ・タグも保存可能。",
+    "listTitle": "リスト検索",
+    "listBody": "登録したお店を一覧表示。新しい順・お気に入り・近い順でソートや絞り込みができます。",
+    "sharedTitle": "共同マップ",
+    "sharedBody": "招待コードやQRコードで友達・同僚とランチマップを共有できます。",
+    "everyoneTitle": "みんなで",
+    "everyoneBody": "他のユーザーが共有したお店を閲覧できます。近くのおすすめを発見しましょう。",
+    "albumTitle": "アルバム",
+    "albumBody": "ランチの写真をアルバムに保存。日付で振り返ったり、思い出を残せます。",
+    "travelTitle": "旅のランチ記録",
+    "travelBody": "47都道府県のランチを写真・評価・メモ付きで記録。全国制覇を目指しましょう。",
+    "remindTitle": "リマインド通知",
+    "remindBody": "登録したお店の近くを通ると通知でお知らせ。ベルアイコンで確認できます。",
+    "favoriteTitle": "お気に入り・次回候補",
+    "favoriteBody": "星マークでお気に入り登録。次に行きたいお店を「今日のおすすめ」に表示します。"
+  },
   "geofence": {
     "nearTitle": "%{name}の近くです",
     "nearBody": "近くに、行ったことのあるランチ候補があります"
@@ -569,19 +662,41 @@
     "empty": "近くの候補はまだありません。＋で登録してみよう",
     "walkMinutes": "徒歩%{minutes}分"
   },
+  "stats": {
+    "title": "統計ダッシュボード",
+    "monthSuffix": "月",
+    "totalStores": "登録数",
+    "favorites": "お気に入り",
+    "withPhoto": "写真あり",
+    "withReminder": "リマインド",
+    "monthlyTitle": "月別登録数（直近6ヶ月）",
+    "weekdayTitle": "曜日別登録数",
+    "tagTitle": "タグ分布",
+    "noTags": "タグがまだありません。"
+  },
   "paywall": {
     "title": "プレミアムプラン",
-    "subtitle": "すべての機能を制限なしで使えます",
+    "subtitle": "旅のランチ記録を、もっと自由に。",
     "feature1Title": "投稿無制限",
     "feature1Body": "ランチ候補の登録件数が無制限に",
     "feature2Title": "広告なし",
     "feature2Body": "バナー広告が非表示に",
     "feature3Title": "都道府県記録無制限",
     "feature3Body": "旅のランチ記録を各都道府県に何件でも",
+    "planMonthly": "月額プラン",
+    "planMonthlySub": "いつでもキャンセルOK",
+    "planAnnual": "年額プラン",
+    "planAnnualSub": "月額より44%おトク",
+    "planAnnualSave": "月額より¥%{amount}おトク",
+    "planLifetime": "買い切りオプション",
+    "planLifetimeSub": "一度の支払いでずっと使える",
+    "bestValue": "おすすめ",
     "planName": "プレミアム（買い切り）",
-    "priceLabel": "¥500",
-    "purchaseCta": "¥500で購入する",
+    "priceLabel": "¥5,800",
+    "purchaseCta": "プレミアムで記録を解放する",
     "freeContinue": "今は無料版を続ける",
+    "subscriptionNote": "※ サブスクリプションはいつでもキャンセルできます。",
+    "restoreNote": "※ 購入の復元は右上から行えます",
     "prefLimitTitle": "無料版の制限です",
     "prefLimitBody": "無料版では各都道府県1件までです。\nプレミアムプランで無制限に記録できます。",
     "homeAdFree": "広告なしで使う",

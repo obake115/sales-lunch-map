@@ -7,7 +7,9 @@ import { restorePurchases } from '@/src/purchases';
 import { useAuth } from '@/src/state/AuthContext';
 import { getStoreCount } from '@/src/storage';
 import { downloadAllData, getCloudDataCounts, uploadAllData } from '@/src/sync/firestoreSync';
+import type { PhotoSyncProgress } from '@/src/sync/storageSync';
 import { useThemeColors } from '@/src/state/ThemeContext';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 export default function DataMigrationScreen() {
@@ -17,6 +19,7 @@ export default function DataMigrationScreen() {
   const [busy, setBusy] = useState(false);
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [cloudCount, setCloudCount] = useState<number | null>(null);
+  const [photoProgress, setPhotoProgress] = useState<PhotoSyncProgress | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -36,8 +39,10 @@ export default function DataMigrationScreen() {
   const handleUpload = async () => {
     if (!user || busy) return;
     setBusy(true);
+    setPhotoProgress(null);
     try {
-      await uploadAllData(user.uid);
+      await uploadAllData(user.uid, setPhotoProgress);
+      setPhotoProgress(null);
       Alert.alert('', t('migration.success'), [
         { text: t('common.ok'), onPress: () => router.replace('/') },
       ]);
@@ -45,14 +50,17 @@ export default function DataMigrationScreen() {
       Alert.alert('', t('migration.failed'));
     } finally {
       setBusy(false);
+      setPhotoProgress(null);
     }
   };
 
   const handleRestore = async () => {
     if (!user || busy) return;
     setBusy(true);
+    setPhotoProgress(null);
     try {
-      await downloadAllData(user.uid);
+      await downloadAllData(user.uid, setPhotoProgress);
+      setPhotoProgress(null);
       await restorePurchases();
       Alert.alert('', t('migration.success'), [
         { text: t('common.ok'), onPress: () => router.replace('/') },
@@ -61,12 +69,13 @@ export default function DataMigrationScreen() {
       Alert.alert('', t('migration.failed'));
     } finally {
       setBusy(false);
+      setPhotoProgress(null);
     }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 }}>
-      <Text style={{ fontSize: 22, fontWeight: '900', color: colors.text, textAlign: 'center', marginBottom: 8 }}>
+      <Text style={{ fontSize: 22, fontFamily: fonts.extraBold, color: colors.text, textAlign: 'center', marginBottom: 8 }}>
         {t('migration.title')}
       </Text>
       <Text style={{ color: colors.subText, textAlign: 'center', marginBottom: 12, lineHeight: 20 }}>
@@ -76,12 +85,12 @@ export default function DataMigrationScreen() {
       {(localCount !== null || cloudCount !== null) && (
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginBottom: 28 }}>
           {localCount !== null && (
-            <Text style={{ color: colors.subText, fontSize: 13, fontWeight: '600' }}>
+            <Text style={{ color: colors.subText, fontSize: 13, fontFamily: fonts.bold }}>
               {t('migration.localCount', { count: localCount })}
             </Text>
           )}
           {cloudCount !== null && (
-            <Text style={{ color: colors.subText, fontSize: 13, fontWeight: '600' }}>
+            <Text style={{ color: colors.subText, fontSize: 13, fontFamily: fonts.bold }}>
               {t('migration.cloudCount', { count: cloudCount })}
             </Text>
           )}
@@ -89,6 +98,14 @@ export default function DataMigrationScreen() {
       )}
 
       {busy && <ActivityIndicator style={{ marginBottom: 12 }} />}
+
+      {photoProgress && (
+        <Text style={{ color: colors.subText, textAlign: 'center', marginBottom: 12, fontSize: 13, fontFamily: fonts.bold }}>
+          {photoProgress.phase === 'uploading'
+            ? t('migration.uploading', { current: photoProgress.current, total: photoProgress.total })
+            : t('migration.downloading', { current: photoProgress.current, total: photoProgress.total })}
+        </Text>
+      )}
 
       <NeuCard style={{ padding: 20, gap: 16 }}>
         <Pressable
@@ -101,7 +118,7 @@ export default function DataMigrationScreen() {
             alignItems: 'center',
             opacity: busy ? 0.5 : 1,
           }}>
-          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 15 }}>
+          <Text style={{ color: '#FFFFFF', fontFamily: fonts.extraBold, fontSize: 15 }}>
             {t('migration.uploadChoice')}
           </Text>
           <Text style={{ color: '#FFFFFF', fontSize: 12, marginTop: 2 }}>
@@ -119,7 +136,7 @@ export default function DataMigrationScreen() {
             alignItems: 'center',
             opacity: busy ? 0.5 : 1,
           }}>
-          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }}>
+          <Text style={{ color: colors.text, fontFamily: fonts.bold, fontSize: 15 }}>
             {t('migration.restoreChoice')}
           </Text>
         </Pressable>

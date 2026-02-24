@@ -8,6 +8,7 @@ import { t } from '@/src/i18n';
 import { restorePurchases } from '@/src/purchases';
 import { useAuth, type LinkResult } from '@/src/state/AuthContext';
 import { useThemeMode } from '@/src/state/ThemeContext';
+import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 export default function SettingsScreen() {
@@ -112,13 +113,13 @@ export default function SettingsScreen() {
 
       {/* Account section */}
       <NeuCard style={{ padding: 20, gap: 12 }}>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: textColor }}>
+        <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: textColor }}>
           {t('auth.accountTitle')}
         </Text>
 
         {authMethod === 'anonymous' ? (
           <>
-            <Text style={{ color: subColor, fontWeight: '600' }}>
+            <Text style={{ color: subColor, fontFamily: fonts.bold }}>
               {t('auth.statusGuest')}
             </Text>
             <Text style={{ color: subColor, fontSize: 13, lineHeight: 18 }}>
@@ -140,7 +141,7 @@ export default function SettingsScreen() {
                   opacity: busy ? 0.5 : 1,
                 }}>
                 <FontAwesome name="apple" size={18} color="#FFFFFF" />
-                <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>
+                <Text style={{ color: '#FFFFFF', fontFamily: fonts.bold }}>
                   {t('auth.linkApple')}
                 </Text>
               </Pressable>
@@ -162,14 +163,14 @@ export default function SettingsScreen() {
                 opacity: busy ? 0.5 : 1,
               }}>
               <FontAwesome name="google" size={16} color="#4285F4" />
-              <Text style={{ color: '#1F2937', fontWeight: '700' }}>
+              <Text style={{ color: '#1F2937', fontFamily: fonts.bold }}>
                 {t('auth.linkGoogle')}
               </Text>
             </Pressable>
           </>
         ) : (
           <>
-            <Text style={{ color: subColor, fontWeight: '600' }}>
+            <Text style={{ color: subColor, fontFamily: fonts.bold }}>
               {authMethod === 'apple' ? t('auth.statusApple') : t('auth.statusGoogle')}
             </Text>
             {email ? (
@@ -186,7 +187,7 @@ export default function SettingsScreen() {
                 backgroundColor: isDark ? '#1E293B' : '#F3F4F6',
                 opacity: busy ? 0.5 : 1,
               }}>
-              <Text style={{ color: '#EF4444', fontWeight: '700' }}>
+              <Text style={{ color: '#EF4444', fontFamily: fonts.bold }}>
                 {t('auth.logout')}
               </Text>
             </Pressable>
@@ -200,13 +201,37 @@ export default function SettingsScreen() {
                 paddingVertical: 12,
                 opacity: busy ? 0.5 : 1,
               }}>
-              <Text style={{ color: '#EF4444', fontWeight: '600', fontSize: 13 }}>
+              <Text style={{ color: '#EF4444', fontFamily: fonts.bold, fontSize: 13 }}>
                 {t('auth.deleteAccount')}
               </Text>
             </Pressable>
           </>
         )}
       </NeuCard>
+
+      {/* Data backup (logged-in users only) */}
+      {authMethod !== 'anonymous' && (
+        <NeuCard style={{ padding: 20, gap: 12 }}>
+          <Pressable
+            onPress={() => router.push('/data-migration')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: 8,
+            }}>
+            <View>
+              <Text style={{ color: textColor, fontFamily: fonts.bold }}>
+                {t('settings.backupTitle')}
+              </Text>
+              <Text style={{ color: subColor, fontSize: 12 }}>
+                {t('settings.backupManage')}
+              </Text>
+            </View>
+            <FontAwesome name="angle-right" size={18} color={subColor} />
+          </Pressable>
+        </NeuCard>
+      )}
 
       {/* Restore purchases */}
       <NeuCard style={{ padding: 20, gap: 12 }}>
@@ -221,7 +246,7 @@ export default function SettingsScreen() {
             backgroundColor: isDark ? '#1E293B' : '#F3F4F6',
             opacity: busy ? 0.5 : 1,
           }}>
-          <Text style={{ color: textColor, fontWeight: '700' }}>
+          <Text style={{ color: textColor, fontFamily: fonts.bold }}>
             {t('settings.restorePurchases')}
           </Text>
         </Pressable>
@@ -229,6 +254,27 @@ export default function SettingsScreen() {
 
       {/* Other settings */}
       <NeuCard style={{ padding: 20, gap: 12 }}>
+        <Pressable
+          onPress={() => router.push('/guide')}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: 8,
+          }}>
+          <View>
+            <Text style={{ color: textColor, fontFamily: fonts.bold }}>
+              {t('profile.settingsHowTo')}
+            </Text>
+            <Text style={{ color: subColor, fontSize: 12 }}>
+              {t('profile.settingsGuide')}
+            </Text>
+          </View>
+          <FontAwesome name="angle-right" size={18} color={subColor} />
+        </Pressable>
+
+        <View style={{ height: 1, backgroundColor: isDark ? '#334155' : '#D5D0C6' }} />
+
         <Pressable
           onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'preview' } })}
           style={{
@@ -238,8 +284,8 @@ export default function SettingsScreen() {
             paddingVertical: 8,
           }}>
           <View>
-            <Text style={{ color: textColor, fontWeight: '600' }}>
-              {t('profile.settingsHowTo')}
+            <Text style={{ color: textColor, fontFamily: fonts.bold }}>
+              {t('profile.settingsOnboarding')}
             </Text>
             <Text style={{ color: subColor, fontSize: 12 }}>
               {t('profile.settingsHowToSub')}
@@ -259,7 +305,7 @@ export default function SettingsScreen() {
             paddingVertical: 8,
           }}>
           <View>
-            <Text style={{ color: textColor, fontWeight: '600' }}>
+            <Text style={{ color: textColor, fontFamily: fonts.bold }}>
               {t('profile.settingsPostLimit')}
             </Text>
             <Text style={{ color: subColor, fontSize: 12 }}>
@@ -280,7 +326,7 @@ export default function SettingsScreen() {
             justifyContent: 'space-between',
             paddingVertical: 8,
           }}>
-          <Text style={{ color: textColor, fontWeight: '600' }}>
+          <Text style={{ color: textColor, fontFamily: fonts.bold }}>
             {t('settings.privacyPolicy')}
           </Text>
           <FontAwesome name="angle-right" size={18} color={subColor} />
@@ -296,7 +342,7 @@ export default function SettingsScreen() {
             justifyContent: 'space-between',
             paddingVertical: 8,
           }}>
-          <Text style={{ color: textColor, fontWeight: '600' }}>
+          <Text style={{ color: textColor, fontFamily: fonts.bold }}>
             {t('settings.termsOfService')}
           </Text>
           <FontAwesome name="angle-right" size={18} color={subColor} />

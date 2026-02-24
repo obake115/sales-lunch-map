@@ -34,8 +34,10 @@
     "onboarding": "Getting Started",
     "postLimitInfo": "Post Limit & Purchase",
     "settings": "Settings",
+    "guide": "Feature Guide",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "stats": "Stats"
   },
   "onboarding": {
     "header": "Getting Started",
@@ -43,16 +45,16 @@
     "slides": {
       "welcome": {
         "title": "Welcome to Lunch Map",
-        "body": "Save places you've been to or want to visit\nas notes on the map."
+        "body": "Your lunch memories,\ngrowing one by one."
       },
       "easy": {
-        "title": "Easy to add",
-        "body": "Tap the map to drop a pin.\nSave photos, notes, and tags."
+        "title": "Tap to record",
+        "body": "Save photos, notes, and tags\nwith ease."
       },
       "free": {
-        "title": "Up to 10 for free",
-        "body": "Once a day, watch an ad\nto add +1 post slot.",
-        "helper": "Unlimited with a one-time purchase (¥500)."
+        "title": "Free for up to 10 spots",
+        "body": "Watch an ad once a day\nto add +1 spot.",
+        "premium": "Go unlimited with Premium."
       }
     }
   },
@@ -74,12 +76,12 @@
     "restoreFailed": "Restore failed",
     "restoreSuccess": "Restored. Saved.",
     "limitTitle": "Post limit reached",
-    "limitBody": "Free is up to 10 posts.\nWatch an ad to add +1, or\nunlock unlimited (¥500).",
-    "valueTitle": "Unlimited forever",
-    "valueBody": "No limits, no ads for future posts. ¥500 (one-time)",
-    "planName": "Unlimited (one-time)",
-    "priceLabel": "¥500",
-    "purchaseCta": "Unlock unlimited",
+    "limitBody": "Free is up to 10 posts.\nWatch an ad to add +1, or\nupgrade to Premium for unlimited.",
+    "valueTitle": "Go Premium, unlimited",
+    "valueBody": "No limits, no ads. Unlock everything.",
+    "planName": "Premium (one-time)",
+    "priceLabel": "¥5,800",
+    "purchaseCta": "Go Premium",
     "purchaseFailed": "Purchase failed",
     "purchaseSuccess": "Unlimited unlocked. Saved.",
     "rewardFailed": "Failed to watch the ad",
@@ -132,6 +134,8 @@
     "remindTitle": "Reminder settings (details)",
     "remindOn": "ON",
     "remindOff": "OFF",
+    "shareButton": "Share with friends",
+    "shareAppMessage": "Found this place on Lunch Map!",
     "saveBack": "Save and go back",
     "deleteTitle": "Delete this?",
     "deleteBody": "This lunch spot will be deleted.",
@@ -209,7 +213,24 @@
     "inviteBody": "Enter the code to join easily.",
     "inviteQr": "You can also join by QR code.",
     "copyCode": "Copy code",
-    "copyLink": "Copy invite link"
+    "copyLink": "Copy invite link",
+    "deleteMapTitle": "Delete this map?",
+    "deleteMapBody": "This map and all its places will be permanently deleted. This cannot be undone.",
+    "deleteMapButton": "Delete this map",
+    "leaveMapTitle": "Leave this map?",
+    "leaveMapBody": "You will leave this shared map. You'll need an invite code to rejoin.",
+    "leaveMapConfirm": "Leave",
+    "leaveMapButton": "Leave this map",
+    "leaveFailedTitle": "Couldn't leave",
+    "showComments": "Show comments",
+    "hideComments": "Hide comments",
+    "noComments": "No comments yet.",
+    "anonymousUser": "Anonymous",
+    "commentPlaceholder": "Write a comment...",
+    "postComment": "Post",
+    "commentFailedTitle": "Couldn't post comment",
+    "shareInvite": "Invite friends",
+    "shareInviteMessage": "Join the shared lunch map \"%{name}\"!\nInvite code: %{code}\n\nJoin using the Lunch Map app."
   },
   "profile": {
     "title": "Profile",
@@ -247,8 +268,10 @@
     "themeWarm": "Warm",
     "themeNavy": "Navy",
     "settingsTitle": "Settings",
-    "settingsHowTo": "View how to use",
-    "settingsHowToSub": "Show onboarding again",
+    "settingsHowTo": "How to use",
+    "settingsGuide": "Icons and features explained",
+    "settingsOnboarding": "Show onboarding again",
+    "settingsHowToSub": "Replay the Getting Started walkthrough",
     "settingsPostLimit": "Post limit & purchase",
     "settingsPostLimitSub": "Limits, ads, and one-time purchase",
     "statusTitle": "Status",
@@ -256,10 +279,26 @@
     "statusFavorites": "Next picks",
     "statusTotalLogin": "Total logins",
     "statusStreak": "Login streak",
-    "statusNearby": "Nearby views"
+    "statusNearby": "Nearby views",
+    "activityTitle": "This week's activity",
+    "activitySummary": "%{count} new places",
+    "weekdayMon": "Mon",
+    "weekdayTue": "Tue",
+    "weekdayWed": "Wed",
+    "weekdayThu": "Thu",
+    "weekdayFri": "Fri",
+    "weekdaySat": "Sat",
+    "weekdaySun": "Sun"
   },
   "home": {
     "title": "Lunch Map",
+    "greetingMorning": "Good morning",
+    "greetingLunch": "Lunch time!",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "streakBadge": "%{count}-day streak",
+    "todayPick": "Today's pick",
+    "todayPickEmpty": "Add your first place to get started",
     "noticeTitle": "Notifications",
     "noticeBody": "Registered places: %{storeCount}\nReminders ON: %{reminderCount}\n\nYou'll be notified when you're near a registered place.",
     "settingsTitle": "Settings",
@@ -283,33 +322,46 @@
     "showList": "Show list",
     "loading": "Loading...",
     "empty": "Add your first place.",
+    "emptyTitle": "No places yet",
+    "emptyBody": "Tap the map to drop a pin and add your first place",
     "radiusLabel": "Radius %{value}m",
     "addPhoto": "Add photo",
     "deleteTitle": "Delete store",
     "deleteBody": "Delete \"%{name}\"? This cannot be undone.",
-    "deleteConfirm": "Delete"
+    "deleteConfirm": "Delete",
+    "storeCount": " places"
   },
   "list": {
     "filterButton": "≡ Filter",
     "searchPlaceholder": "Search by place name",
     "loading": "Loading...",
     "empty": "No matching places.",
+    "emptyTitle": "No places found",
+    "emptyBody": "Try adding a place from the map",
+    "emptyCta": "Add from map",
     "filterTitle": "Filter",
-    "apply": "Apply"
+    "apply": "Apply",
+    "sortNewest": "Newest",
+    "sortFavorites": "Favorites",
+    "sortNearest": "Nearest",
+    "distanceM": "%{value}m",
+    "distanceKm": "%{value}km"
   },
   "postLimitInfo": {
     "section1Title": "About post slots",
     "section1Body": "You can register up to 10 for free.\nTo add more, choose a rewarded ad or a one-time purchase.",
     "section2Title": "Add +1 with an ad",
     "section2Body": "Once a day, watch a full video ad\nand your slots increase by +1 permanently.",
-    "section3Title": "One-time purchase (¥500)",
-    "section3Body": "A one-time purchase unlocks unlimited posts.\nNo ads required."
+    "section3Title": "Premium Plan",
+    "section3Body": "Choose monthly, annual, or lifetime plan for unlimited posts.\nAds are also removed."
   },
   "collection": {
     "title": "Your collection",
     "hint": "Tap the map to select a prefecture.",
     "cardTitleRecent": "Recent memories",
     "cardTitleSelected": "Memories in %{name}",
+    "legendVisited": "Has memories",
+    "memoryCount": "%{count} memories",
     "emptyBody": "No memories yet.",
     "deleteTitle": "Delete this memory?",
     "deleteBody": "\"%{name}\" will be deleted.",
@@ -404,14 +456,24 @@
   "everyone": {
     "title": "Everyone's Lunch Map",
     "subtitle": "Lunch spots shared by everyone",
-    "filterArea": "Shibuya",
-    "filterGenre": "Genre",
+    "heroTitle": "Lunch spots being shared now",
+    "heroCount": "%{count} posts in this area",
+    "filterNearest": "Nearest",
+    "filterNewest": "Newest",
     "filterPopular": "Popular",
     "locationLoading": "Getting location…",
-    "nearbyTitle": "Nearby shared places",
-    "empty": "No nearby shared places yet.",
+    "storeCount": "%{count} places",
+    "emptyTitle": "It's quiet here so far.",
+    "emptyBody": "Be the first to share a spot!",
+    "emptyCta": "Share with everyone",
     "loginRequired": "Log in to see shared places.",
-    "filterComingSoon": "Coming soon"
+    "timeJustNow": "Just now",
+    "timeMinutesAgo": "%{count}m ago",
+    "timeHoursAgo": "%{count}h ago",
+    "timeDaysAgo": "%{count}d ago",
+    "weatherSunny": "Sunny",
+    "weatherCloudy": "Cloudy",
+    "weatherRain": "Rain"
   },
   "album": {
     "title": "Album",
@@ -424,6 +486,8 @@
     "clearDateFilter": "Clear date filter",
     "emptyForDate": "No photos for that date.",
     "empty": "No photos yet.",
+    "emptyTitle": "No photos yet",
+    "emptyBody": "Capture your lunch memories with photos",
     "pickDate": "Select a date",
     "select": "Select",
     "deleteTitle": "Delete this photo?",
@@ -471,7 +535,10 @@
     "success": "Data migrated successfully.",
     "failed": "Data migration failed.",
     "localCount": "This device: %{count}",
-    "cloudCount": "Account: %{count}"
+    "cloudCount": "Account: %{count}",
+    "uploading": "Uploading photos... (%{current}/%{total})",
+    "downloading": "Downloading photos... (%{current}/%{total})",
+    "photoSyncFailed": "Some photos failed to sync (%{count})"
   },
   "settings": {
     "title": "Settings",
@@ -479,7 +546,9 @@
     "restoreSuccess": "Purchases restored.",
     "restoreNone": "No purchases to restore.",
     "privacyPolicy": "Privacy Policy",
-    "termsOfService": "Terms of Service"
+    "termsOfService": "Terms of Service",
+    "backupTitle": "Data Backup",
+    "backupManage": "Manage Backup"
   },
   "loginBonus": {
     "title": "Today's login",
@@ -531,6 +600,11 @@
       "description": "Grow your profile to earn badges"
     }
   },
+  "shareCard": {
+    "minutes": " min",
+    "favorite": "Favorite",
+    "watermark": "Lunch Map"
+  },
   "storage": {
     "postLimitReached": "Post limit reached.",
     "memoEmpty": "Memo is empty.",
@@ -560,6 +634,25 @@
     "missingApiKey": "Google Places API key is not set.",
     "searchFailed": "Search failed."
   },
+  "guide": {
+    "intro": "Here's what each icon and feature does.",
+    "mapTitle": "Map",
+    "mapBody": "Tap the map to drop a pin and save a lunch spot. Add photos, notes, and tags.",
+    "listTitle": "List Search",
+    "listBody": "View all your saved places. Sort by newest, favorites, or nearest, and filter results.",
+    "sharedTitle": "Shared Map",
+    "sharedBody": "Share your lunch map with friends and colleagues using an invite code or QR code.",
+    "everyoneTitle": "Everyone",
+    "everyoneBody": "Browse lunch spots shared by other users. Discover nearby recommendations.",
+    "albumTitle": "Album",
+    "albumBody": "Save lunch photos to your album. Browse by date and keep your food memories.",
+    "travelTitle": "Travel Lunch Log",
+    "travelBody": "Record meals across all 47 prefectures with photos, ratings, and notes. Aim for a complete collection!",
+    "remindTitle": "Reminder Notifications",
+    "remindBody": "Get notified when you're near a saved spot. Check the bell icon for details.",
+    "favoriteTitle": "Favorites & Next Picks",
+    "favoriteBody": "Star your favorite spots. They'll appear in 'Today's Pick' for easy access."
+  },
   "geofence": {
     "nearTitle": "You're near %{name}",
     "nearBody": "There's a lunch spot you've been to nearby."
@@ -569,19 +662,41 @@
     "empty": "No nearby picks yet. Add one with +",
     "walkMinutes": "%{minutes} min walk"
   },
+  "stats": {
+    "title": "Stats Dashboard",
+    "monthSuffix": "",
+    "totalStores": "Total",
+    "favorites": "Favorites",
+    "withPhoto": "With Photo",
+    "withReminder": "Reminders",
+    "monthlyTitle": "Monthly Registrations (Last 6 months)",
+    "weekdayTitle": "Weekday Distribution",
+    "tagTitle": "Tag Distribution",
+    "noTags": "No tags yet."
+  },
   "paywall": {
     "title": "Premium Plan",
-    "subtitle": "Use all features without limits",
+    "subtitle": "Record your lunch journeys, freely.",
     "feature1Title": "Unlimited Posts",
     "feature1Body": "Register unlimited lunch spots",
     "feature2Title": "Ad-Free",
     "feature2Body": "No more banner ads",
     "feature3Title": "Unlimited Prefecture Saves",
     "feature3Body": "Save unlimited travel lunch memories",
+    "planMonthly": "Monthly",
+    "planMonthlySub": "Cancel anytime",
+    "planAnnual": "Annual",
+    "planAnnualSub": "Save 44% vs monthly",
+    "planAnnualSave": "Save ¥%{amount} vs monthly",
+    "planLifetime": "Lifetime option",
+    "planLifetimeSub": "One-time payment, forever yours",
+    "bestValue": "Best value",
     "planName": "Premium (one-time)",
-    "priceLabel": "¥500",
-    "purchaseCta": "Purchase for ¥500",
+    "priceLabel": "¥5,800",
+    "purchaseCta": "Unlock your records with Premium",
     "freeContinue": "Continue with free version",
+    "subscriptionNote": "Subscriptions can be cancelled anytime.",
+    "restoreNote": "Restore purchases from the top-right button.",
     "prefLimitTitle": "Free tier limit",
     "prefLimitBody": "Free users: 1 per prefecture.\nUpgrade to Premium for unlimited saves.",
     "homeAdFree": "Go ad-free",
