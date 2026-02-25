@@ -446,6 +446,7 @@ export default function SharedMapsScreen() {
             ) : (
               <View style={{ width: '100%', height: 280, borderRadius: 12, overflow: 'hidden' }}>
                 <CameraView
+                  facing="back"
                   style={{ flex: 1 }}
                   barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                   onBarcodeScanned={(result: BarcodeScanningResult) => {

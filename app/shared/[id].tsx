@@ -17,6 +17,7 @@ import {
   listenMap,
   listenMapStores,
   listenStoreComments,
+  renameMap,
   setMapReadOnly,
   updateMapStoreTag,
   type SharedMap,
@@ -226,6 +227,8 @@ export default function SharedMapDetailScreen() {
   const [inviteVisible, setInviteVisible] = useState(false);
   const [filterTag, setFilterTag] = useState<'all' | 'favorite' | 'want' | 'again'>('all');
   const [readOnlyUpdating, setReadOnlyUpdating] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
     if (!mapId) return;
@@ -302,9 +305,48 @@ export default function SharedMapDetailScreen() {
         </View>
 
         <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
-          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }} numberOfLines={1}>
-            {map?.name ?? t('sharedDetail.defaultName')}
-          </Text>
+          {renaming ? (
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholder={t('sharedDetail.renamePlaceholder')}
+                style={[{ flex: 1 }, UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
+                autoFocus
+                {...INPUT_PROPS}
+              />
+              <Pressable
+                onPress={async () => {
+                  try {
+                    await renameMap(mapId, editName);
+                    setRenaming(false);
+                  } catch (e: any) {
+                    Alert.alert(t('sharedDetail.renameFailedTitle'), e?.message ?? t('shared.tryLater'));
+                  }
+                }}
+                style={{ ...UI.primaryBtn, paddingHorizontal: 14, paddingVertical: 8 }}>
+                <Text style={{ color: 'white', fontFamily: fonts.extraBold, fontSize: 13 }}>{t('sharedDetail.renameSave')}</Text>
+              </Pressable>
+              <Pressable onPress={() => setRenaming(false)}>
+                <Text style={{ color: colors.subText, fontFamily: fonts.extraBold, fontSize: 13 }}>{t('sharedDetail.renameCancel')}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text, flex: 1 }} numberOfLines={1}>
+                {map?.name ?? t('sharedDetail.defaultName')}
+              </Text>
+              {isOwner && (
+                <Pressable
+                  onPress={() => {
+                    setEditName(map?.name ?? '');
+                    setRenaming(true);
+                  }}>
+                  <Text style={{ fontSize: 16 }}>✏️</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
           <Text style={{ color: colors.subText, marginTop: 6 }}>
             {t('shared.inviteCodeLabel')} {map?.code ?? '-'}
           </Text>

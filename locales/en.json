@@ -41,20 +41,22 @@
   },
   "onboarding": {
     "header": "Getting Started",
-    "start": "Get Started",
+    "start": "Start for Free",
     "slides": {
       "welcome": {
-        "title": "Welcome to Lunch Map",
-        "body": "Your lunch memories,\ngrowing one by one."
+        "title": "Fill your Japan, one lunch at a time.",
+        "body": "Your lunch memories become a map."
       },
       "easy": {
-        "title": "Tap to record",
-        "body": "Save photos, notes, and tags\nwith ease."
+        "title": "Today's lunch, a special memory.",
+        "body": "From the diner by the station\nto the hidden gem on a trip."
       },
       "free": {
-        "title": "Free for up to 10 spots",
-        "body": "Watch an ad once a day\nto add +1 spot.",
-        "premium": "Go unlimited with Premium."
+        "title": "Find your favorites, anytime.",
+        "body": "\"I want to go back there\"\n— always at your fingertips.",
+        "premium": "Go unlimited with Premium.",
+        "freeNote": "* Record up to 10 spots for free",
+        "planChangeHint": "You can change your plan anytime"
       }
     }
   },
@@ -230,7 +232,12 @@
     "postComment": "Post",
     "commentFailedTitle": "Couldn't post comment",
     "shareInvite": "Invite friends",
-    "shareInviteMessage": "Join the shared lunch map \"%{name}\"!\nInvite code: %{code}\n\nJoin using the Lunch Map app."
+    "shareInviteMessage": "Join the shared lunch map \"%{name}\"!\nInvite code: %{code}\n\nJoin using the Lunch Map app.",
+    "renameButton": "Rename",
+    "renamePlaceholder": "Enter map name",
+    "renameSave": "Save",
+    "renameCancel": "Cancel",
+    "renameFailedTitle": "Couldn't rename"
   },
   "profile": {
     "title": "Profile",
@@ -520,11 +527,14 @@
     "logoutConfirm": "Sign out? Your data stays on this device.",
     "linkSuccess": "Account linked successfully.",
     "linkFailed": "Sign in failed.",
+    "linkAppleLogoutConfirm": "You will be signed out to log in with your Apple account. Guest data will remain on this device.",
     "deleteAccount": "Delete Account",
     "deleteAccountConfirm": "Delete your account? All data will be permanently deleted and cannot be recovered.",
     "deleteAccountFinal": "Are you sure? This action cannot be undone.",
     "deleteAccountSuccess": "Account deleted.",
-    "deleteAccountFailed": "Failed to delete account."
+    "deleteAccountFailed": "Failed to delete account.",
+    "restoringData": "Restoring your data...",
+    "restoringPhotos": "Restoring photos... (%{current}/%{total})"
   },
   "migration": {
     "title": "Data Migration",
@@ -621,7 +631,11 @@
     "verifyFailed": "Purchase verification failed.",
     "failed": "Purchase failed.",
     "restoreNone": "No purchases to restore.",
-    "restoreFailed": "Restore failed."
+    "restoreFailed": "Restore failed.",
+    "packageUnavailable": "Unable to load purchase info.",
+    "packageUnavailableHint": "This may happen in Sandbox or if App Store Connect settings are not yet synced. Please wait and retry, or try restoring purchases.",
+    "packageInvalid": "Purchase info is invalid. Please close and try again.",
+    "retry": "Retry"
   },
   "sharedMaps": {
     "untitled": "Untitled map",
@@ -677,29 +691,36 @@
   "paywall": {
     "title": "Premium Plan",
     "subtitle": "Record your lunch journeys, freely.",
-    "feature1Title": "Unlimited Posts",
-    "feature1Body": "Register unlimited lunch spots",
-    "feature2Title": "Ad-Free",
-    "feature2Body": "No more banner ads",
-    "feature3Title": "Unlimited Prefecture Saves",
-    "feature3Body": "Save unlimited travel lunch memories",
-    "planMonthly": "Monthly",
+    "feature1Title": "🗺 Unlimited Records",
+    "feature1Body": "Save as many as you want in every prefecture",
+    "feature2Title": "🚫 Zero Ads",
+    "feature2Body": "Enjoy a stress-free, ad-free experience",
+    "feature3Title": "☁ Auto Backup",
+    "feature3Body": "Safely back up your photos to the cloud",
+    "planAnnual": "Annual Plan (Best Value)",
+    "planAnnualEquiv": "Just ¥%{monthlyEquiv} / month",
+    "planAnnualOff": "%{percent}% OFF",
+    "planAnnualSub": "Most users choose annual",
+    "planMonthly": "Monthly Plan",
     "planMonthlySub": "Cancel anytime",
-    "planAnnual": "Annual",
-    "planAnnualSub": "Save 44% vs monthly",
-    "planAnnualSave": "Save ¥%{amount} vs monthly",
-    "planLifetime": "Lifetime option",
+    "planLifetime": "Lifetime Plan",
     "planLifetimeSub": "One-time payment, forever yours",
     "bestValue": "Best value",
-    "planName": "Premium (one-time)",
-    "priceLabel": "¥5,800",
-    "purchaseCta": "Unlock your records with Premium",
-    "freeContinue": "Continue with free version",
+    "ctaButton": "Start recording unlimited now",
+    "ctaAnnual": "Start saving with annual",
+    "ctaMonthly": "Start with monthly",
+    "ctaLifetime": "Buy lifetime access",
+    "annualNormalPrice": "(Regular ¥%{monthlyPrice}/mo)",
+    "annualSaving": "Save ¥%{saving} vs monthly",
+    "annualCancelNote": "Cancel anytime",
+    "cancelNote": "Cancel anytime",
+    "subscriptionTerms": "Payment is charged to your Apple ID account. Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period.",
     "subscriptionNote": "Subscriptions can be cancelled anytime.",
+    "manageSubscriptions": "Manage Subscriptions",
     "restoreNote": "Restore purchases from the top-right button.",
-    "prefLimitTitle": "Free tier limit",
-    "prefLimitBody": "Free users: 1 per prefecture.\nUpgrade to Premium for unlimited saves.",
     "homeAdFree": "Go ad-free",
-    "purchasedLabel": "Purchased"
+    "purchasedLabel": "Purchased",
+    "prefLimitTitle": "Free tier limit",
+    "prefLimitBody": "Free users: 1 per prefecture.\nUpgrade to Premium for unlimited saves."
   }
 }

@@ -187,6 +187,10 @@ export async function updateMapStoreTag(
   await updateDoc(doc(firebaseDb, 'maps', mapId, 'stores', storeId), { tag });
 }
 
+export async function renameMap(mapId: string, newName: string) {
+  await updateDoc(doc(firebaseDb, 'maps', mapId), { name: newName.trim() || t('sharedMaps.untitled') });
+}
+
 export async function setMapReadOnly(mapId: string, isReadOnly: boolean) {
   await updateDoc(doc(firebaseDb, 'maps', mapId), { isReadOnly });
 }

@@ -41,20 +41,22 @@
   },
   "onboarding": {
     "header": "はじめに",
-    "start": "はじめる",
+    "start": "無料で始める",
     "slides": {
       "welcome": {
-        "title": "ランチマップへようこそ",
-        "body": "少しずつ増えていく、\nあなただけのランチ記録。"
+        "title": "あなたの日本が、埋まっていく。",
+        "body": "ランチの思い出が、地図になる。"
       },
       "easy": {
-        "title": "タップして記録",
-        "body": "写真・メモ・タグを\nかんたんに保存できます。"
+        "title": "今日のランチも、特別な思い出。",
+        "body": "駅前の定食屋も、\n出張先の名店も。"
       },
       "free": {
-        "title": "まずは無料で10件まで",
-        "body": "1日1回、広告を見ると\n+1件追加できます。",
-        "premium": "プレミアムで無制限に。"
+        "title": "また行きたい場所を、いつでも。",
+        "body": "「あの店、また行きたいな」\nが、すぐ見つかる。",
+        "premium": "プレミアムで無制限に。",
+        "freeNote": "※ 10件まで無料で記録できます",
+        "planChangeHint": "あとからいつでもプラン変更できます"
       }
     }
   },
@@ -230,7 +232,12 @@
     "postComment": "送信",
     "commentFailedTitle": "コメントの投稿に失敗しました",
     "shareInvite": "友達に招待を送る",
-    "shareInviteMessage": "「%{name}」の共同ランチマップに参加しよう！\n招待コード: %{code}\n\n「ランチマップ」アプリで参加できます。"
+    "shareInviteMessage": "「%{name}」の共同ランチマップに参加しよう！\n招待コード: %{code}\n\n「ランチマップ」アプリで参加できます。",
+    "renameButton": "名前を変更",
+    "renamePlaceholder": "マップ名を入力",
+    "renameSave": "保存",
+    "renameCancel": "キャンセル",
+    "renameFailedTitle": "名前を変更できませんでした"
   },
   "profile": {
     "title": "プロフィール",
@@ -471,11 +478,14 @@
     "logoutConfirm": "ログアウトしますか？データはこの端末に残ります。",
     "linkSuccess": "アカウントを連携しました。",
     "linkFailed": "ログインに失敗しました。",
+    "linkAppleLogoutConfirm": "Appleアカウントでログインするために、一度ログアウトします。ゲストのデータはこの端末に残ります。",
     "deleteAccount": "アカウントを削除",
     "deleteAccountConfirm": "アカウントを削除しますか？すべてのデータが削除され、元に戻すことはできません。",
     "deleteAccountFinal": "本当に削除しますか？この操作は取り消せません。",
     "deleteAccountSuccess": "アカウントを削除しました。",
-    "deleteAccountFailed": "アカウントの削除に失敗しました。"
+    "deleteAccountFailed": "アカウントの削除に失敗しました。",
+    "restoringData": "データを復元中...",
+    "restoringPhotos": "写真を復元中... (%{current}/%{total})"
   },
   "migration": {
     "title": "データの引き継ぎ",
@@ -621,7 +631,11 @@
     "verifyFailed": "購入確認に失敗しました。",
     "failed": "購入に失敗しました。",
     "restoreNone": "復元できる購入がありません。",
-    "restoreFailed": "復元に失敗しました。"
+    "restoreFailed": "復元に失敗しました。",
+    "packageUnavailable": "購入情報を取得できませんでした。",
+    "packageUnavailableHint": "Sandbox環境やApp Store Connectの設定が未反映の場合があります。しばらく時間をおいて再試行するか、購入の復元をお試しください。",
+    "packageInvalid": "購入情報が無効です。画面を閉じて再度お試しください。",
+    "retry": "再試行"
   },
   "sharedMaps": {
     "untitled": "無題のマップ",
@@ -677,29 +691,36 @@
   "paywall": {
     "title": "プレミアムプラン",
     "subtitle": "旅のランチ記録を、もっと自由に。",
-    "feature1Title": "投稿無制限",
-    "feature1Body": "ランチ候補の登録件数が無制限に",
-    "feature2Title": "広告なし",
-    "feature2Body": "バナー広告が非表示に",
-    "feature3Title": "都道府県記録無制限",
-    "feature3Body": "旅のランチ記録を各都道府県に何件でも",
+    "feature1Title": "🗺 無制限で記録",
+    "feature1Body": "すべての都道府県に何件でも保存",
+    "feature2Title": "🚫 広告ゼロ",
+    "feature2Body": "広告なしでストレスなく使える",
+    "feature3Title": "☁ 自動バックアップ",
+    "feature3Body": "写真も安全にクラウド保存",
+    "planAnnual": "年額プラン（おすすめ）",
+    "planAnnualEquiv": "実質 ¥%{monthlyEquiv} / 月",
+    "planAnnualOff": "%{percent}% OFF",
+    "planAnnualSub": "多くのユーザーが年額を選択",
     "planMonthly": "月額プラン",
-    "planMonthlySub": "いつでもキャンセルOK",
-    "planAnnual": "年額プラン",
-    "planAnnualSub": "月額より44%おトク",
-    "planAnnualSave": "月額より¥%{amount}おトク",
-    "planLifetime": "買い切りオプション",
+    "planMonthlySub": "いつでもキャンセル可能",
+    "planLifetime": "永久プラン",
     "planLifetimeSub": "一度の支払いでずっと使える",
     "bestValue": "おすすめ",
-    "planName": "プレミアム（買い切り）",
-    "priceLabel": "¥5,800",
-    "purchaseCta": "プレミアムで記録を解放する",
-    "freeContinue": "今は無料版を続ける",
+    "ctaButton": "今すぐ無制限で記録する",
+    "ctaAnnual": "年額でおトクに始める",
+    "ctaMonthly": "月額で始める",
+    "ctaLifetime": "買い切りで購入する",
+    "annualNormalPrice": "（通常 月額 ¥%{monthlyPrice}）",
+    "annualSaving": "月額より ¥%{saving} おトク",
+    "annualCancelNote": "いつでもキャンセル可能",
+    "cancelNote": "いつでもキャンセル可能",
+    "subscriptionTerms": "※ お支払いはApple IDアカウントに請求されます。現在の期間終了の24時間前までにキャンセルしない限り、サブスクリプションは自動更新されます。",
     "subscriptionNote": "※ サブスクリプションはいつでもキャンセルできます。",
+    "manageSubscriptions": "サブスクリプション管理",
     "restoreNote": "※ 購入の復元は右上から行えます",
-    "prefLimitTitle": "無料版の制限です",
-    "prefLimitBody": "無料版では各都道府県1件までです。\nプレミアムプランで無制限に記録できます。",
     "homeAdFree": "広告なしで使う",
-    "purchasedLabel": "購入済み"
+    "purchasedLabel": "購入済み",
+    "prefLimitTitle": "無料版の制限です",
+    "prefLimitBody": "無料版では各都道府県1件までです。\nプレミアムプランで無制限に記録できます。"
   }
 }
