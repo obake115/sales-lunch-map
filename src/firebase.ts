@@ -26,26 +26,38 @@ export const firebaseApp = (() => {
   return initializeApp(firebaseConfig);
 })();
 
-function getReactNativePersistenceSafe() {
+/**
+ * Firebase Auth を AsyncStorage 永続化つきで初期化する。
+ *
+ * Metro は firebase/auth を RN ビルド (dist/rn) に解決するため、
+ * ランタイムでは getReactNativePersistence が利用可能。
+ * TSC のブラウザ型定義には含まれないため require() で取得する。
+ */
+function buildPersistence() {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = require('firebase/auth/react-native');
-    const getReactNativePersistence = mod?.getReactNativePersistence;
-    return AsyncStorage && getReactNativePersistence ? getReactNativePersistence(AsyncStorage) : null;
+    const { getReactNativePersistence } = require('firebase/auth');
+    if (typeof getReactNativePersistence === 'function' && AsyncStorage) {
+      return getReactNativePersistence(AsyncStorage);
+    }
   } catch {
-    return null;
+    // fallback
   }
+  return null;
 }
 
 export const firebaseAuth = (() => {
   try {
-    const persistence = getReactNativePersistenceSafe();
-    return persistence ? initializeAuth(firebaseApp, { persistence }) : getAuth(firebaseApp);
+    const persistence = buildPersistence();
+    if (persistence) {
+      return initializeAuth(firebaseApp, { persistence });
+    }
   } catch {
-    return getAuth(firebaseApp);
+    // initializeAuth は再呼び出し不可（Hot Reload時など）
   }
+  return getAuth(firebaseApp);
 })();
 export const firebaseDb = getFirestore(firebaseApp);
 export const firebaseStorage = getStorage(firebaseApp);

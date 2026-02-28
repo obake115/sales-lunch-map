@@ -484,6 +484,11 @@
     "deleteAccountFinal": "本当に削除しますか？この操作は取り消せません。",
     "deleteAccountSuccess": "アカウントを削除しました。",
     "deleteAccountFailed": "アカウントの削除に失敗しました。",
+    "deleteGuestData": "データを削除",
+    "deleteGuestDataConfirm": "すべてのローカルデータを削除しますか？投稿や写真など、すべてのデータが失われます。",
+    "deleteGuestDataFinal": "本当に削除しますか？この操作は取り消せません。",
+    "deleteGuestDataSuccess": "すべてのデータを削除しました。",
+    "deleteGuestDataFailed": "データの削除に失敗しました。",
     "restoringData": "データを復元中...",
     "restoringPhotos": "写真を復元中... (%{current}/%{total})"
   },

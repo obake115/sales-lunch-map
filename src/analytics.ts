@@ -275,3 +275,27 @@ export async function logAccountLinked(params: { method: string }): Promise<void
     // ignore
   }
 }
+
+// ---------------------------------------------------------------------------
+// Paywall
+// ---------------------------------------------------------------------------
+
+export async function logPaywallShown(params: { trigger: string }): Promise<void> {
+  try {
+    const analytics = getAnalytics();
+    if (!analytics) return;
+    await analytics().logEvent('paywall_shown', params);
+  } catch {
+    // ignore
+  }
+}
+
+export async function logPaywallDismissed(params: { trigger: string }): Promise<void> {
+  try {
+    const analytics = getAnalytics();
+    if (!analytics) return;
+    await analytics().logEvent('paywall_dismissed', params);
+  } catch {
+    // ignore
+  }
+}

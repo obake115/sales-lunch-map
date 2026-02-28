@@ -25,7 +25,7 @@ const COLORS = {
   accentPink: ACCENT_PINK,
   accentPinkSoft: ACCENT_PINK_SOFT,
   mapSelected: 'rgba(216, 132, 159, 0.70)',
-  mapVisited: 'rgba(216, 132, 159, 0.40)',
+  mapVisited: 'rgba(216, 120, 150, 0.50)',
   primaryBtn: '#4F6FAF',
   border: '#D5D0C6',
   dotActive: ACCENT_PINK,
@@ -71,7 +71,7 @@ const miniCardStyles = StyleSheet.create({
     padding: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 2,
   },
@@ -300,7 +300,7 @@ const recordStyles = StyleSheet.create({
     paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 2,
     alignItems: 'center',
@@ -332,12 +332,25 @@ const recordStyles = StyleSheet.create({
 // ─── Slide 1: Welcome with map + mini cards ────────
 function Slide1() {
   const opacity = useSharedValue(0);
+  const [animatedPref, setAnimatedPref] = useState<string | null>(null);
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.ease) });
+    const timer = setTimeout(() => setAnimatedPref('aichi'), 600);
+    return () => clearTimeout(timer);
   }, [opacity]);
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  const visitedPrefs = useMemo(
+    () => new Set(['osaka', 'fukuoka', 'hokkaido', ...(animatedPref ? [animatedPref] : [])]),
+    [animatedPref],
+  );
+
+  const breathingPrefs = useMemo(
+    () => (animatedPref ? new Set([animatedPref]) : undefined),
+    [animatedPref],
+  );
 
   return (
     <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
@@ -346,14 +359,16 @@ function Slide1() {
         <Text style={styles.subtitle}>{t('onboarding.slides.welcome.body')}</Text>
         <Animated.View style={[styles.mapContainer, animStyle]}>
           <JapanMapInteractive
-            height={220}
+            height={238}
             fillDefault="#F5F0E8"
             fillSelected={COLORS.mapSelected}
             fillVisited={COLORS.mapVisited}
             selectedPref="tokyo"
-            visitedPrefs={new Set(['osaka', 'fukuoka', 'hokkaido'])}
+            visitedPrefs={visitedPrefs}
             stroke={COLORS.border}
-            strokeWidth={0.6}
+            strokeWidth={0.8}
+            breathing={!!animatedPref}
+            breathingPrefs={breathingPrefs}
           />
         </Animated.View>
         {/* Mini memory cards */}
@@ -375,14 +390,14 @@ function Slide2() {
         <Text style={styles.subtitle}>{t('onboarding.slides.easy.body')}</Text>
         <View style={styles.mapContainer}>
           <JapanMapInteractive
-            height={220}
+            height={238}
             fillDefault="#F5F0E8"
             fillSelected={COLORS.mapSelected}
             fillVisited={COLORS.mapVisited}
             selectedPref="osaka"
             visitedPrefs={new Set(['hokkaido', 'miyagi', 'tokyo', 'aichi', 'kyoto', 'fukuoka'])}
             stroke={COLORS.border}
-            strokeWidth={0.6}
+            strokeWidth={0.8}
           />
         </View>
         {/* Mini record card */}
@@ -405,12 +420,13 @@ function Slide3() {
   const premiumAnim = useAnimatedStyle(() => ({ opacity: premiumOpacity.value }));
 
   return (
-    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+    <View style={[styles.slide, { width: SCREEN_WIDTH, backgroundColor: '#E3DDD2' }]}>
       <View style={styles.slideContent}>
         <Text style={styles.title}>{t('onboarding.slides.free.title')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.slides.free.body')}</Text>
         <View style={styles.slide3Visual}>
           <CounterPill />
+          <Text style={styles.freeNoteText}>{t('onboarding.slides.free.freeNote')}</Text>
           <View style={{ height: 24 }} />
           <CardStack />
           <Animated.View style={[styles.premiumHint, premiumAnim]}>
@@ -485,39 +501,45 @@ export default function OnboardingScreen() {
 
       {/* Bottom buttons */}
       <View style={styles.bottomArea}>
-        {pageIndex > 0 ? (
+        {isLast && (
+          <Text style={styles.planChangeHint}>{t('onboarding.slides.free.planChangeHint')}</Text>
+        )}
+        <View style={styles.bottomButtons}>
+          {pageIndex > 0 ? (
+            <Pressable
+              onPress={() => {
+                const prev = Math.max(0, pageIndex - 1);
+                scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * prev, animated: true });
+                setPageIndex(prev);
+              }}
+              style={styles.backBtn}
+            >
+              <Text style={styles.backBtnText}>{t('common.back')}</Text>
+            </Pressable>
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
           <Pressable
             onPress={() => {
-              const prev = Math.max(0, pageIndex - 1);
-              scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * prev, animated: true });
-              setPageIndex(prev);
+              if (isLast) {
+                finishOnboarding();
+                return;
+              }
+              const next = Math.min(total - 1, pageIndex + 1);
+              scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * next, animated: true });
+              setPageIndex(next);
             }}
-            style={styles.backBtn}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              isLast && styles.primaryBtnLast,
+              pressed && { transform: [{ scale: 0.98 }] },
+            ]}
           >
-            <Text style={styles.backBtnText}>{t('common.back')}</Text>
+            <Text style={styles.primaryBtnText}>
+              {isLast ? t('onboarding.start') : t('common.next')}
+            </Text>
           </Pressable>
-        ) : (
-          <View style={{ flex: 1 }} />
-        )}
-        <Pressable
-          onPress={() => {
-            if (isLast) {
-              finishOnboarding();
-              return;
-            }
-            const next = Math.min(total - 1, pageIndex + 1);
-            scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * next, animated: true });
-            setPageIndex(next);
-          }}
-          style={({ pressed }) => [
-            styles.primaryBtn,
-            pressed && { transform: [{ scale: 0.98 }] },
-          ]}
-        >
-          <Text style={styles.primaryBtnText}>
-            {isLast ? t('onboarding.start') : t('common.next')}
-          </Text>
-        </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -575,6 +597,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
   // Slide 1: mini cards row
   miniCardsRow: {
@@ -602,6 +629,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: COLORS.textSecondary,
   },
+  freeNoteText: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  planChangeHint: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
 
   // Dots (active is elongated)
   dotsRow: {
@@ -621,6 +662,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingTop: 14,
     paddingBottom: 34,
+  },
+  bottomButtons: {
     flexDirection: 'row',
     gap: 12,
   },
@@ -651,6 +694,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 2,
+  },
+  primaryBtnLast: {
+    height: 60,
+    borderRadius: 30,
   },
   primaryBtnText: {
     color: '#FFFFFF',

@@ -18,6 +18,9 @@ import { usePremium } from '@/src/state/PremiumContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
+import { PremiumPaywall } from '@/src/components/PremiumPaywall';
+import { coordToPrefectureId } from '@/src/domain/prefectureLookup';
+import { canShowPaywall } from '@/src/paywallTrigger';
 
 const UI = {
   card: {
@@ -210,6 +213,8 @@ export default function StoreNewScreen() {
   const [saving, setSaving] = useState(false);
   const [limitState, setLimitState] = useState<PostLimitState | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [premiumPaywallVisible, setPremiumPaywallVisible] = useState(false);
+  const [premiumPaywallTrigger, setPremiumPaywallTrigger] = useState('prefDuplicate');
   const [pendingSaveDraft, setPendingSaveDraft] = useState<{
     name: string;
     latitude: number;
@@ -413,11 +418,32 @@ export default function StoreNewScreen() {
           onPress={async () => {
             if (!canSave) return;
             const nextLimit = await refreshLimit();
-            const isPremium = !!nextLimit?.isUnlimited;
+            const isPremiumUser = !!nextLimit?.isUnlimited;
+
+            // Soft-block: same prefecture 2nd store trigger
+            if (!isPremiumUser && latitude != null && longitude != null) {
+              const prefId = coordToPrefectureId(latitude, longitude);
+              if (prefId) {
+                const sameCount = stores.filter(s => coordToPrefectureId(s.latitude, s.longitude) === prefId).length;
+                if (sameCount >= 1 && await canShowPaywall()) {
+                  setPendingSaveDraft({
+                    name: name.trim() || t('storeNew.unnamed'),
+                    latitude: latitude as number,
+                    longitude: longitude as number,
+                    note: note.trim() || undefined,
+                  });
+                  setPremiumPaywallTrigger('prefDuplicate');
+                  setPremiumPaywallVisible(true);
+                  return;
+                }
+              }
+            }
+
+            // Hard-block: post limit reached
             const allowedSlots =
-              isPremium ? Number.POSITIVE_INFINITY : (nextLimit?.freeLimit ?? 10) + (nextLimit?.extraSlotCount ?? 0);
+              isPremiumUser ? Number.POSITIVE_INFINITY : (nextLimit?.freeLimit ?? 10) + (nextLimit?.extraSlotCount ?? 0);
             const countRegistered = stores.length;
-            if (!isPremium && countRegistered >= allowedSlots) {
+            if (!isPremiumUser && countRegistered >= allowedSlots) {
               setPendingSaveDraft({
                 name: name.trim() || t('storeNew.unnamed'),
                 latitude: latitude as number,
@@ -437,7 +463,7 @@ export default function StoreNewScreen() {
                 note: note.trim() || undefined,
               });
               logStoreRegistered({ store_name: storeName });
-              await maybeShowInterstitial(isPremium);
+              await maybeShowInterstitial(isPremiumUser);
               router.back();
             } catch (e: any) {
               Alert.alert(t('common.saveFailed'), e?.message ?? t('common.tryAgain'));
@@ -552,6 +578,37 @@ export default function StoreNewScreen() {
           </View>
         </View>
       </Modal>
+      <PremiumPaywall
+        visible={premiumPaywallVisible}
+        onClose={() => {
+          setPremiumPaywallVisible(false);
+          // Soft-block: dismiss → continue saving if postLimit not reached
+          const draft = pendingSaveDraft;
+          if (draft) {
+            setPendingSaveDraft(null);
+            (async () => {
+              try {
+                setSaving(true);
+                await addStore(draft);
+                logStoreRegistered({ store_name: draft.name });
+                router.back();
+              } catch (e: any) {
+                Alert.alert(t('common.saveFailed'), e?.message ?? t('common.tryAgain'));
+              } finally {
+                setSaving(false);
+              }
+            })();
+          }
+        }}
+        onPurchased={() => {
+          const draft = pendingSaveDraft;
+          if (draft) {
+            setPendingSaveDraft(null);
+            autoSavePending(t('storeNew.purchaseSuccess'));
+          }
+        }}
+        trigger={premiumPaywallTrigger}
+      />
       {toastMessage ? (
         <View style={UI.toast}>
           <Text style={UI.toastText}>{toastMessage}</Text>

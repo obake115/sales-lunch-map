@@ -51,7 +51,7 @@ async function uploadImage(uid: string, path: string, localUri: string): Promise
   return getDownloadURL(storageRef);
 }
 
-async function downloadImage(url: string, fileName: string): Promise<string> {
+export async function downloadImage(url: string, fileName: string): Promise<string> {
   const destination = new File(Paths.document, fileName);
   const downloaded = await File.downloadFileAsync(url, destination);
   return downloaded.uri;
@@ -134,15 +134,34 @@ export async function uploadTravelEntryPhoto(uid: string, entry: TravelLunchEntr
   }
 }
 
+// --- Profile avatar ---
+
+export async function uploadProfileAvatar(uid: string, localUri: string): Promise<void> {
+  if (!localFileExists(localUri)) return;
+  try {
+    const url = await uploadImage(uid, 'avatar.jpg', localUri);
+    const { updateDoc, doc, setDoc } = await import('firebase/firestore');
+    const { firebaseDb } = await import('../firebase');
+    try {
+      await updateDoc(doc(firebaseDb, 'users', uid, 'data', 'settings'), { profileAvatarUrl: url });
+    } catch {
+      await setDoc(doc(firebaseDb, 'users', uid, 'data', 'settings'), { profileAvatarUrl: url }, { merge: true });
+    }
+  } catch (e) {
+    console.error('Failed to upload profile avatar:', e);
+  }
+}
+
 // --- Batch uploads ---
 
 export async function uploadAllPhotos(uid: string, onProgress?: ProgressCallback): Promise<number> {
   const storage = await import('../storage');
-  const [stores, albumPhotos, prefecturePhotos, travelEntries] = await Promise.all([
+  const [stores, albumPhotos, prefecturePhotos, travelEntries, avatarUri] = await Promise.all([
     storage.getStores(),
     storage.getAlbumPhotos(),
     storage.getPrefecturePhotos(),
     storage.getTravelLunchEntries(),
+    storage.getProfileAvatarUri(),
   ]);
 
   // Count total photos to upload
@@ -154,6 +173,7 @@ export async function uploadAllPhotos(uid: string, onProgress?: ProgressCallback
   total += albumPhotos.length;
   total += prefecturePhotos.length;
   total += travelEntries.filter((e) => !!e.imageUri).length;
+  if (avatarUri && localFileExists(avatarUri)) total++;
 
   if (total === 0) return 0;
 
@@ -254,6 +274,17 @@ export async function uploadAllPhotos(uid: string, onProgress?: ProgressCallback
         console.error(`Failed to upload travel photo ${entry.id}:`, e);
         failCount++;
       }
+    }
+    advance();
+  }
+
+  // Profile avatar
+  if (avatarUri && localFileExists(avatarUri)) {
+    try {
+      await uploadProfileAvatar(uid, avatarUri);
+    } catch (e) {
+      console.error('Failed to upload profile avatar:', e);
+      failCount++;
     }
     advance();
   }

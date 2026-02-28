@@ -1,26 +1,54 @@
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
+
+import { canUseNotifications } from './notificationGuard';
 
 export type PermissionState = {
   locationForegroundGranted: boolean;
   notificationsGranted: boolean;
 };
 
+function getNotificationsModule() {
+  if (!canUseNotifications()) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('expo-notifications');
+  } catch {
+    return null;
+  }
+}
+
 export async function getPermissionState(): Promise<PermissionState> {
   const fg = await Location.getForegroundPermissionsAsync();
-  const noti = await Notifications.getPermissionsAsync();
+  let notificationsGranted = false;
+  const Noti = getNotificationsModule();
+  if (Noti) {
+    try {
+      const noti = await Noti.getPermissionsAsync();
+      notificationsGranted = noti.granted;
+    } catch (e) {
+      console.warn('[Permissions] getPermissionsAsync failed:', e);
+    }
+  }
   return {
     locationForegroundGranted: fg.granted,
-    notificationsGranted: noti.granted,
+    notificationsGranted,
   };
 }
 
 export async function requestAllNeededPermissions(): Promise<PermissionState> {
   const fg = await Location.requestForegroundPermissionsAsync();
-  const noti = await Notifications.requestPermissionsAsync();
+  let notificationsGranted = false;
+  const Noti = getNotificationsModule();
+  if (Noti) {
+    try {
+      const noti = await Noti.requestPermissionsAsync();
+      notificationsGranted = noti.granted;
+    } catch (e) {
+      console.warn('[Permissions] requestPermissionsAsync failed:', e);
+    }
+  }
   return {
     locationForegroundGranted: fg.granted,
-    notificationsGranted: noti.granted,
+    notificationsGranted,
   };
 }
-

@@ -25,7 +25,7 @@ export function PermissionNotice() {
   const [state, setState] = useState<PermissionState | null>(null);
 
   useEffect(() => {
-    getPermissionState().then(setState);
+    getPermissionState().then(setState).catch(() => {});
   }, []);
 
   if (!state) return null;

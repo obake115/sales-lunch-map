@@ -80,3 +80,9 @@ export function fireSyncTravelEntryPhoto(entry: TravelLunchEntry) {
   if (!uid) return;
   getStorageSync().then((m) => m.uploadTravelEntryPhoto(uid, entry)).catch(() => {});
 }
+
+export function fireSyncProfileAvatar(localUri: string) {
+  const uid = getLoggedInUid();
+  if (!uid) return;
+  getStorageSync().then((m) => m.uploadProfileAvatar(uid, localUri)).catch(() => {});
+}

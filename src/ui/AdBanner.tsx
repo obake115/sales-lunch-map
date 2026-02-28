@@ -45,7 +45,12 @@ export function BottomAdBanner() {
         alignItems: 'center',
         backgroundColor: 'transparent',
       }}>
-      <BannerAd unitId={unitId} size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} />
+      <BannerAd
+        unitId={unitId}
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        onAdLoaded={() => console.log('[AdMob] BottomAdBanner loaded')}
+        onAdFailedToLoad={(error: any) => console.error('[AdMob] BottomAdBanner failed', error?.message ?? error)}
+      />
     </View>
   );
 }
@@ -80,7 +85,12 @@ export function InlineAdBanner() {
         alignItems: 'center',
         marginVertical: 8,
       }}>
-      <BannerAd unitId={unitId} size={BannerAdSize.MEDIUM_RECTANGLE} />
+      <BannerAd
+        unitId={unitId}
+        size={BannerAdSize.MEDIUM_RECTANGLE}
+        onAdLoaded={() => console.log('[AdMob] InlineAdBanner loaded')}
+        onAdFailedToLoad={(error: any) => console.error('[AdMob] InlineAdBanner failed', error?.message ?? error)}
+      />
     </View>
   );
 }

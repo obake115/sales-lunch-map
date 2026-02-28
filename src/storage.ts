@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
+import { isDevUser } from './auth/isDevUser';
 import { SETTING_KEYS, STORAGE_KEYS } from './constants';
 import { runMigrations } from './db/migrations';
 import { deletePlace, getAllPlaces, getPlaceById, insertPlace, updatePlace } from './db/placesRepo';
@@ -10,7 +10,7 @@ import { getDb } from './db/sqlite';
 import { addDays, formatYmd } from './domain/date';
 import { createId } from './id';
 import type { AlbumPhoto, Memo, PrefecturePhoto, Store, TravelLunchEntry } from './models';
-import { fireSyncAlbumPhoto, fireSyncDeleteAlbumPhoto, fireSyncDeleteMemo, fireSyncDeletePlace, fireSyncMemo, fireSyncPlace, fireSyncPlacePhotos, fireSyncPrefecturePhoto, fireSyncSetting, fireSyncTravelEntry, fireSyncTravelEntryPhoto } from './sync/syncHooks';
+import { fireSyncAlbumPhoto, fireSyncDeleteAlbumPhoto, fireSyncDeleteMemo, fireSyncDeletePlace, fireSyncMemo, fireSyncPlace, fireSyncPlacePhotos, fireSyncPrefecturePhoto, fireSyncProfileAvatar, fireSyncSetting, fireSyncTravelEntry, fireSyncTravelEntryPhoto } from './sync/syncHooks';
 import { t } from './i18n';
 
 type MemoRow = {
@@ -231,8 +231,22 @@ async function migrateFromAsyncStorageIfNeeded(db: SQLiteDatabase) {
   await setSetting(db, SETTING_KEYS.migrationV1, '1');
 }
 
+function getNotificationsModule() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { canUseNotifications } = require('./notificationGuard');
+    if (!canUseNotifications()) return null;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('expo-notifications');
+  } catch {
+    return null;
+  }
+}
+
 async function cancelScheduledIfNeeded(notificationId?: string) {
   if (!notificationId) return;
+  const Notifications = getNotificationsModule();
+  if (!Notifications) return;
   try {
     await Notifications.cancelScheduledNotificationAsync(notificationId);
   } catch {
@@ -495,7 +509,7 @@ export type PostLimitState = {
 
 export async function getPostLimitState(usedCount?: number): Promise<PostLimitState> {
   const db = await getReadyDb();
-  const purchased = (await getSetting(db, SETTING_KEYS.postLimitPurchased)) === '1';
+  const purchased = isDevUser() || (await getSetting(db, SETTING_KEYS.postLimitPurchased)) === '1';
   const used = typeof usedCount === 'number' ? usedCount : await getStoreCount();
   const today = formatYmdJst(new Date());
   const rewardedDate = await getSetting(db, SETTING_KEYS.postLimitRewardedDate);
@@ -578,14 +592,17 @@ export async function updateMemoText(storeId: string, memoId: string, text: stri
     const store = await getStore(storeId);
     const title = getReminderTitle(store);
     const when = new Date(current.reminderAt as number);
-    reminderNotificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body: nextText,
-        sound: 'default',
-      },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
-    });
+    const Noti = getNotificationsModule();
+    if (Noti) {
+      reminderNotificationId = await Noti.scheduleNotificationAsync({
+        content: {
+          title,
+          body: nextText,
+          sound: 'default',
+        },
+        trigger: { type: Noti.SchedulableTriggerInputTypes.DATE, date: when },
+      });
+    }
   }
 
   await db.runAsync('UPDATE memos SET text = ?, reminderNotificationId = ? WHERE id = ?', [
@@ -621,13 +638,17 @@ export async function setMemoReminder(storeId: string, memoId: string, reminderA
   const title = getReminderTitle(store);
   const body = current.text;
 
-  const newId = await Notifications.scheduleNotificationAsync({
+  const Noti = getNotificationsModule();
+  if (!Noti) {
+    throw new Error(t('storage.notificationsUnavailable', { defaultValue: 'Notifications unavailable' }));
+  }
+  const newId = await Noti.scheduleNotificationAsync({
     content: {
       title,
       body,
       sound: 'default',
     },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+    trigger: { type: Noti.SchedulableTriggerInputTypes.DATE, date: when },
   });
 
   await db.runAsync('UPDATE memos SET reminderAt = ?, reminderNotificationId = ? WHERE id = ?', [
@@ -774,6 +795,7 @@ export async function getTravelEntryCountByPrefecture(prefId: string): Promise<n
 }
 
 export async function isPremiumUser(): Promise<boolean> {
+  if (isDevUser()) return true;
   const db = await getReadyDb();
   return (await getSetting(db, SETTING_KEYS.postLimitPurchased)) === '1';
 }
@@ -822,6 +844,7 @@ export async function setProfileAvatarUri(uri: string | null): Promise<void> {
     return;
   }
   await setSetting(db, SETTING_KEYS.profileAvatarUri, uri);
+  fireSyncProfileAvatar(uri);
 }
 
 export async function getSelectedBadgeId(): Promise<string | null> {
@@ -863,6 +886,21 @@ export async function getLoginBonusState(): Promise<LoginBonusState> {
     streak,
     totalDays,
   };
+}
+
+export async function restoreLoginBonusState(state: LoginBonusState): Promise<void> {
+  const db = await getReadyDb();
+  if (state.lastClaimedDate) {
+    await setSetting(db, SETTING_KEYS.lastLoginDate, state.lastClaimedDate);
+  }
+  await setSetting(db, SETTING_KEYS.streakDays, String(state.streak ?? 0));
+  await setSetting(db, SETTING_KEYS.totalLoginDays, String(state.totalDays ?? 0));
+  await setSetting(db, SETTING_KEYS.maxStreakDays, String(Math.max(state.streak ?? 0, Number(await getSetting(db, SETTING_KEYS.maxStreakDays)) || 0)));
+}
+
+export async function setNearbyShownCount(count: number): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.nearbyShownCount, String(count));
 }
 
 export async function claimLoginBonusIfNeeded(): Promise<{ state: LoginBonusState; awarded: boolean }> {
@@ -912,6 +950,51 @@ export async function clearAllLocalData(): Promise<void> {
   await db.runAsync('DELETE FROM album_photos');
   await db.runAsync('DELETE FROM prefecture_photos');
   await db.runAsync('DELETE FROM settings');
+}
+
+export async function getPaywallDismissedAt(): Promise<string | null> {
+  const db = await getReadyDb();
+  const stored = await getSetting(db, SETTING_KEYS.paywallDismissedAt);
+  return stored || null;
+}
+
+export async function setPaywallDismissedAt(iso: string): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.paywallDismissedAt, iso);
+}
+
+export async function getPaywallFivePrefShown(): Promise<boolean> {
+  const db = await getReadyDb();
+  return (await getSetting(db, SETTING_KEYS.paywallFivePrefShown)) === '1';
+}
+
+export async function setPaywallFivePrefShown(): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.paywallFivePrefShown, '1');
+}
+
+export async function getAdImpressionCount(): Promise<number> {
+  const db = await getReadyDb();
+  return Number(await getSetting(db, SETTING_KEYS.adImpressionCount)) || 0;
+}
+
+export async function incrementAdImpressionCount(): Promise<number> {
+  const db = await getReadyDb();
+  const current = Number(await getSetting(db, SETTING_KEYS.adImpressionCount)) || 0;
+  const next = current + 1;
+  await setSetting(db, SETTING_KEYS.adImpressionCount, String(next));
+  return next;
+}
+
+export async function getDistinctPrefectureCount(storeList?: Store[]): Promise<number> {
+  const { coordToPrefectureId } = require('./domain/prefectureLookup');
+  const allStores = storeList ?? await getStores();
+  const prefSet = new Set<string>();
+  for (const s of allStores) {
+    const prefId = coordToPrefectureId(s.latitude, s.longitude);
+    if (prefId) prefSet.add(prefId);
+  }
+  return prefSet.size;
 }
 
 export { getStoreCount };

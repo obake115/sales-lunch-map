@@ -7,6 +7,7 @@ import {
   type AuthCredential,
   type User,
 } from 'firebase/auth';
+import { setHasSeenOnboarding, setHasSeenWelcome } from '../storage';
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -63,15 +64,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      signInAnonymously(firebaseAuth).catch((e: any) => {
-        const message =
-          e?.code === 'auth/operation-not-allowed'
-            ? t('auth.anonymousDisabled')
-            : t('auth.loginFailed');
-        setError(message);
-      });
-    } else {
+    if (user) {
       setError(null);
     }
   }, [loading, user]);
@@ -83,7 +76,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const credential = await getAppleCredential();
       console.log('[Firebase] signInWithApple: calling signInWithCredential...');
       const result = await signInWithCredential(firebaseAuth, credential);
-      console.log('[Firebase] signInWithCredential success', result.user?.uid);
+      console.log('[Firebase] signInWithCredential success', {
+        uid: result.user?.uid,
+        provider: result.user?.providerData?.map((p) => p.providerId),
+      });
       return result.user;
     } catch (e: any) {
       console.error('[Apple/Firebase] sign-in failed', {
@@ -183,28 +179,27 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return { success: false, uidChanged: false, error: t('auth.linkFailed') + detail };
       }
 
+      // Apple / Google 共通: linkWithCredential → 失敗時 signOut → signInWithCredential
       try {
         console.log('[AUTH] linkAccount: linking with Firebase...');
         await linkWithCredential(currentUser, credential);
         console.log('[AUTH] linkAccount: link SUCCESS');
         return { success: true, uidChanged: false };
       } catch (linkError: any) {
-        console.error('[AUTH] linkAccount: link FAILED', { code: linkError?.code, message: linkError?.message });
-        if (linkError?.code === 'auth/credential-already-in-use') {
-          try {
-            console.log('[AUTH] linkAccount: credential-already-in-use, signing in instead...');
-            await signInWithCredential(firebaseAuth, credential);
-            console.log('[AUTH] linkAccount: signIn SUCCESS (uid changed)');
-            return { success: true, uidChanged: true };
-          } catch (signInError: any) {
-            console.error('[AUTH] linkAccount: fallback signIn FAILED', { code: signInError?.code, message: signInError?.message });
-            return { success: false, uidChanged: false, error: t('auth.linkFailed') };
-          }
+        console.error('[AUTH] linkAccount: link FAILED, falling back to signOut+signIn', { code: linkError?.code, message: linkError?.message });
+        try {
+          await firebaseAuth.signOut();
+          await signInWithCredential(firebaseAuth, credential);
+          console.log('[AUTH] linkAccount: fallback signOut+signIn SUCCESS (uid changed)');
+          return { success: true, uidChanged: true };
+        } catch (signInError: any) {
+          console.error('[AUTH] linkAccount: fallback signIn FAILED', { code: signInError?.code, message: signInError?.message });
+          try { await signInAnonymously(firebaseAuth); } catch { /* best effort */ }
+          const msg = signInError?.code
+            ? `${signInError.code}: ${signInError.message ?? ''}`
+            : (signInError?.message ?? String(signInError));
+          return { success: false, uidChanged: false, error: t('auth.linkFailed') + '\n(' + msg + ')' };
         }
-        const msg = linkError?.code
-          ? `${linkError.code}: ${linkError.message ?? ''}`
-          : (linkError?.message ?? String(linkError));
-        return { success: false, uidChanged: false, error: t('auth.linkFailed') + '\n(' + msg + ')' };
       }
     },
     []
@@ -213,7 +208,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const signOut = useCallback(async () => {
     setError(null);
     await firebaseAuth.signOut();
-    await signInAnonymously(firebaseAuth);
+    await setHasSeenWelcome(false);
+    await setHasSeenOnboarding(false);
   }, []);
 
   const deleteAccount = useCallback(async () => {
@@ -231,8 +227,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await AsyncStorage.clear();
     // 4. Delete Firebase user
     await deleteUser(currentUser);
-    // 5. Re-sign in as anonymous
-    await signInAnonymously(firebaseAuth);
   }, []);
 
   const authMethod = useMemo(() => getAuthMethod(user), [user]);

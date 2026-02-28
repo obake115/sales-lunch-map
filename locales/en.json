@@ -533,6 +533,11 @@
     "deleteAccountFinal": "Are you sure? This action cannot be undone.",
     "deleteAccountSuccess": "Account deleted.",
     "deleteAccountFailed": "Failed to delete account.",
+    "deleteGuestData": "Delete Data",
+    "deleteGuestDataConfirm": "Delete all local data? All posts and photos will be permanently lost.",
+    "deleteGuestDataFinal": "Are you sure? This action cannot be undone.",
+    "deleteGuestDataSuccess": "All data deleted.",
+    "deleteGuestDataFailed": "Failed to delete data.",
     "restoringData": "Restoring your data...",
     "restoringPhotos": "Restoring photos... (%{current}/%{total})"
   },

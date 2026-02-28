@@ -5,7 +5,8 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View }
 
 import { logAccountLinked } from '@/src/analytics';
 import { t } from '@/src/i18n';
-import { restorePurchases } from '@/src/purchases';
+import { restorePurchases, logOutPurchases } from '@/src/purchases';
+import { clearAllLocalData } from '@/src/storage';
 import { useAuth, type LinkResult } from '@/src/state/AuthContext';
 import { useThemeMode } from '@/src/state/ThemeContext';
 import { fonts } from '@/src/ui/fonts';
@@ -22,6 +23,33 @@ export default function SettingsScreen() {
 
   const handleLink = async (provider: 'apple' | 'google') => {
     if (busy) return;
+
+    // Apple: linkWithCredential が nonce 問題で失敗するため、
+    // ログアウト → Welcome 画面で新規ログインさせる
+    if (provider === 'apple') {
+      Alert.alert(
+        t('auth.linkApple'),
+        t('auth.linkAppleLogoutConfirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('auth.logout'),
+            style: 'destructive',
+            onPress: async () => {
+              setBusy(true);
+              try {
+                await signOut();
+                router.replace('/welcome');
+              } finally {
+                setBusy(false);
+              }
+            },
+          },
+        ],
+      );
+      return;
+    }
+
     setBusy(true);
     try {
       const result: LinkResult = await linkAccount(provider);
@@ -50,6 +78,7 @@ export default function SettingsScreen() {
           setBusy(true);
           try {
             await signOut();
+            router.replace('/welcome');
           } finally {
             setBusy(false);
           }
@@ -74,9 +103,44 @@ export default function SettingsScreen() {
                 setBusy(true);
                 try {
                   await deleteAccount();
-                  Alert.alert('', t('auth.deleteAccountSuccess'));
+                  Alert.alert('', t('auth.deleteAccountSuccess'), [
+                    { text: t('common.ok'), onPress: () => router.replace('/welcome') },
+                  ]);
                 } catch {
                   Alert.alert('', t('auth.deleteAccountFailed'));
+                } finally {
+                  setBusy(false);
+                }
+              },
+            },
+          ]);
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteGuestData = () => {
+    Alert.alert(t('auth.deleteGuestData'), t('auth.deleteGuestDataConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('auth.deleteGuestData'),
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert(t('auth.deleteGuestData'), t('auth.deleteGuestDataFinal'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+              text: t('auth.deleteGuestData'),
+              style: 'destructive',
+              onPress: async () => {
+                setBusy(true);
+                try {
+                  await clearAllLocalData();
+                  await logOutPurchases();
+                  Alert.alert('', t('auth.deleteGuestDataSuccess'), [
+                    { text: t('common.ok'), onPress: () => router.replace('/welcome') },
+                  ]);
+                } catch {
+                  Alert.alert('', t('auth.deleteGuestDataFailed'));
                 } finally {
                   setBusy(false);
                 }
@@ -165,6 +229,20 @@ export default function SettingsScreen() {
               <FontAwesome name="google" size={16} color="#4285F4" />
               <Text style={{ color: '#1F2937', fontFamily: fonts.bold }}>
                 {t('auth.linkGoogle')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleDeleteGuestData}
+              disabled={busy}
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 24,
+                paddingVertical: 12,
+                opacity: busy ? 0.5 : 1,
+              }}>
+              <Text style={{ color: '#EF4444', fontFamily: fonts.bold, fontSize: 13 }}>
+                {t('auth.deleteGuestData')}
               </Text>
             </Pressable>
           </>

@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 
 import { getAdMobInterstitialUnitId } from './admob';
+import { incrementAdImpressionCount } from './storage';
 
 /**
  * Interstitial ad manager with frequency limiting.
@@ -94,6 +95,7 @@ export async function maybeShowInterstitial(isPremium: boolean): Promise<void> {
     const unsubscribe = ad.onAdEvent((type: string) => {
       if (type === AdEventType.CLOSED) {
         unsubscribe();
+        incrementAdImpressionCount().catch(() => {});
         // Preload next ad
         preloadInterstitial();
         resolve();

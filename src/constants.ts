@@ -31,7 +31,12 @@ export const SETTING_KEYS = {
   hasSeenOnboarding: 'hasSeenOnboarding',
   hasSeenWelcome: 'hasSeenWelcome',
   lastPaywallShownAt: 'lastPaywallShownAt',
+  paywallDismissedAt: 'paywallDismissedAt',
+  paywallFivePrefShown: 'paywallFivePrefShown',
+  adImpressionCount: 'adImpressionCount',
   reviewPrompted: 'reviewPrompted',
   reviewPromptedCount: 'reviewPromptedCount',
 };
+
+export const DEV_UID = 'rwczt6I126Zi5Lc2MrrVvrq5Slz1';
 

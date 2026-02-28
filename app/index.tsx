@@ -1,16 +1,17 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, Image, Pressable, Text, View, useWindowDimensions, type ImageStyle } from 'react-native';
+import { Alert, Image, InteractionManager, Pressable, Text, View, useWindowDimensions, type ImageStyle } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
+import { LoginBonusModal } from '@/src/components/LoginBonusModal';
 import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import { TravelLunchCard } from '@/components/TravelLunchCard';
 import { formatYmd } from '@/src/domain/date';
 import { t } from '@/src/i18n';
 import { getCurrentBadge } from '@/src/domain/badges';
-import { getHasSeenOnboarding, getHasSeenWelcome, getLastPaywallShownAt, getLoginBonusState, getNearbyShownCount, getProfileAvatarUri, getSelectedBadgeId, getStores, getTravelLunchProgress, setLastPaywallShownAt } from '@/src/storage';
+import { claimLoginBonusIfNeeded, getHasSeenOnboarding, getHasSeenWelcome, getLastPaywallShownAt, getLoginBonusState, getNearbyShownCount, getProfileAvatarUri, getSelectedBadgeId, getStores, getTravelLunchProgress, setLastPaywallShownAt, getPaywallFivePrefShown, setPaywallFivePrefShown, getDistinctPrefectureCount, getAdImpressionCount } from '@/src/storage';
 import type { Store } from '@/src/models';
 import { usePremium } from '@/src/state/PremiumContext';
 import { useThemeColors, useThemeMode } from '@/src/state/ThemeContext';
@@ -18,6 +19,7 @@ import { preloadInterstitial } from '@/src/interstitialAd';
 import { InlineAdBanner } from '@/src/ui/AdBanner';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
+import { canShowPaywall } from '@/src/paywallTrigger';
 
 const QUICK_PADDING_H = 32;
 const QUICK_GAP = 8;
@@ -254,11 +256,16 @@ export default function StoreListScreen() {
   const { isPremium } = usePremium();
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [paywallTrigger, setPaywallTrigger] = useState('homeAdFree');
   const [adFreeShownToday, setAdFreeShownToday] = useState(false);
   const [loginStreak, setLoginStreak] = useState(0);
   const [badgeLabel, setBadgeLabel] = useState<string | null>(null);
   const [dailyPick, setDailyPick] = useState<Store | null>(null);
   const [allStoresCount, setAllStoresCount] = useState(0);
+  const loginBonusShownRef = useRef(false);
+  const [loginBonusVisible, setLoginBonusVisible] = useState(false);
+  const [loginBonusStreak, setLoginBonusStreak] = useState(0);
+  const [loginBonusTotalDays, setLoginBonusTotalDays] = useState(0);
 
   const quickItemWidth = useMemo(
     () => (width - QUICK_PADDING_H * 2 - QUICK_GAP * 3) / 4,
@@ -330,6 +337,28 @@ export default function StoreListScreen() {
     };
   }, [router]);
 
+  // Login bonus: only show on HomeScreen after navigation is stable
+  useEffect(() => {
+    if (checkingOnboarding) return;
+    if (loginBonusShownRef.current) return;
+    const task = InteractionManager.runAfterInteractions(() => {
+      (async () => {
+        try {
+          const result = await claimLoginBonusIfNeeded();
+          if (result.awarded) {
+            loginBonusShownRef.current = true;
+            setLoginBonusStreak(result.state.streak);
+            setLoginBonusTotalDays(result.state.totalDays);
+            setLoginBonusVisible(true);
+          }
+        } catch {
+          // ignore
+        }
+      })();
+    });
+    return () => task.cancel();
+  }, [checkingOnboarding]);
+
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
@@ -343,34 +372,62 @@ export default function StoreListScreen() {
           getNearbyShownCount(),
           getSelectedBadgeId(),
         ]);
-        if (mounted) {
-          setAvatarUri(uri);
-          setTravelProgress(progress);
-          const today = formatYmd(new Date());
-          setAdFreeShownToday(lastShown === today);
-          setLoginStreak(bonusState.streak);
-          setDailyPick(getDailyPick(stores));
-          setAllStoresCount(stores.length);
-          const badge = getCurrentBadge({
-            storesCount: stores.length,
-            favoritesCount: stores.filter((s) => s.isFavorite).length,
-            nearbyShownCount: nearbyCount,
-            totalLoginDays: bonusState.totalDays,
-            loginStreak: bonusState.streak,
-          });
-          setBadgeLabel(badge.label);
+        if (!mounted) return;
+
+        setAvatarUri(uri);
+        setTravelProgress(progress);
+        const today = formatYmd(new Date());
+        setAdFreeShownToday(lastShown === today);
+        setLoginStreak(bonusState.streak);
+        setDailyPick(getDailyPick(stores));
+        setAllStoresCount(stores.length);
+        const badge = getCurrentBadge({
+          storesCount: stores.length,
+          favoritesCount: stores.filter((s) => s.isFavorite).length,
+          nearbyShownCount: nearbyCount,
+          totalLoginDays: bonusState.totalDays,
+          loginStreak: bonusState.streak,
+        });
+        setBadgeLabel(badge.label);
+
+        // Sub-triggers (only for non-premium)
+        if (!isPremium) {
+          // 5-prefecture trigger (one-time)
+          const fivePrefShown = await getPaywallFivePrefShown();
+          if (!fivePrefShown) {
+            const prefCount = await getDistinctPrefectureCount(stores);
+            if (prefCount >= 5 && await canShowPaywall()) {
+              if (mounted) {
+                setPaywallTrigger('fivePref');
+                setPaywallVisible(true);
+                await setPaywallFivePrefShown();
+              }
+              return;
+            }
+          }
+
+          // Ad 3-times trigger
+          const adCount = await getAdImpressionCount();
+          if (adCount >= 3 && await canShowPaywall()) {
+            if (mounted) {
+              setPaywallTrigger('adImpression3');
+              setPaywallVisible(true);
+            }
+            return;
+          }
         }
       })();
       return () => {
         mounted = false;
       };
-    }, [])
+    }, [isPremium])
   );
 
   const handleAdFreePress = useCallback(async () => {
     const today = formatYmd(new Date());
     await setLastPaywallShownAt(today);
     setAdFreeShownToday(true);
+    setPaywallTrigger('homeAdFree');
     setPaywallVisible(true);
   }, []);
 
@@ -500,7 +557,13 @@ export default function StoreListScreen() {
       <PremiumPaywall
         visible={paywallVisible}
         onClose={() => setPaywallVisible(false)}
-        trigger="homeAdFree"
+        trigger={paywallTrigger}
+      />
+      <LoginBonusModal
+        visible={loginBonusVisible}
+        streak={loginBonusStreak}
+        totalDays={loginBonusTotalDays}
+        onClose={() => setLoginBonusVisible(false)}
       />
     </View>
   );

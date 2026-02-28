@@ -1,8 +1,8 @@
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 
 import { t } from '@/src/i18n';
+import { canUseNotifications } from '../notificationGuard';
 import { GEOFENCE_TASK_NAME, NOTIFY_COOLDOWN_MS } from '../constants';
 import { getMemos, getStore, setStoreLastNotifiedAt } from '../storage';
 
@@ -34,6 +34,9 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, async ({ data, error }) => {
     if (!isLunchWindow(new Date(now))) return;
     if (store.lastNotifiedAt && now - store.lastNotifiedAt < NOTIFY_COOLDOWN_MS) return;
 
+    if (!canUseNotifications()) return;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Notifications = require('expo-notifications');
     await Notifications.scheduleNotificationAsync({
       content: {
         title: t('geofence.nearTitle', { name: store.name }),
@@ -48,4 +51,3 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, async ({ data, error }) => {
     // swallow: background task must not throw
   }
 });
-

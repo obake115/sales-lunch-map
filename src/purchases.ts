@@ -41,6 +41,12 @@ function getApiKey(): string | null {
   return key && key.trim().length > 0 ? key.trim() : null;
 }
 
+/** API キー末尾4桁（診断用。個人情報は含まない） */
+function maskApiKey(key: string | null): string {
+  if (!key || key.length < 4) return 'null';
+  return '...' + key.slice(-4);
+}
+
 function getEntitlementId(): string {
   const raw = process.env.EXPO_PUBLIC_REVCAT_ENTITLEMENT_ID;
   return raw && raw.trim().length > 0 ? raw.trim() : 'unlimited_posts';
@@ -54,12 +60,55 @@ function getOfferingId(): string | null {
 async function ensureConfigured(): Promise<boolean> {
   if (Constants.appOwnership === 'expo') return false;
   const Purchases = getPurchasesModule();
-  if (!Purchases) return false;
+  if (!Purchases) {
+    console.warn('[RC] module not available');
+    return false;
+  }
   const apiKey = getApiKey();
-  if (!apiKey) return false;
+  if (!apiKey) {
+    console.warn('[RC] no API key');
+    return false;
+  }
   if (!configured) {
-    Purchases.configure({ apiKey });
-    configured = true;
+    console.log('[RC] configure: key=%s, platform=%s, __DEV__=%s, appOwnership=%s',
+      maskApiKey(apiKey), Platform.OS, __DEV__, Constants.appOwnership);
+    try {
+      Purchases.configure({ apiKey });
+      configured = true;
+      console.log('[RC] configure OK');
+
+      // configure 直後に offerings をプリフェッチ（初回取りこぼし対策）
+      try {
+        const offerings = await Purchases.getOfferings();
+        const cur = offerings?.current;
+        console.log('[RC] pre-fetch: currentId=%s, pkgCount=%d, allKeys=[%s]',
+          cur?.identifier ?? 'null',
+          cur?.availablePackages?.length ?? 0,
+          offerings?.all ? Object.keys(offerings.all).join(', ') : '');
+        if (cur?.availablePackages?.length) {
+          console.log('[RC] pre-fetch packages:', cur.availablePackages.map((p: any) => ({
+            pkgId: p.identifier,
+            productId: p.product?.identifier,
+            price: p.product?.priceString,
+          })));
+        }
+      } catch (e: any) {
+        console.warn('[RC] pre-fetch offerings failed:', e?.message);
+      }
+
+      // CustomerInfo の environment を出力（sandbox/production 判定）
+      try {
+        const info = await Purchases.getCustomerInfo();
+        console.log('[RC] customerInfo: environment=%s, entitlements=%s',
+          info?.entitlements?.verification ?? 'unknown',
+          JSON.stringify(Object.keys(info?.entitlements?.active ?? {})));
+      } catch (e: any) {
+        console.warn('[RC] getCustomerInfo failed:', e?.message);
+      }
+    } catch (e) {
+      console.error('[RC] configure failed:', e);
+      return false;
+    }
   }
   return true;
 }
@@ -87,9 +136,49 @@ export async function getAvailablePackages(): Promise<PlanPackage[]> {
 
   try {
     const offerings = await Purchases.getOfferings();
+
+    // ── 診断ログ ──
     const offeringId = getOfferingId();
-    const offering = offeringId ? offerings?.all?.[offeringId] : offerings?.current;
-    const pkgs: any[] = offering?.availablePackages ?? [];
+    console.log('[RC] getOfferings:', {
+      hasOfferings: !!offerings,
+      currentId: offerings?.current?.identifier ?? 'null',
+      currentPkgCount: offerings?.current?.availablePackages?.length ?? 0,
+      allKeys: offerings?.all ? Object.keys(offerings.all) : [],
+      requestedOfferingId: offeringId ?? '(use current)',
+    });
+
+    if (!offerings) {
+      console.warn('[RC] getOfferings returned null/undefined');
+      return [];
+    }
+
+    // Offering 解決: 指定 ID → 存在しなければ current にフォールバック
+    let offering = offeringId ? offerings.all?.[offeringId] : null;
+    if (offeringId && !offering) {
+      console.warn('[RC] offeringId=%s not found, falling back to current', offeringId);
+      offering = offerings.current;
+    }
+    if (!offering) {
+      offering = offerings.current;
+    }
+    if (!offering) {
+      console.warn('[RC] No offering available (current is null)');
+      return [];
+    }
+
+    const pkgs: any[] = offering.availablePackages ?? [];
+    console.log('[RC] resolved offering=%s, packages(%d):', offering.identifier, pkgs.length,
+      pkgs.map((p: any) => ({
+        pkgId: p.identifier,
+        productId: p.product?.identifier,
+        price: p.product?.priceString,
+        type: p.packageType,
+      })));
+
+    if (pkgs.length === 0) {
+      console.warn('[RC] offering=%s has 0 availablePackages', offering.identifier);
+      return [];
+    }
     return pkgs.map((pkg: any) => ({
       identifier: pkg.identifier ?? '',
       packageType: pkg.packageType ?? '',
@@ -102,13 +191,26 @@ export async function getAvailablePackages(): Promise<PlanPackage[]> {
       },
       _raw: pkg,
     }));
-  } catch {
+  } catch (e) {
+    console.error('[RC] getAvailablePackages error:', e);
     return [];
   }
 }
 
 /** Purchase a specific package by its raw reference. */
 export async function purchasePackage(pkg: PlanPackage): Promise<PurchaseOutcome> {
+  console.log('[RC] purchasePackage:', {
+    identifier: pkg.identifier,
+    hasRaw: !!pkg._raw,
+    rawId: pkg._raw?.identifier,
+    productId: pkg._raw?.product?.identifier,
+  });
+
+  if (!pkg._raw) {
+    console.error('[RC] purchasePackage: _raw is null');
+    return { success: false, message: t('purchases.packageInvalid') };
+  }
+
   const ok = await ensureConfigured();
   if (!ok) {
     return { success: false, message: t('purchases.configMissing') };
@@ -116,11 +218,35 @@ export async function purchasePackage(pkg: PlanPackage): Promise<PurchaseOutcome
   const Purchases = getPurchasesModule();
   if (!Purchases) return { success: false, message: t('purchases.unavailable') };
 
+  // 購入前に最新 offerings で package の存在を再検証
+  try {
+    const offerings = await Purchases.getOfferings();
+    const offeringId = getOfferingId();
+    let offering = offeringId ? offerings?.all?.[offeringId] : null;
+    if (!offering) offering = offerings?.current;
+    const available = (offering?.availablePackages ?? []) as any[];
+    const match = available.find((p: any) => p.identifier === pkg._raw.identifier);
+    console.log('[RC] pre-purchase verify: target=%s, found=%s, available=[%s]',
+      pkg._raw.identifier, !!match, available.map((p: any) => p.identifier).join(', '));
+    if (!match) {
+      console.error('[RC] package not in current offerings — aborting purchase');
+      return { success: false, message: t('purchases.packageInvalid') };
+    }
+  } catch (e: any) {
+    console.warn('[RC] pre-purchase verify failed, proceeding:', e?.message);
+  }
+
   try {
     await Purchases.purchasePackage(pkg._raw);
     const active = await syncPurchasedState();
     return active ? { success: true } : { success: false, message: t('purchases.verifyFailed') };
   } catch (error: any) {
+    console.error('[RC] purchasePackage error:', {
+      code: error?.code,
+      message: error?.message,
+      userCancelled: error?.userCancelled,
+      underlyingErrorMessage: error?.underlyingErrorMessage,
+    });
     if (error?.userCancelled) {
       return { success: false, cancelled: true };
     }
@@ -139,8 +265,13 @@ export async function purchaseUnlimited(): Promise<PurchaseOutcome> {
 
   try {
     const offerings = await Purchases.getOfferings();
+    if (!offerings) {
+      console.warn('[RC] purchaseUnlimited: offerings null');
+      return { success: false, message: t('purchases.packageMissing') };
+    }
     const offeringId = getOfferingId();
-    const offering = offeringId ? offerings?.all?.[offeringId] : offerings?.current;
+    let offering = offeringId ? offerings.all?.[offeringId] : null;
+    if (!offering) offering = offerings.current;
     const pkg = offering?.availablePackages?.[0];
     if (!pkg) {
       return { success: false, message: t('purchases.packageMissing') };
@@ -152,6 +283,7 @@ export async function purchaseUnlimited(): Promise<PurchaseOutcome> {
     if (error?.userCancelled) {
       return { success: false, cancelled: true };
     }
+    console.error('[RC] purchaseUnlimited error:', error);
     return { success: false, message: t('purchases.failed') };
   }
 }

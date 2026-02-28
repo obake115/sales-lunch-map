@@ -12,7 +12,10 @@ let deviceLocale = 'ja';
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Localization = require('expo-localization');
-  deviceLocale = Localization?.getLocales?.()[0]?.languageTag ?? 'ja';
+  const tag: string = Localization?.getLocales?.()[0]?.languageTag ?? 'ja';
+  // 'ja-JP' → 'ja', 'en-US' → 'en' — locale ファイルのキーに合わせる
+  const lang = tag.split('-')[0];
+  deviceLocale = lang === 'ja' || lang === 'en' ? lang : 'ja';
 } catch {
   deviceLocale = 'ja';
 }

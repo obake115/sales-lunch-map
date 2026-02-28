@@ -10,7 +10,11 @@ import { useFonts } from 'expo-font';
 import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
+import { LogBox } from 'react-native';
 import 'react-native-reanimated';
+
+// Suppress uncatchable expo-notifications error on iOS Simulator
+LogBox.ignoreLogs(['getRegistrationInfoAsync', 'ExpoLinearGradient', 'topSvgLayout']);
 
 import { logScreenView } from '@/src/analytics';
 import { AppProviders } from '@/src/AppProviders';

@@ -75,7 +75,7 @@ export default function PostLimitInfoScreen() {
             </View>
           ) : (
             <Pressable onPress={() => setPaywallVisible(true)} style={UI.purchaseBtn}>
-              <Text style={UI.purchaseBtnText}>{t('paywall.purchaseCta')}</Text>
+              <Text style={UI.purchaseBtnText}>{t('paywall.ctaButton')}</Text>
             </Pressable>
           )}
         </NeuCard>

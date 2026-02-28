@@ -177,8 +177,29 @@ export async function downloadAllData(uid: string, onProgress?: (p: PhotoSyncPro
     if (data.nearbyRadiusM) await storage.setNearbyRadiusM(Number(data.nearbyRadiusM) || 300);
     if (data.postLimitPurchased === '1') await storage.setPostLimitPurchased(true);
     if (data.profileName) await storage.setProfileName(data.profileName);
-    if (data.profileAvatarUri) await storage.setProfileAvatarUri(data.profileAvatarUri);
     if (data.selectedBadgeId) await storage.setSelectedBadgeId(data.selectedBadgeId);
+    // アバターはクラウドURLからダウンロードして復元
+    if (data.profileAvatarUrl) {
+      try {
+        const { downloadImage } = await import('./storageSync');
+        const localUri = await downloadImage(data.profileAvatarUrl as string, 'profile_avatar.jpg');
+        await storage.setProfileAvatarUri(localUri);
+      } catch (e) {
+        console.error('Failed to download profile avatar:', e);
+      }
+    }
+    // ログインボーナス状態を復元
+    if (data.lastLoginDate || data.streakDays || data.totalLoginDays) {
+      await storage.restoreLoginBonusState({
+        lastClaimedDate: data.lastLoginDate || undefined,
+        streak: Number(data.streakDays) || 0,
+        totalDays: Number(data.totalLoginDays) || 0,
+      });
+    }
+    // 近場表示カウントを復元
+    if (data.nearbyShownCount) {
+      await storage.setNearbyShownCount(Number(data.nearbyShownCount) || 0);
+    }
   }
 
   // Restore stores (preserve original IDs so memo storeId references stay valid)

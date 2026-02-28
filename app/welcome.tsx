@@ -1,19 +1,24 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, Text, View } from 'react-native';
 
 import { logLogin } from '@/src/analytics';
 import { t } from '@/src/i18n';
+import { restorePurchases } from '@/src/purchases';
 import { useAuth } from '@/src/state/AuthContext';
 import { setHasSeenWelcome } from '@/src/storage';
+import { checkCloudDataExists, downloadAllData } from '@/src/sync/firestoreSync';
+import type { PhotoSyncProgress } from '@/src/sync/storageSync';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
+import type { User } from 'firebase/auth';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { signInWithApple, signInWithGoogle, signInAsGuest, error } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
   const prevError = useRef<string | null>(null);
 
   // error state が変化したら Alert で表示（Firebase エラーコード含む）
@@ -24,8 +29,37 @@ export default function WelcomeScreen() {
     prevError.current = error;
   }, [error]);
 
-  const finish = async () => {
+  const handleProgress = (p: PhotoSyncProgress) => {
+    setRestoreStatus(t('auth.restoringPhotos', { current: p.current, total: p.total }));
+  };
+
+  const finish = async (user: User) => {
     await setHasSeenWelcome(true);
+    // 既存アカウントにクラウドデータがあれば自動復元
+    if (!user.isAnonymous) {
+      try {
+        // Firestore が応答しない場合に備え 10 秒でタイムアウト
+        const hasCloud = await Promise.race([
+          checkCloudDataExists(user.uid),
+          new Promise<false>((resolve) => setTimeout(() => resolve(false), 10_000)),
+        ]);
+        if (hasCloud) {
+          setRestoreStatus(t('auth.restoringData'));
+          await downloadAllData(user.uid, handleProgress);
+          // IAP状態も復元
+          await restorePurchases().catch(() => {});
+          setRestoreStatus(null);
+          router.replace('/');
+          return;
+        }
+      } catch (e) {
+        console.error('[Welcome] auto-restore failed:', e);
+        setRestoreStatus(null);
+        // 復元失敗時はdata-migrationへフォールバック
+        router.replace('/data-migration');
+        return;
+      }
+    }
     router.replace('/onboarding');
   };
 
@@ -36,9 +70,8 @@ export default function WelcomeScreen() {
       const user = await signInWithApple();
       if (user) {
         logLogin({ method: 'apple' });
-        await finish();
+        await finish(user);
       }
-      // error は state 経由で次の render で Alert 表示（下の useEffect で処理）
     } finally {
       setBusy(false);
     }
@@ -51,7 +84,7 @@ export default function WelcomeScreen() {
       const user = await signInWithGoogle();
       if (user) {
         logLogin({ method: 'google' });
-        await finish();
+        await finish(user);
       }
     } finally {
       setBusy(false);
@@ -65,7 +98,7 @@ export default function WelcomeScreen() {
       const user = await signInAsGuest();
       if (user) {
         logLogin({ method: 'guest' });
-        await finish();
+        await finish(user);
       }
     } finally {
       setBusy(false);
@@ -83,7 +116,14 @@ export default function WelcomeScreen() {
 
       <NeuCard style={{ padding: 24, gap: 12 }}>
         {busy && (
-          <ActivityIndicator style={{ marginBottom: 4 }} />
+          <View style={{ alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <ActivityIndicator />
+            {restoreStatus && (
+              <Text style={{ color: '#6B7280', fontSize: 13, fontFamily: fonts.bold, textAlign: 'center' }}>
+                {restoreStatus}
+              </Text>
+            )}
+          </View>
         )}
 
         {Platform.OS === 'ios' && (
@@ -147,6 +187,20 @@ export default function WelcomeScreen() {
       <Text style={{ color: '#9CA3AF', textAlign: 'center', marginTop: 20, fontSize: 12, lineHeight: 18 }}>
         {t('auth.guestHint')}
       </Text>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16, gap: 4 }}>
+        <Pressable onPress={() => router.push('/privacy')} hitSlop={8}>
+          <Text style={{ color: '#9CA3AF', fontSize: 11, textDecorationLine: 'underline' }}>
+            {t('settings.privacyPolicy')}
+          </Text>
+        </Pressable>
+        <Text style={{ color: '#D1D5DB', fontSize: 11 }}>|</Text>
+        <Pressable onPress={() => router.push('/terms')} hitSlop={8}>
+          <Text style={{ color: '#9CA3AF', fontSize: 11, textDecorationLine: 'underline' }}>
+            {t('settings.termsOfService')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
