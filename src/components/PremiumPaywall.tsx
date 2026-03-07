@@ -492,23 +492,23 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
           <Text style={s.cancelNote}>{t('paywall.cancelNote')}</Text>
 
           <View style={s.footerLinks}>
-            <Pressable onPress={() => router.push('/privacy')} hitSlop={8}>
+            <Pressable onPress={() => router.push('/privacy')} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
               <Text style={s.footerLink}>{t('settings.privacyPolicy')}</Text>
             </Pressable>
             <Text style={s.footerSep}>|</Text>
-            <Pressable onPress={() => router.push('/terms')} hitSlop={8}>
+            <Pressable onPress={() => router.push('/terms')} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
               <Text style={s.footerLink}>{t('settings.termsOfService')}</Text>
             </Pressable>
             <Text style={s.footerSep}>|</Text>
             <Pressable
               onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}
-              hitSlop={8}>
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
               <Text style={s.footerLink}>{t('paywall.manageSubscriptions')}</Text>
             </Pressable>
           </View>
 
           <Text style={s.note}>{t('paywall.subscriptionTerms')}</Text>
-          <Text style={s.note}>{t('paywall.subscriptionNote')}</Text>
+          <Text style={s.note}>{t('paywall.subscriptionCancel')}</Text>
           <Text style={s.note}>{t('paywall.restoreNote')}</Text>
         </ScrollView>
       </View>
