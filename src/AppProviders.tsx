@@ -20,7 +20,7 @@ function PurchaseIdentifier() {
     // ユーザー確定後に再評価しないとプレミアム判定が反映されない。
     const sync = authMethod !== 'anonymous'
       ? identifyUser(user.uid).then(() => syncPurchasedState()).catch(() => {})
-      : Promise.resolve();
+      : syncPurchasedState().catch(() => {});
     sync.then(() => refreshPremium());
   }, [user?.uid, authMethod, refreshPremium]);
 

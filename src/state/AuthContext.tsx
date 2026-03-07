@@ -207,6 +207,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signOut = useCallback(async () => {
     setError(null);
+    const { logOutPurchases } = await import('../purchases');
+    await logOutPurchases();
     await firebaseAuth.signOut();
     await setHasSeenWelcome(false);
     await setHasSeenOnboarding(false);
@@ -219,13 +221,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     // 1. Delete cloud data
     const { deleteAllCloudData } = await import('../sync/firestoreSync');
     await deleteAllCloudData(uid);
-    // 2. Clear all local data
+    // 2. RevenueCat logout
+    const { logOutPurchases } = await import('../purchases');
+    await logOutPurchases();
+    // 3. Clear all local data (includes postLimitPurchased reset)
     const { clearAllLocalData } = await import('../storage');
     await clearAllLocalData();
-    // 3. Clear AsyncStorage
+    // 4. Clear AsyncStorage
     const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     await AsyncStorage.clear();
-    // 4. Delete Firebase user
+    // 5. Delete Firebase user
     await deleteUser(currentUser);
   }, []);
 
