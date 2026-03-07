@@ -27,6 +27,10 @@
         "ascApiKeyId": "GB3P326JPL",
         "ascApiKeyIssuerId": "ff563272-17b7-45f9-a4e1-c2b34f59b30c",
         "ascApiKeyPath": "/Users/shunkawasaki/Desktop/AuthKey_GB3P326JPL.p8"
+      },
+      "android": {
+        "serviceAccountKeyPath": "/Users/shunkawasaki/Desktop/google-play-service-account.json",
+        "track": "internal"
       }
     }
   }
