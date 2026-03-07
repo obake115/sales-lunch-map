@@ -383,20 +383,15 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
 
                     <Text style={s.annualLabel}>{t('paywall.planAnnual')}</Text>
 
-                    {/* Equiv monthly price + normal monthly comparison */}
-                    <View style={s.annualPriceRow}>
-                      <Text style={s.annualEquiv}>
-                        {t('paywall.planAnnualEquiv', { monthlyEquiv: annualMetrics.monthlyEquiv.toLocaleString() })}
-                      </Text>
-                    </View>
-                    <Text style={s.annualNormal}>
-                      {t('paywall.annualNormalPrice', { monthlyPrice: annualMetrics.monthlyPrice.toLocaleString() })}
-                    </Text>
-
-                    {/* Annual price */}
+                    {/* Billed amount — must be the most prominent pricing element */}
                     <Text style={s.annualPrice}>{getPlanPrice('annual')}</Text>
 
-                    {/* Saving callout in accent */}
+                    {/* Equiv monthly price (subordinate) */}
+                    <Text style={s.annualEquiv}>
+                      {t('paywall.planAnnualEquiv', { monthlyEquiv: annualMetrics.monthlyEquiv.toLocaleString() })}
+                    </Text>
+
+                    {/* Saving callout (subordinate) */}
                     {annualMetrics.saving > 0 && (
                       <View style={s.savingBadge}>
                         <Text style={s.savingText}>
@@ -682,26 +677,16 @@ const s = StyleSheet.create({
     marginTop: 18,
     marginBottom: 6,
   },
-  annualPriceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 2,
+  annualPrice: {
+    fontSize: 28,
+    fontFamily: fonts.extraBold,
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   annualEquiv: {
-    fontSize: 26,
-    fontFamily: fonts.extraBold,
-    color: '#FDE68A',
-  },
-  annualNormal: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: fonts.medium,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 6,
-  },
-  annualPrice: {
-    fontSize: 15,
-    fontFamily: fonts.bold,
-    color: 'rgba(255,255,255,0.85)',
+    color: 'rgba(255,255,255,0.7)',
     marginBottom: 6,
   },
   savingBadge: {

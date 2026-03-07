@@ -1,0 +1,9 @@
+{
+  "NSCameraUsageDescription": "The camera is used to scan QR codes for invite codes.",
+  "NSLocationWhenInUseUsageDescription": "Your location is used to display nearby shops and map features.",
+  "NSLocationAlwaysAndWhenInUseUsageDescription": "Your location is used in the background to send reminders when you are near saved restaurants.",
+  "NSLocationAlwaysUsageDescription": "Your location is used in the background to send reminders when you are near saved restaurants.",
+  "NSPhotoLibraryUsageDescription": "Access to your photo library is needed to select a profile photo.",
+  "NSPhotoLibraryAddUsageDescription": "Access to your photo library is needed to save profile photos.",
+  "NSUserTrackingUsageDescription": "Tracking is used to personalize ads. You can still use the app without granting permission."
+}
