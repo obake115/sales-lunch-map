@@ -57,6 +57,12 @@ export async function downloadImage(url: string, fileName: string): Promise<stri
   return downloaded.uri;
 }
 
+// --- Shared map store photo upload ---
+
+export async function uploadSharedStorePhoto(uid: string, mapId: string, storeId: string, localUri: string): Promise<string> {
+  return uploadImage(uid, `shared-stores/${mapId}_${storeId}.jpg`, localUri);
+}
+
 // --- Single-item uploads (incremental sync) ---
 
 export async function uploadStorePhotos(uid: string, store: Store): Promise<void> {

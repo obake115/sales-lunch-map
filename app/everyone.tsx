@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
+  Image,
   PanResponder,
   Pressable,
   ScrollView,
@@ -180,7 +181,7 @@ export default function EveryoneScreen() {
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>('nearest');
-  const [scrollEnabled, setScrollEnabled] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   const { resolvedTone, resolvedLabel } = useEveryoneTone({
     isNavy,
@@ -196,14 +197,14 @@ export default function EveryoneScreen() {
   const snapTo = useCallback((target: number) => {
     'worklet';
     sheetHeight.value = withSpring(target, SPRING_CONFIG);
-    runOnJS(setScrollEnabled)(target >= SNAP_FULL);
+    runOnJS(setScrollEnabled)(true);
   }, [sheetHeight]);
 
   const snapToIndex = useCallback((index: number) => {
     const target = SNAPS[index] ?? SNAP_PEEK;
     currentSnap.current = target;
     sheetHeight.value = withSpring(target, SPRING_CONFIG);
-    setScrollEnabled(target >= SNAP_FULL);
+    setScrollEnabled(true);
   }, [sheetHeight]);
 
   const panResponder = useMemo(() => PanResponder.create({
@@ -526,34 +527,41 @@ export default function EveryoneScreen() {
                   }}>
                   <View
                     onLayout={(e) => { cardRefs.current[store.id] = e.nativeEvent.layout.y; }}>
-                    <Text
-                      style={{ fontFamily: fonts.extraBold, fontSize: 15, color: colors.text }}
-                      numberOfLines={1}>
-                      {store.name}
-                    </Text>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                      <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: APRICOT }}>
-                        {store.mapName}
-                      </Text>
-                      <Text style={{ fontSize: 11, color: colors.subText }}>
-                        {relativeTime(store.createdAt)}
-                      </Text>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                      {typeof store.distanceM === 'number' && (
-                        <Text style={{ fontSize: 12, color: colors.subText, fontFamily: fonts.bold }}>
-                          {'📍 ' + formatDistance(store.distanceM)}
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      {store.photoUrl ? (
+                        <Image source={{ uri: store.photoUrl }} style={{ width: 60, height: 60, borderRadius: 10 }} />
+                      ) : null}
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{ fontFamily: fonts.extraBold, fontSize: 15, color: colors.text }}
+                          numberOfLines={1}>
+                          {store.name}
                         </Text>
-                      )}
-                      {store.tag && (
-                        <View style={[styles.tagChip, { backgroundColor: colors.chipBg }]}>
-                          <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.subText }}>
-                            {TAG_EMOJI[store.tag] ?? ''} {store.tag}
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: APRICOT }}>
+                            {store.mapName}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: colors.subText }}>
+                            {relativeTime(store.createdAt)}
                           </Text>
                         </View>
-                      )}
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                          {typeof store.distanceM === 'number' && (
+                            <Text style={{ fontSize: 12, color: colors.subText, fontFamily: fonts.bold }}>
+                              {'📍 ' + formatDistance(store.distanceM)}
+                            </Text>
+                          )}
+                          {store.tag && (
+                            <View style={[styles.tagChip, { backgroundColor: colors.chipBg }]}>
+                              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.subText }}>
+                                {TAG_EMOJI[store.tag] ?? ''} {store.tag}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
                     </View>
 
                     {store.memo ? (

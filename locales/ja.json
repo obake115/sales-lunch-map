@@ -237,7 +237,12 @@
     "renamePlaceholder": "マップ名を入力",
     "renameSave": "保存",
     "renameCancel": "キャンセル",
-    "renameFailedTitle": "名前を変更できませんでした"
+    "renameFailedTitle": "名前を変更できませんでした",
+    "photoLabel": "写真",
+    "photoSelect": "写真を選択",
+    "photoRemove": "削除",
+    "photoUploadFailedTitle": "写真のアップロードに失敗しました",
+    "photoUploadFailedBody": "店舗は保存されましたが、写真のアップロードに失敗しました。"
   },
   "profile": {
     "title": "プロフィール",

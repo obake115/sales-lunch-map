@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -26,6 +27,7 @@ import {
 } from '@/src/sharedMaps';
 import { useAuth } from '@/src/state/AuthContext';
 import { getProfileName } from '@/src/storage';
+import { uploadSharedStorePhoto } from '@/src/sync/storageSync';
 import { useThemeColors } from '@/src/state/ThemeContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { fonts } from '@/src/ui/fonts';
@@ -221,6 +223,7 @@ export default function SharedMapDetailScreen() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
   const [saving, setSaving] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [deviceLatLng, setDeviceLatLng] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const [profileName, setProfileName] = useState('');
@@ -445,6 +448,35 @@ export default function SharedMapDetailScreen() {
           />
 
           <View style={{ marginTop: 10 }}>
+            <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('sharedDetail.photoLabel')}</Text>
+            {photoUri ? (
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                <Image source={{ uri: photoUri }} style={{ width: 80, height: 80, borderRadius: 10 }} />
+                <Pressable
+                  onPress={() => setPhotoUri(null)}
+                  style={{ ...UI.dangerBtn, backgroundColor: colors.dangerBg }}>
+                  <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold, fontSize: 12 }}>{t('sharedDetail.photoRemove')}</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                onPress={async () => {
+                  const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: true,
+                    quality: 0.8,
+                  });
+                  if (!result.canceled && result.assets[0]) {
+                    setPhotoUri(result.assets[0].uri);
+                  }
+                }}
+                style={{ ...UI.secondaryBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, paddingVertical: 12 }}>
+                <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('sharedDetail.photoSelect')}</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <View style={{ marginTop: 10 }}>
             <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('sharedDetail.location')}</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Pressable
@@ -522,12 +554,22 @@ export default function SharedMapDetailScreen() {
               if (!canSave) return;
               try {
                 setSaving(true);
+                let photoUrl: string | undefined;
+                if (photoUri) {
+                  try {
+                    const tempId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                    photoUrl = await uploadSharedStorePhoto(user.uid, mapId, tempId, photoUri);
+                  } catch (uploadErr: any) {
+                    console.error('Photo upload failed:', uploadErr?.code, uploadErr?.message, uploadErr);
+                  }
+                }
                 await addMapStore(mapId, {
                   name,
                   memo,
                   placeId: placeId.trim().length > 0 ? placeId.trim() : undefined,
                   latitude: latitude as number,
                   longitude: longitude as number,
+                  photoUrl,
                   createdBy: user.uid,
                 });
                 setName('');
@@ -535,6 +577,10 @@ export default function SharedMapDetailScreen() {
                 setPlaceId('');
                 setLatitude(null);
                 setLongitude(null);
+                setPhotoUri(null);
+                if (photoUri && !photoUrl) {
+                  Alert.alert(t('sharedDetail.photoUploadFailedTitle'), t('sharedDetail.photoUploadFailedBody'));
+                }
               } catch (e: any) {
                 Alert.alert(t('sharedDetail.saveFailedTitle'), e?.message ?? t('shared.tryLater'));
               } finally {
@@ -592,9 +638,16 @@ export default function SharedMapDetailScreen() {
               const canDelete = user?.uid && user.uid === item.createdBy && canEdit;
               return (
                 <NeuCard key={item.id} style={[UI.card, { backgroundColor: colors.card }]}>
-                  <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }} numberOfLines={1}>
-                    {item.name}
-                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {item.photoUrl ? (
+                      <Image source={{ uri: item.photoUrl }} style={{ width: 60, height: 60, borderRadius: 10 }} />
+                    ) : null}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                    </View>
+                  </View>
                   {item.tag ? (
                     <Text style={{ color: '#B45309', marginTop: 4, fontFamily: fonts.extraBold }}>
                       {item.tag === 'favorite'

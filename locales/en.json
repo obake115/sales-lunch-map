@@ -237,7 +237,12 @@
     "renamePlaceholder": "Enter map name",
     "renameSave": "Save",
     "renameCancel": "Cancel",
-    "renameFailedTitle": "Couldn't rename"
+    "renameFailedTitle": "Couldn't rename",
+    "photoLabel": "Photo",
+    "photoSelect": "Select photo",
+    "photoRemove": "Remove",
+    "photoUploadFailedTitle": "Photo upload failed",
+    "photoUploadFailedBody": "The place was saved, but the photo could not be uploaded."
   },
   "profile": {
     "title": "Profile",

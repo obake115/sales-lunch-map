@@ -36,6 +36,7 @@ export type SharedStore = {
   longitude: number;
   memo?: string;
   tag?: 'favorite' | 'want' | 'again';
+  photoUrl?: string;
   createdBy: string;
   createdAt?: number;
 };
@@ -138,6 +139,7 @@ export function listenMapStores(mapId: string, onChange: (stores: SharedStore[])
         longitude: data?.longitude ?? 0,
         memo: data?.memo ?? undefined,
         tag: data?.tag ?? undefined,
+        photoUrl: data?.photoUrl ?? undefined,
         createdBy: data?.createdBy ?? '',
         createdAt: data?.createdAt?.toMillis?.() ?? undefined,
       } as SharedStore;
@@ -157,6 +159,7 @@ export async function addMapStore(
     longitude: number;
     memo?: string;
     tag?: 'favorite' | 'want' | 'again';
+    photoUrl?: string;
     createdBy: string;
   }
 ) {
@@ -172,6 +175,7 @@ export async function addMapStore(
   if (placeId) data.placeId = placeId;
   const memo = input.memo?.trim();
   if (memo) data.memo = memo;
+  if (input.photoUrl) data.photoUrl = input.photoUrl;
   await addDoc(collection(firebaseDb, 'maps', mapId, 'stores'), data);
 }
 
