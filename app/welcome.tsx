@@ -7,7 +7,7 @@ import { logLogin } from '@/src/analytics';
 import { t } from '@/src/i18n';
 import { restorePurchases } from '@/src/purchases';
 import { useAuth } from '@/src/state/AuthContext';
-import { setHasSeenWelcome } from '@/src/storage';
+import { setHasSeenOnboarding, setHasSeenWelcome } from '@/src/storage';
 import { checkCloudDataExists, downloadAllData } from '@/src/sync/firestoreSync';
 import type { PhotoSyncProgress } from '@/src/sync/storageSync';
 import { fonts } from '@/src/ui/fonts';
@@ -46,6 +46,9 @@ export default function WelcomeScreen() {
         if (hasCloud) {
           setRestoreStatus(t('auth.restoringData'));
           await downloadAllData(user.uid, handleProgress);
+          // downloadAllData の clearAllLocalData でフラグが消えるので再設定
+          await setHasSeenWelcome(true);
+          await setHasSeenOnboarding(true);
           // IAP状態も復元
           await restorePurchases().catch(() => {});
           setRestoreStatus(null);

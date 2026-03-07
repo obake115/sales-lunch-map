@@ -168,7 +168,13 @@ export async function downloadAllData(uid: string, onProgress?: (p: PhotoSyncPro
 
   // 2. All downloads succeeded — now safe to clear local data and write
   const storage = await getStorage();
+  // ナビゲーションフラグを退避（clearAllLocalData で消えるため）
+  const wasWelcome = await storage.getHasSeenWelcome();
+  const wasOnboarding = await storage.getHasSeenOnboarding();
   await storage.clearAllLocalData();
+  // データ復元するユーザーは既にログイン済みなのでフラグを復元
+  if (wasWelcome) await storage.setHasSeenWelcome(true);
+  if (wasOnboarding) await storage.setHasSeenOnboarding(true);
 
   // Restore settings
   if (settingsDoc.exists()) {
