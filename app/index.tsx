@@ -534,6 +534,15 @@ export default function StoreListScreen() {
           onAdd={() => router.push('/travel/new')}
         />
 
+        <NeuCard
+          style={{ padding: 14, marginTop: 8, marginBottom: 4, backgroundColor: colors.card }}
+          onPress={() => router.push('/stats')}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <FontAwesome name="bar-chart" size={20} color="#F59E0B" />
+            <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text }}>{t('nav.stats')}</Text>
+          </View>
+        </NeuCard>
+
         <InlineAdBanner />
 
         {!isPremium && !adFreeShownToday && (

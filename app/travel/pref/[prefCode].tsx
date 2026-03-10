@@ -6,6 +6,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Linking,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -15,7 +16,7 @@ import {
 
 import { fonts } from '@/src/ui/fonts';
 import { t } from '@/src/i18n';
-import { deleteTravelLunchEntry, getTravelLunchEntries } from '@/src/storage';
+import { deleteTravelLunchEntry, getTravelLunchEntries, toggleTravelLunchFavorite } from '@/src/storage';
 import { useThemeMode } from '@/src/state/ThemeContext';
 import type { TravelLunchEntry } from '@/src/models';
 
@@ -108,6 +109,22 @@ export default function TravelPrefDetailScreen() {
                   {item.memo}
                 </Text>
               ) : null}
+              {item.url ? (
+                <Pressable onPress={() => Linking.openURL(item.url!)} style={{ marginTop: 4 }}>
+                  <Text style={{ color: '#4F78FF', textDecorationLine: 'underline', fontFamily: fonts.medium, fontSize: 12 }} numberOfLines={1}>
+                    {item.url}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                <Pressable
+                  onPress={async () => {
+                    await toggleTravelLunchFavorite(item.id);
+                    await refresh();
+                  }}
+                  style={{ padding: 4 }}>
+                  <Text style={{ fontSize: 18 }}>{item.isFavorite ? '★' : '☆'}</Text>
+                </Pressable>
               <Pressable
                 onPress={() => {
                   Alert.alert(
@@ -126,9 +143,10 @@ export default function TravelPrefDetailScreen() {
                     ]
                   );
                 }}
-                style={{ marginTop: 8, alignSelf: 'flex-end', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2' }}>
+                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2' }}>
                 <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold }}>−</Text>
               </Pressable>
+              </View>
             </View>
           </View>
         )}

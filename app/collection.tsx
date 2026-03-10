@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import {
   Alert,
   Image,
+  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -15,7 +16,7 @@ import {
 import { t } from '@/src/i18n';
 import { fonts } from '@/src/ui/fonts';
 import { useThemeColors } from '@/src/state/ThemeContext';
-import { deleteTravelLunchEntry, getTravelLunchEntries, updateTravelLunchEntryImage } from '@/src/storage';
+import { deleteTravelLunchEntry, getTravelLunchEntries, toggleTravelLunchFavorite, updateTravelLunchEntryImage } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { JapanMapInteractive } from '@/src/ui/JapanMapInteractive';
 import { NeuCard } from '@/src/ui/NeuCard';
@@ -233,7 +234,6 @@ export default function CollectionDetailScreen() {
                           const result = await ImagePicker.launchImageLibraryAsync({
                             mediaTypes: ['images'],
                             allowsEditing: true,
-                            aspect: [4, 3],
                             quality: 0.8,
                           });
                           if (result.canceled) return;
@@ -249,6 +249,20 @@ export default function CollectionDetailScreen() {
                           <Text style={[UI.cardTitle, { color: colors.text }]} numberOfLines={1}>{prefName}｜{post.restaurantName}</Text>
                           <Text style={[UI.cardMeta, { color: colors.subText }]} numberOfLines={1}>{post.genre} | {post.visitedAt}</Text>
                           {post.memo ? <Text style={[UI.cardMemo, { color: colors.subText }]} numberOfLines={1}>{post.memo}</Text> : null}
+                          {post.url ? (
+                            <Pressable onPress={() => Linking.openURL(post.url!)} style={{ marginTop: 2 }}>
+                              <Text style={{ color: '#4F78FF', textDecorationLine: 'underline', fontSize: 11 }} numberOfLines={1}>{post.url}</Text>
+                            </Pressable>
+                          ) : null}
+                          <Pressable
+                            onPress={async (e) => {
+                              e.stopPropagation();
+                              await toggleTravelLunchFavorite(post.id);
+                              await refresh();
+                            }}
+                            style={{ position: 'absolute', bottom: 4, right: 4, padding: 4 }}>
+                            <Text style={{ fontSize: 18 }}>{post.isFavorite ? '★' : '☆'}</Text>
+                          </Pressable>
                         </View>
                       </Pressable>
                     </View>

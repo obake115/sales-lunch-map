@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, ImageBackground, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Image, ImageBackground, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { logReminderSetup, logStoreDeleted } from '@/src/analytics';
 import { ShareCard } from '@/src/components/ShareCard';
@@ -113,11 +113,13 @@ export default function PlaceDetailScreen() {
   const [showReminder, setShowReminder] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [draftNote, setDraftNote] = useState('');
+  const [draftUrl, setDraftUrl] = useState('');
 
   useEffect(() => {
     if (store) {
       setDraftName(store.name);
       setDraftNote(store.note ?? '');
+      setDraftUrl(store.url ?? '');
     }
   }, [store?.id]);
 
@@ -126,6 +128,7 @@ export default function PlaceDetailScreen() {
     const patch: Partial<Omit<Store, 'id' | 'createdAt'>> = {};
     if (draftName !== store.name) patch.name = draftName;
     if (draftNote !== (store.note ?? '')) patch.note = draftNote;
+    if (draftUrl !== (store.url ?? '')) patch.url = draftUrl || undefined;
     if (Object.keys(patch).length > 0) {
       await updateStore(store.id, patch);
       await refresh();
@@ -334,6 +337,28 @@ export default function PlaceDetailScreen() {
             multiline
             {...INPUT_PROPS}
           />
+        </NeuCard>
+
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeDetail.urlLabel')}</Text>
+          <TextInput
+            value={draftUrl}
+            onChangeText={setDraftUrl}
+            onBlur={saveTextFields}
+            placeholder={t('storeDetail.urlPlaceholder')}
+            style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
+            placeholderTextColor={colors.subText}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {draftUrl ? (
+            <Pressable onPress={() => Linking.openURL(draftUrl)} style={{ marginTop: 8 }}>
+              <Text style={{ color: '#4F78FF', textDecorationLine: 'underline', fontFamily: fonts.medium, fontSize: 13 }} numberOfLines={1}>
+                {draftUrl}
+              </Text>
+            </Pressable>
+          ) : null}
         </NeuCard>
 
         <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>

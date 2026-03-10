@@ -20,6 +20,7 @@ type PlaceRow = {
   shareToEveryone: number;
   remindEnabled: number;
   remindRadiusM: number | null;
+  url: string | null;
   photoUri: string | null;
   photoUris: string | null;
   createdAt: string;
@@ -57,6 +58,7 @@ const rowToStore = (row: PlaceRow): Store => ({
   longitude: row.lng,
   enabled: row.enabled === 1,
   note: row.note ?? undefined,
+  url: row.url ?? undefined,
   timeBand: (row.timeBand as Store['timeBand']) ?? undefined,
   moodTags: safeJsonParse(row.moodTags),
   sceneTags: safeJsonParse(row.sceneTags),
@@ -91,6 +93,7 @@ export async function insertPlace(
       Pick<
         Store,
         | 'note'
+        | 'url'
         | 'timeBand'
         | 'moodTags'
         | 'sceneTags'
@@ -115,13 +118,14 @@ export async function insertPlace(
   const lastNotifiedAt = input.lastNotifiedAt ? toDbDate(input.lastNotifiedAt) : null;
   await db.runAsync(
     `INSERT INTO places (
-      id, name, note, lat, lng, placeId, enabled, timeBand, moodTags, sceneTags, parking, smoking, seating,
+      id, name, note, url, lat, lng, placeId, enabled, timeBand, moodTags, sceneTags, parking, smoking, seating,
       isFavorite, shareToEveryone, remindEnabled, remindRadiusM, photoUri, photoUris, createdAt, updatedAt, lastNotifiedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       input.id,
       input.name ?? '',
       input.note ?? null,
+      input.url ?? null,
       input.latitude,
       input.longitude,
       input.placeId ?? null,
@@ -155,12 +159,13 @@ export async function updatePlace(
   const next: Store = { ...current, ...patch, updatedAt: Date.now() };
   await db.runAsync(
     `UPDATE places SET
-      name = ?, note = ?, lat = ?, lng = ?, placeId = ?, enabled = ?, timeBand = ?, moodTags = ?, sceneTags = ?, parking = ?, smoking = ?, seating = ?,
+      name = ?, note = ?, url = ?, lat = ?, lng = ?, placeId = ?, enabled = ?, timeBand = ?, moodTags = ?, sceneTags = ?, parking = ?, smoking = ?, seating = ?,
       isFavorite = ?, shareToEveryone = ?, remindEnabled = ?, remindRadiusM = ?, photoUri = ?, photoUris = ?, updatedAt = ?, lastNotifiedAt = ?
     WHERE id = ?`,
     [
       next.name ?? '',
       next.note ?? null,
+      next.url ?? null,
       next.latitude,
       next.longitude,
       next.placeId ?? null,

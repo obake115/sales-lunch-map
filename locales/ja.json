@@ -10,6 +10,15 @@
     "saveFailed": "保存に失敗しました",
     "tryAgain": "もう一度お試しください。"
   },
+  "shareTarget": {
+    "title": "どこに追加しますか？",
+    "mapTitle": "マップに登録",
+    "mapDesc": "ランチ候補として地図に追加",
+    "travelTitle": "思い出を追加",
+    "travelDesc": "旅先ランチの記録として追加",
+    "albumTitle": "アルバムに追加",
+    "albumDesc": "ランチアルバムに写真を保存"
+  },
   "nav": {
     "home": "ホーム",
     "profile": "プロフィール",
@@ -37,7 +46,8 @@
     "guide": "機能ガイド",
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
-    "stats": "統計"
+    "stats": "統計",
+    "shareTarget": "写真の追加先"
   },
   "onboarding": {
     "header": "はじめに",
@@ -66,6 +76,8 @@
     "namePlaceholder": "例：現場前の定食屋",
     "memoLabel": "メモ（任意）",
     "memoPlaceholder": "例：日替わりが早い。13時以降は空いてる",
+    "photoLabel": "共有された写真",
+    "photoRemove": "写真を削除",
     "locationTitle": "位置を選択",
     "locationHelp": "地図をタップしてピンを置いてください。",
     "locationLoading": "位置情報を取得中…",
@@ -133,6 +145,8 @@
     "shareOff": "共有しない",
     "memoTitle": "メモ",
     "memoPlaceholder": "例：14時以降は空きやすい",
+    "urlLabel": "URL",
+    "urlPlaceholder": "例：https://tabelog.com/...",
     "remindTitle": "リマインド設定（詳細内）",
     "remindOn": "ON",
     "remindOff": "OFF",
@@ -399,6 +413,8 @@
     "ratingLabel": "評価",
     "memoLabel": "メモ",
     "memoPlaceholder": "例：行列が長いので早めが安心",
+    "urlLabel": "URL（任意）",
+    "urlPlaceholder": "例：https://tabelog.com/...",
     "saveButton": "保存する",
     "validationTitle": "入力を確認してください",
     "validationPhoto": "写真を追加してください。",
@@ -689,12 +705,23 @@
   "stats": {
     "title": "統計ダッシュボード",
     "monthSuffix": "月",
+    "totalLunches": "ランチ数",
     "totalStores": "登録数",
+    "visitedPrefs": "都道府県",
     "favorites": "お気に入り",
     "withPhoto": "写真あり",
     "withReminder": "リマインド",
+    "monthlyLunchTitle": "月間ランチ数（直近6ヶ月）",
     "monthlyTitle": "月別登録数（直近6ヶ月）",
     "weekdayTitle": "曜日別登録数",
+    "genreRanking": "料理ランキング",
+    "prefRanking": "都道府県ランキング",
+    "favoriteLunches": "お気に入りランチ",
+    "noFavorites": "★をタップしてお気に入りを追加しよう",
+    "noData": "データがまだありません",
+    "noEntries": "この日の記録はありません",
+    "calYear": "年",
+    "calMonth": "月",
     "tagTitle": "タグ分布",
     "noTags": "タグがまだありません。"
   },

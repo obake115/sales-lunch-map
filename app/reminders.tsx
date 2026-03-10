@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Image, Modal, Platform, Pressable, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -133,11 +133,12 @@ const UI = {
 
 export default function AlbumScreen() {
   const router = useRouter();
+  const { sharedPhotoUri } = useLocalSearchParams<{ sharedPhotoUri?: string }>();
   const colors = useThemeColors();
   const [loading, setLoading] = useState(true);
   const [photos, setPhotos] = useState<Awaited<ReturnType<typeof getAlbumPhotos>>>([]);
   const [pickerVisible, setPickerVisible] = useState(false);
-  const [pendingUri, setPendingUri] = useState<string | null>(null);
+  const [pendingUri, setPendingUri] = useState<string | null>(sharedPhotoUri ?? null);
   const [pendingDate, setPendingDate] = useState<Date>(new Date());
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterDate, setFilterDate] = useState<string | null>(null);
@@ -159,6 +160,13 @@ export default function AlbumScreen() {
       }
     })();
   }, [refresh]);
+
+  // 共有写真を受け取ったら日付選択モーダルを自動表示
+  useEffect(() => {
+    if (sharedPhotoUri) {
+      setPickerVisible(true);
+    }
+  }, [sharedPhotoUri]);
 
   const ordered = useMemo(() => {
     let list = photos;
@@ -189,7 +197,6 @@ export default function AlbumScreen() {
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
               allowsEditing: true,
-              aspect: [1, 1],
               quality: 0.8,
             });
             if (result.canceled) return;

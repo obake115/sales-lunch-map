@@ -46,6 +46,8 @@ type TravelLunchEntryRow = {
   visitedAt: string;
   rating: number;
   memo: string | null;
+  url: string | null;
+  isFavorite: number;
   createdAt: number;
 };
 
@@ -132,6 +134,8 @@ const rowToTravelLunchEntry = (row: TravelLunchEntryRow): TravelLunchEntry => ({
   visitedAt: row.visitedAt,
   rating: row.rating,
   memo: row.memo ?? undefined,
+  url: row.url ?? undefined,
+  isFavorite: row.isFavorite === 1,
   createdAt: row.createdAt,
 });
 
@@ -413,6 +417,7 @@ export async function addTravelLunchEntry(input: {
   visitedAt: string;
   rating: number;
   memo?: string;
+  url?: string;
 }): Promise<TravelLunchEntry> {
   const db = await getReadyDb();
   const createdAt = Date.now();
@@ -425,12 +430,13 @@ export async function addTravelLunchEntry(input: {
     visitedAt: input.visitedAt,
     rating: input.rating,
     memo: input.memo?.trim() || undefined,
+    url: input.url?.trim() || undefined,
     createdAt,
   };
   await db.runAsync(
     `INSERT INTO travel_lunch_entries
-      (id, prefectureId, imageUri, restaurantName, genre, visitedAt, rating, memo, createdAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, prefectureId, imageUri, restaurantName, genre, visitedAt, rating, memo, url, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.id,
       entry.prefectureId,
@@ -440,6 +446,7 @@ export async function addTravelLunchEntry(input: {
       entry.visitedAt,
       entry.rating,
       entry.memo ?? null,
+      entry.url ?? null,
       entry.createdAt,
     ]
   );
@@ -482,6 +489,14 @@ export async function getTravelLunchEntries(): Promise<TravelLunchEntry[]> {
 export async function deleteTravelLunchEntry(entryId: string): Promise<void> {
   const db = await getReadyDb();
   await db.runAsync('DELETE FROM travel_lunch_entries WHERE id = ?', entryId);
+}
+
+export async function toggleTravelLunchFavorite(entryId: string): Promise<boolean> {
+  const db = await getReadyDb();
+  const row = await db.getFirstAsync<{ isFavorite: number }>('SELECT isFavorite FROM travel_lunch_entries WHERE id = ?', entryId);
+  const next = (row?.isFavorite ?? 0) === 1 ? 0 : 1;
+  await db.runAsync('UPDATE travel_lunch_entries SET isFavorite = ? WHERE id = ?', [next, entryId]);
+  return next === 1;
 }
 
 export async function updateTravelLunchEntryImage(entryId: string, imageUri: string): Promise<void> {

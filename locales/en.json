@@ -10,6 +10,15 @@
     "saveFailed": "Failed to save",
     "tryAgain": "Please try again."
   },
+  "shareTarget": {
+    "title": "Where to add?",
+    "mapTitle": "Add to Map",
+    "mapDesc": "Add as a lunch spot on the map",
+    "travelTitle": "Add Memory",
+    "travelDesc": "Save as a travel lunch memory",
+    "albumTitle": "Add to Album",
+    "albumDesc": "Save the photo to your lunch album"
+  },
   "nav": {
     "home": "Home",
     "profile": "Profile",
@@ -37,7 +46,8 @@
     "guide": "Feature Guide",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
-    "stats": "Stats"
+    "stats": "Stats",
+    "shareTarget": "Add photo to"
   },
   "onboarding": {
     "header": "Getting Started",
@@ -66,6 +76,8 @@
     "namePlaceholder": "e.g. Set meal spot before the site",
     "memoLabel": "Memo (optional)",
     "memoPlaceholder": "e.g. Fast daily specials. Quiet after 1 PM",
+    "photoLabel": "Shared photo",
+    "photoRemove": "Remove photo",
     "locationTitle": "Select a location",
     "locationHelp": "Tap the map to drop a pin.",
     "locationLoading": "Getting your location…",
@@ -133,6 +145,8 @@
     "shareOff": "Don't share",
     "memoTitle": "Memo",
     "memoPlaceholder": "e.g. Less crowded after 2 PM",
+    "urlLabel": "URL",
+    "urlPlaceholder": "e.g. https://tabelog.com/...",
     "remindTitle": "Reminder settings (details)",
     "remindOn": "ON",
     "remindOff": "OFF",
@@ -399,6 +413,8 @@
     "ratingLabel": "Rating",
     "memoLabel": "Memo",
     "memoPlaceholder": "e.g. Go early to avoid lines",
+    "urlLabel": "URL (optional)",
+    "urlPlaceholder": "e.g. https://tabelog.com/...",
     "saveButton": "Save",
     "validationTitle": "Check your input",
     "validationPhoto": "Please add a photo.",
@@ -689,12 +705,23 @@
   "stats": {
     "title": "Stats Dashboard",
     "monthSuffix": "",
-    "totalStores": "Total",
+    "totalLunches": "Lunches",
+    "totalStores": "Spots",
+    "visitedPrefs": "Prefectures",
     "favorites": "Favorites",
     "withPhoto": "With Photo",
     "withReminder": "Reminders",
+    "monthlyLunchTitle": "Monthly Lunches (Last 6 months)",
     "monthlyTitle": "Monthly Registrations (Last 6 months)",
     "weekdayTitle": "Weekday Distribution",
+    "genreRanking": "Cuisine Ranking",
+    "prefRanking": "Prefecture Ranking",
+    "favoriteLunches": "Favorite Lunches",
+    "noFavorites": "Tap ★ to add favorites",
+    "noData": "No data yet",
+    "noEntries": "No entries on this day",
+    "calYear": "/",
+    "calMonth": "",
     "tagTitle": "Tag Distribution",
     "noTags": "No tags yet."
   },

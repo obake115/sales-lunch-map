@@ -86,7 +86,20 @@
       ],
       "./plugins/withDisableAndroidTablet",
       "./plugins/withLunchMapWidget",
-      "expo-tracking-transparency"
+      "expo-tracking-transparency",
+      [
+        "expo-share-intent",
+        {
+          "iosShareExtensionName": "ShareLunchMap",
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsImageWithMaxCount": 1
+          }
+        }
+      ],
+      "expo-localization",
+      "expo-sharing",
+      "expo-sqlite",
+      "expo-web-browser"
     ],
     "cli": {
       "appVersionSource": "remote"

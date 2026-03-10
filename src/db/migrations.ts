@@ -98,6 +98,22 @@ export async function runMigrations(db: SQLiteDatabase) {
     await db.execAsync('ALTER TABLE places ADD COLUMN photoUris TEXT');
   }
 
+  const hasUrl = columns.some((col) => col.name === 'url');
+  if (!hasUrl) {
+    await db.execAsync('ALTER TABLE places ADD COLUMN url TEXT');
+  }
+
+  const travelColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(travel_lunch_entries)');
+  const hasTravelUrl = travelColumns.some((col) => col.name === 'url');
+  if (!hasTravelUrl) {
+    await db.execAsync('ALTER TABLE travel_lunch_entries ADD COLUMN url TEXT');
+  }
+
+  const hasTravelFavorite = travelColumns.some((col) => col.name === 'isFavorite');
+  if (!hasTravelFavorite) {
+    await db.execAsync('ALTER TABLE travel_lunch_entries ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0');
+  }
+
   const albumColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(album_photos)');
   const hasTakenAt = albumColumns.some((col) => col.name === 'takenAt');
   if (!hasTakenAt) {

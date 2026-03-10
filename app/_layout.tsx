@@ -7,7 +7,8 @@ import {
 } from '@expo-google-fonts/m-plus-rounded-1c';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
+import { useShareIntent } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
 import { LogBox } from 'react-native';
@@ -118,6 +119,16 @@ function toScreenName(pathname: string): string {
 function RootLayoutNav() {
   const pathname = usePathname();
   const prevPathname = useRef(pathname);
+  const router = useRouter();
+  const { shareIntent, resetShareIntent } = useShareIntent();
+
+  useEffect(() => {
+    if (shareIntent?.files?.[0]?.path) {
+      const photoUri = shareIntent.files[0].path;
+      resetShareIntent();
+      router.push({ pathname: '/share-target', params: { photoUri } });
+    }
+  }, [shareIntent, resetShareIntent, router]);
 
   useEffect(() => {
     if (pathname !== prevPathname.current) {
@@ -184,6 +195,7 @@ function RootLayoutNav() {
           <Stack.Screen name="guide" options={{ title: t('nav.guide') }} />
           <Stack.Screen name="stats" options={{ title: t('nav.stats') }} />
           <Stack.Screen name="post-limit-info" options={{ title: t('nav.postLimitInfo') }} />
+          <Stack.Screen name="share-target" options={{ title: t('nav.shareTarget'), presentation: 'modal' }} />
           <Stack.Screen name="privacy" options={{ title: t('nav.privacy') }} />
           <Stack.Screen name="terms" options={{ title: t('nav.terms') }} />
         </Stack>

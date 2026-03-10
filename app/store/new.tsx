@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 
 import { getAdMobRewardedUnitId } from '@/src/admob';
@@ -196,8 +196,8 @@ function toRegion(latitude: number, longitude: number): Region {
 
 export default function StoreNewScreen() {
   const router = useRouter();
-  const { lat, lng } = useLocalSearchParams<{ lat?: string; lng?: string }>();
-  const { addStore, stores } = useStores();
+  const { lat, lng, sharedPhotoUri } = useLocalSearchParams<{ lat?: string; lng?: string; sharedPhotoUri?: string }>();
+  const { addStore, updateStore, stores } = useStores();
   const colors = useThemeColors();
   const { isPremium } = usePremium();
 
@@ -222,6 +222,7 @@ export default function StoreNewScreen() {
     note?: string;
   } | null>(null);
   const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(sharedPhotoUri ?? null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const canSave = latitude != null && longitude != null && !saving;
@@ -285,7 +286,10 @@ export default function StoreNewScreen() {
       setPendingSaveDraft(null);
       try {
         setSaving(true);
-        await addStore(draft);
+        const created = await addStore(draft);
+        if (photoUri && created?.id) {
+          await updateStore(created.id, { photoUri, photoUris: [photoUri] });
+        }
         logStoreRegistered({ store_name: draft.name });
         showToast(message);
         setTimeout(() => {
@@ -366,6 +370,18 @@ export default function StoreNewScreen() {
             {...INPUT_PROPS}
           />
         </NeuCard>
+
+        {photoUri ? (
+          <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+            <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeNew.photoLabel')}</Text>
+            <View style={{ alignItems: 'center' }}>
+              <Image source={{ uri: photoUri }} style={{ width: '100%', height: 200, borderRadius: 14 }} resizeMode="cover" />
+              <Pressable onPress={() => setPhotoUri(null)} style={{ marginTop: 8 }}>
+                <Text style={{ color: '#EF4444', fontFamily: fonts.bold }}>{t('storeNew.photoRemove')}</Text>
+              </Pressable>
+            </View>
+          </NeuCard>
+        ) : null}
 
         <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
           <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 6, color: colors.text }}>{t('storeNew.locationTitle')}</Text>
@@ -456,12 +472,15 @@ export default function StoreNewScreen() {
             try {
               setSaving(true);
               const storeName = name.trim() || t('storeNew.unnamed');
-              await addStore({
+              const created = await addStore({
                 name: storeName,
                 latitude: latitude as number,
                 longitude: longitude as number,
                 note: note.trim() || undefined,
               });
+              if (photoUri && created?.id) {
+                await updateStore(created.id, { photoUri, photoUris: [photoUri] });
+              }
               logStoreRegistered({ store_name: storeName });
               await maybeShowInterstitial(isPremiumUser);
               router.back();
@@ -589,7 +608,10 @@ export default function StoreNewScreen() {
             (async () => {
               try {
                 setSaving(true);
-                await addStore(draft);
+                const created = await addStore(draft);
+                if (photoUri && created?.id) {
+                  await updateStore(created.id, { photoUri, photoUris: [photoUri] });
+                }
                 logStoreRegistered({ store_name: draft.name });
                 router.back();
               } catch (e: any) {

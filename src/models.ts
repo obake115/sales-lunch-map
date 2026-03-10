@@ -9,6 +9,7 @@ export type Store = {
   photoUri?: string;
   photoUris?: string[];
   note?: string;
+  url?: string;
   timeBand?: '10' | '20' | '30' | '30+';
   moodTags?: string[];
   sceneTags?: string[];
@@ -57,5 +58,7 @@ export type TravelLunchEntry = {
   visitedAt: string; // YYYY-MM-DD
   rating: number; // 1-5
   memo?: string;
+  url?: string;
+  isFavorite?: boolean;
   createdAt: number;
 };

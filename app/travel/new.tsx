@@ -94,10 +94,10 @@ export default function TravelLunchNewScreen() {
   const router = useRouter();
   const { themeMode } = useThemeMode();
   const { isPremium } = usePremium();
-  const params = useLocalSearchParams<{ prefecture?: string }>();
+  const params = useLocalSearchParams<{ prefecture?: string; sharedPhotoUri?: string }>();
   const paramPrefecture = typeof params.prefecture === 'string' ? params.prefecture : undefined;
 
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageUri, setImageUri] = useState<string | null>(params.sharedPhotoUri ?? null);
   const [prefectureId, setPrefectureId] = useState<string | null>(paramPrefecture ?? null);
   const [restaurantName, setRestaurantName] = useState('');
   const [genre, setGenre] = useState<string>('');
@@ -105,6 +105,7 @@ export default function TravelLunchNewScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [rating, setRating] = useState(0);
   const [memo, setMemo] = useState('');
+  const [url, setUrl] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [showGenreModal, setShowGenreModal] = useState(false);
   const [showPrefectureModal, setShowPrefectureModal] = useState(false);
@@ -207,6 +208,7 @@ export default function TravelLunchNewScreen() {
         visitedAt: visitedLabel,
         rating,
         memo,
+        url: url.trim() || undefined,
       });
       logTravelLunchRecorded({ prefecture_id: prefectureId, genre, rating });
       showToast(t('travel.savedToast', { name: restaurantName.trim() }));
@@ -323,6 +325,23 @@ export default function TravelLunchNewScreen() {
               ]}
               multiline
               textAlignVertical="top"
+            />
+          </View>
+
+          <View style={{ marginTop: 16 }}>
+            <Text style={[styles.label, { color: colors.text }]}>{t('travel.urlLabel')}</Text>
+            <TextInput
+              value={url}
+              onChangeText={setUrl}
+              placeholder={t('travel.urlPlaceholder')}
+              placeholderTextColor={colors.subText}
+              style={[
+                styles.input,
+                { color: colors.text, borderColor: colors.border },
+              ]}
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
         </View>
