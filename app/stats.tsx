@@ -4,13 +4,16 @@ import { useCallback, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { t } from '@/src/i18n';
+import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import type { TravelLunchEntry } from '@/src/models';
+import { usePremium } from '@/src/state/PremiumContext';
 import { useStores } from '@/src/state/StoresContext';
 import { useThemeColors } from '@/src/state/ThemeContext';
 import { getTravelLunchEntries, toggleTravelLunchFavorite } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
+import { SafeImage } from '@/src/ui/SafeImage';
 
 const UI = {
   card: {
@@ -65,6 +68,8 @@ export default function StatsScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const { stores } = useStores();
+  const { isPremium } = usePremium();
+  const [paywallVisible, setPaywallVisible] = useState(false);
 
   const [entries, setEntries] = useState<TravelLunchEntry[]>([]);
   const [calMonth, setCalMonth] = useState(() => {
@@ -167,8 +172,8 @@ export default function StatsScreen() {
         {/* ── Summary cards ── */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {[
-            { label: t('stats.totalLunches'), value: totalLunches, color: '#F59E0B' },
-            { label: t('stats.totalStores'), value: totalStores, color: '#4F78FF' },
+            { label: t('stats.totalLunches'), value: totalLunches, color: colors.accent },
+            { label: t('stats.totalStores'), value: totalStores, color: colors.primary },
             { label: t('stats.visitedPrefs'), value: visitedPrefs, color: '#10B981' },
           ].map((item) => (
             <NeuCard key={item.label} style={[UI.card, { flex: 1, backgroundColor: colors.card, alignItems: 'center' }]}>
@@ -186,14 +191,14 @@ export default function StatsScreen() {
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-end', height: 100 }}>
             {monthlyData.map((m) => (
               <View key={m.label} style={{ flex: 1, alignItems: 'center' }}>
-                <Text style={{ fontFamily: fonts.extraBold, fontSize: 10, color: '#F59E0B', marginBottom: 2 }}>
+                <Text style={{ fontFamily: fonts.extraBold, fontSize: 10, color: colors.accent, marginBottom: 2 }}>
                   {m.count > 0 ? m.count : ''}
                 </Text>
                 <View
                   style={{
                     width: '80%',
                     height: Math.max((m.count / maxMonthly) * 70, 2),
-                    backgroundColor: '#F59E0B',
+                    backgroundColor: colors.accent,
                     borderRadius: 4,
                   }}
                 />
@@ -237,7 +242,7 @@ export default function StatsScreen() {
                     justifyContent: 'center',
                     height: 32,
                     borderRadius: 8,
-                    backgroundColor: cell.date === selectedDate ? '#4F78FF' : 'transparent',
+                    backgroundColor: cell.date === selectedDate ? colors.primary : 'transparent',
                   }}>
                   {cell.inMonth ? (
                     <View style={{ alignItems: 'center' }}>
@@ -249,7 +254,7 @@ export default function StatsScreen() {
                         {cell.day}
                       </Text>
                       {cell.hasLunch ? (
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#F59E0B', marginTop: 1 }} />
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent, marginTop: 1 }} />
                       ) : null}
                     </View>
                   ) : null}
@@ -265,7 +270,7 @@ export default function StatsScreen() {
               {selectedEntries.map((entry) => (
                 <View key={entry.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   {entry.imageUri ? (
-                    <Image source={{ uri: entry.imageUri }} style={{ width: 40, height: 40, borderRadius: 8 }} />
+                    <SafeImage uri={entry.imageUri} style={{ width: 40, height: 40, borderRadius: 8 }} />
                   ) : null}
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: fonts.extraBold, fontSize: 13, color: colors.text }} numberOfLines={1}>
@@ -297,7 +302,7 @@ export default function StatsScreen() {
             <View style={{ gap: 6 }}>
               {genreRanking.map(([genre, count], i) => (
                 <View key={genre} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontFamily: fonts.extraBold, fontSize: 14, color: i < 3 ? '#F59E0B' : colors.subText, width: 20 }}>
+                  <Text style={{ fontFamily: fonts.extraBold, fontSize: 14, color: i < 3 ? colors.accent : colors.subText, width: 20 }}>
                     {i + 1}
                   </Text>
                   <Text style={{ fontFamily: fonts.extraBold, fontSize: 13, color: colors.text, width: 80 }} numberOfLines={1}>
@@ -308,7 +313,7 @@ export default function StatsScreen() {
                       style={{
                         width: `${Math.min((count / maxGenre) * 100, 100)}%`,
                         height: 14,
-                        backgroundColor: '#F59E0B',
+                        backgroundColor: colors.accent,
                         borderRadius: 7,
                       }}
                     />
@@ -370,7 +375,7 @@ export default function StatsScreen() {
               {favoriteLunches.map((entry) => (
                 <View key={entry.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   {entry.imageUri ? (
-                    <Image source={{ uri: entry.imageUri }} style={{ width: 50, height: 50, borderRadius: 10 }} />
+                    <SafeImage uri={entry.imageUri} style={{ width: 50, height: 50, borderRadius: 10 }} />
                   ) : null}
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontFamily: fonts.extraBold, fontSize: 13, color: colors.text }} numberOfLines={1}>
@@ -379,12 +384,12 @@ export default function StatsScreen() {
                     <Text style={{ fontSize: 11, color: colors.subText }}>
                       {entry.genre} · {entry.visitedAt}
                     </Text>
-                    <Text style={{ fontSize: 11, color: '#F59E0B' }}>
+                    <Text style={{ fontSize: 11, color: colors.accent }}>
                       {'★'.repeat(entry.rating)}{'☆'.repeat(5 - entry.rating)}
                     </Text>
                   </View>
                   <Pressable onPress={() => handleToggleFavorite(entry.id)} style={{ padding: 4 }}>
-                    <Text style={{ fontSize: 20, color: '#F59E0B' }}>★</Text>
+                    <Text style={{ fontSize: 20, color: colors.accent }}>★</Text>
                   </Pressable>
                 </View>
               ))}
@@ -392,6 +397,46 @@ export default function StatsScreen() {
           )}
         </NeuCard>
       </ScrollView>
+
+      {!isPremium && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: colors.bg === '#0F172A' ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 24,
+          }}>
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>📊</Text>
+          <Text style={{ fontSize: 18, fontFamily: fonts.extraBold, color: colors.text, textAlign: 'center', marginBottom: 8 }}>
+            {t('stats.premiumTitle')}
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.subText, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+            {t('stats.premiumBody')}
+          </Text>
+          <Pressable
+            onPress={() => setPaywallVisible(true)}
+            style={{
+              backgroundColor: colors.accent,
+              borderRadius: 16,
+              paddingVertical: 14,
+              paddingHorizontal: 40,
+            }}>
+            <Text style={{ color: '#FFF', fontFamily: fonts.extraBold, fontSize: 16 }}>
+              {t('stats.unlockButton')}
+            </Text>
+          </Pressable>
+          <PremiumPaywall
+            visible={paywallVisible}
+            onClose={() => setPaywallVisible(false)}
+            trigger="stats"
+          />
+        </View>
+      )}
 
       <BottomAdBanner />
     </View>

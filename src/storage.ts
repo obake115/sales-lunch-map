@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Directory, File, Paths } from 'expo-file-system';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { isDevUser } from './auth/isDevUser';
@@ -285,6 +286,7 @@ export async function addStore(input: {
   latitude: number;
   longitude: number;
   note?: string;
+  url?: string;
 }): Promise<Store> {
   const currentCount = await getStoreCount();
   const limitState = await getPostLimitState(currentCount);
@@ -375,13 +377,39 @@ export async function addAlbumPhoto(
   const createdAt = Date.now();
   const safeTakenAt = typeof takenAt === 'number' ? takenAt : createdAt;
   const id = createId('photo');
+
+  // Copy photo to persistent directory so shared/temporary URIs survive
+  let persistedUri = uri;
+  try {
+    const albumDir = new Directory(Paths.document, 'album_photos');
+    if (!albumDir.exists) {
+      albumDir.create();
+    }
+    const ext = uri.split('.').pop()?.split('?')[0] || 'jpg';
+    const src = new File(uri);
+    const dest = new File(albumDir, `${id}.${ext}`);
+    src.copy(dest);
+    persistedUri = dest.uri;
+  } catch {
+    // Fallback: keep original URI (e.g. already in document directory)
+  }
+
   await db.runAsync(
     'INSERT INTO album_photos (id, uri, storeId, createdAt, takenAt) VALUES (?, ?, ?, ?, ?)',
-    [id, uri, storeId ?? null, createdAt, safeTakenAt]
+    [id, persistedUri, storeId ?? null, createdAt, safeTakenAt]
   );
-  const photo: AlbumPhoto = { id, uri, storeId, createdAt, takenAt: safeTakenAt };
+  const photo: AlbumPhoto = { id, uri: persistedUri, storeId, createdAt, takenAt: safeTakenAt };
   fireSyncAlbumPhoto(photo);
   return photo;
+}
+
+/** Insert an album photo with a specific ID (used for cloud download). No file copy, no sync hook. */
+export async function addAlbumPhotoWithId(photo: AlbumPhoto): Promise<void> {
+  const db = await getReadyDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO album_photos (id, uri, storeId, createdAt, takenAt) VALUES (?, ?, ?, ?, ?)',
+    [photo.id, photo.uri, photo.storeId ?? null, photo.createdAt, photo.takenAt]
+  );
 }
 
 export async function deleteAlbumPhoto(photoId: string): Promise<void> {
@@ -787,6 +815,17 @@ export async function setThemeMode(mode: ThemeMode): Promise<void> {
   fireSyncSetting(SETTING_KEYS.themeMode, mode);
 }
 
+export async function getMapBackground(): Promise<string> {
+  const db = await getReadyDb();
+  return (await getSetting(db, SETTING_KEYS.mapBackground)) ?? 'none';
+}
+
+export async function setMapBackground(id: string): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.mapBackground, id);
+  fireSyncSetting(SETTING_KEYS.mapBackground, id);
+}
+
 export async function getProfileName(): Promise<string> {
   const db = await getReadyDb();
   const stored = await getSetting(db, SETTING_KEYS.profileName);
@@ -834,6 +873,16 @@ export async function getHasSeenOnboarding(): Promise<boolean> {
 export async function setHasSeenOnboarding(value: boolean): Promise<void> {
   const db = await getReadyDb();
   await setSetting(db, SETTING_KEYS.hasSeenOnboarding, value ? '1' : '0');
+}
+
+export async function getHasSeenTutorial(): Promise<boolean> {
+  const db = await getReadyDb();
+  return (await getSetting(db, SETTING_KEYS.hasSeenTutorial)) === '1';
+}
+
+export async function setHasSeenTutorial(value: boolean): Promise<void> {
+  const db = await getReadyDb();
+  await setSetting(db, SETTING_KEYS.hasSeenTutorial, value ? '1' : '0');
 }
 
 export async function getHasSeenWelcome(): Promise<boolean> {
@@ -1010,6 +1059,117 @@ export async function getDistinctPrefectureCount(storeList?: Store[]): Promise<n
     if (prefId) prefSet.add(prefId);
   }
   return prefSet.size;
+}
+
+// ── Food Badge Collection ──
+
+export async function getEarnedFoodBadges(): Promise<string[]> {
+  const db = await getReadyDb();
+  const raw = await getSetting(db, SETTING_KEYS.foodBadgesEarned);
+  if (!raw) return [];
+  const parsed = safeJsonParse<string[]>(raw);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+/**
+ * Earn a food badge for a prefecture.
+ * Returns true if newly earned, false if already owned.
+ */
+export async function earnFoodBadge(prefId: string): Promise<boolean> {
+  const db = await getReadyDb();
+  const raw = await getSetting(db, SETTING_KEYS.foodBadgesEarned);
+  const current: string[] = raw ? (safeJsonParse<string[]>(raw) ?? []) : [];
+  if (current.includes(prefId)) return false;
+  const next = [...current, prefId];
+  const val = JSON.stringify(next);
+  await setSetting(db, SETTING_KEYS.foodBadgesEarned, val);
+  fireSyncSetting(SETTING_KEYS.foodBadgesEarned, val);
+  return true;
+}
+
+export async function isFoodBadgeCollectionPurchased(): Promise<boolean> {
+  if (isDevUser()) return true;
+  const db = await getReadyDb();
+  return (await getSetting(db, SETTING_KEYS.foodBadgePurchased)) === '1';
+}
+
+export async function setFoodBadgeCollectionPurchased(v: boolean): Promise<void> {
+  const db = await getReadyDb();
+  const val = v ? '1' : '0';
+  await setSetting(db, SETTING_KEYS.foodBadgePurchased, val);
+  fireSyncSetting(SETTING_KEYS.foodBadgePurchased, val);
+}
+
+// --- Map background individual purchases ---
+
+const BG_SETTING_MAP: Record<string, string> = {
+  sakura: SETTING_KEYS.bgPurchased_sakura,
+  seasonal: SETTING_KEYS.bgPurchased_seasonal,
+  navy: SETTING_KEYS.bgPurchased_navy,
+};
+
+export async function isMapBgPurchased(bgId: string): Promise<boolean> {
+  if (isDevUser()) return true;
+  const key = BG_SETTING_MAP[bgId];
+  if (!key) return true; // free backgrounds
+  const db = await getReadyDb();
+  return (await getSetting(db, key)) === '1';
+}
+
+export async function setMapBgPurchased(bgId: string): Promise<void> {
+  const key = BG_SETTING_MAP[bgId];
+  if (!key) return;
+  const db = await getReadyDb();
+  await setSetting(db, key, '1');
+  fireSyncSetting(key, '1');
+}
+
+export async function getAllPurchasedBgIds(): Promise<Set<string>> {
+  if (isDevUser()) return new Set(['sakura', 'seasonal', 'navy']);
+  const db = await getReadyDb();
+  const purchased = new Set<string>();
+  for (const [bgId, key] of Object.entries(BG_SETTING_MAP)) {
+    if ((await getSetting(db, key)) === '1') purchased.add(bgId);
+  }
+  return purchased;
+}
+
+/**
+ * Backfill food badges from existing stores.
+ * Scans all stores and earns badges for any prefecture not yet in the earned list.
+ */
+export async function backfillFoodBadges(): Promise<void> {
+  const { coordToPrefectureId } = require('./domain/prefectureLookup');
+  const db = await getReadyDb();
+  const raw = await getSetting(db, SETTING_KEYS.foodBadgesEarned);
+  const current: string[] = raw ? (safeJsonParse<string[]>(raw) ?? []) : [];
+  const earnedSet = new Set(current);
+
+  const allStores = await getStores();
+  let changed = false;
+  for (const s of allStores) {
+    const prefId = coordToPrefectureId(s.latitude, s.longitude);
+    if (prefId && !earnedSet.has(prefId)) {
+      earnedSet.add(prefId);
+      changed = true;
+    }
+  }
+
+  // Also backfill from travel lunch entries (they have prefectureId directly)
+  const travelEntries = await getTravelLunchEntries();
+  for (const entry of travelEntries) {
+    if (entry.prefectureId && !earnedSet.has(entry.prefectureId)) {
+      earnedSet.add(entry.prefectureId);
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    const next = Array.from(earnedSet);
+    const val = JSON.stringify(next);
+    await setSetting(db, SETTING_KEYS.foodBadgesEarned, val);
+    fireSyncSetting(SETTING_KEYS.foodBadgesEarned, val);
+  }
 }
 
 export { getStoreCount };

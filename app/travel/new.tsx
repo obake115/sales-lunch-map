@@ -18,13 +18,16 @@ import {
 } from 'react-native';
 
 import { fonts } from '@/src/ui/fonts';
+import { SafeImage } from '@/src/ui/SafeImage';
 import { logPhotoAdded, logTravelLunchRecorded } from '@/src/analytics';
+import { BadgeCelebrationModal } from '@/src/components/BadgeCelebrationModal';
 import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import { t } from '@/src/i18n';
 import { formatYmd } from '@/src/domain/date';
-import { addTravelLunchEntry, getTravelEntryCountByPrefecture } from '@/src/storage';
+import { getFoodBadge, type FoodBadge } from '@/src/domain/foodBadges';
+import { addTravelLunchEntry, earnFoodBadge, getEarnedFoodBadges, getTravelEntryCountByPrefecture, isFoodBadgeCollectionPurchased } from '@/src/storage';
 import { usePremium } from '@/src/state/PremiumContext';
-import { useThemeMode } from '@/src/state/ThemeContext';
+import { useThemeColors, useThemeMode } from '@/src/state/ThemeContext';
 
 const GENRES = [
   '和食',
@@ -111,29 +114,26 @@ export default function TravelLunchNewScreen() {
   const [showPrefectureModal, setShowPrefectureModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [badgeCelebrationVisible, setBadgeCelebrationVisible] = useState(false);
+  const [celebrationBadge, setCelebrationBadge] = useState<FoodBadge | null>(null);
+  const [celebrationPrefName, setCelebrationPrefName] = useState('');
+  const [celebrationCount, setCelebrationCount] = useState(0);
+  const [badgeCollectionPurchased, setBadgeCollectionPurchased] = useState(false);
 
-  const colors = useMemo(() => {
-    if (themeMode === 'navy') {
-      return {
-        background: '#0F172A',
-        card: '#111827',
-        text: '#E5E7EB',
-        subText: '#9CA3AF',
-        border: '#374151',
-        accent: '#4F78FF',
-        chip: '#1F2937',
-      };
-    }
-    return {
-      background: '#E9E4DA',
-      card: '#E9E4DA',
-      text: '#111',
-      subText: '#666',
-      border: '#D6D0C6',
-      accent: '#4F78FF',
-      chip: '#E9E4DA',
-    };
-  }, [themeMode]);
+  useEffect(() => {
+    isFoodBadgeCollectionPurchased().then(setBadgeCollectionPurchased);
+  }, []);
+
+  const themeColors = useThemeColors();
+  const colors = useMemo(() => ({
+    background: themeColors.bg,
+    card: themeColors.card,
+    text: themeColors.text,
+    subText: themeColors.subText,
+    border: themeColors.border,
+    accent: themeColors.primary,
+    chip: themeColors.inputBg,
+  }), [themeColors]);
 
   useEffect(() => {
     if (paramPrefecture) setPrefectureId(paramPrefecture);
@@ -211,6 +211,21 @@ export default function TravelLunchNewScreen() {
         url: url.trim() || undefined,
       });
       logTravelLunchRecorded({ prefecture_id: prefectureId, genre, rating });
+
+      // Check and show food badge
+      const isNewBadge = await earnFoodBadge(prefectureId);
+      if (isNewBadge) {
+        const badge = getFoodBadge(prefectureId);
+        if (badge) {
+          const earned = await getEarnedFoodBadges();
+          setCelebrationBadge(badge);
+          setCelebrationPrefName(t(`prefectures.${prefectureId}`) as string);
+          setCelebrationCount(earned.length);
+          setBadgeCelebrationVisible(true);
+          return; // defer router.back() to modal onClose
+        }
+      }
+
       showToast(t('travel.savedToast', { name: restaurantName.trim() }));
       setTimeout(() => router.back(), 600);
     } catch (error) {
@@ -235,7 +250,7 @@ export default function TravelLunchNewScreen() {
 
         <Pressable
           onPress={() => setShowPrefectureModal(true)}
-          style={[styles.prefectureChip, { backgroundColor: colors.chip, shadowColor: '#C8C3B9', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }]}
+          style={[styles.prefectureChip, { backgroundColor: colors.chip, shadowColor: themeColors.shadowDark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }]}
         >
           <Text style={[styles.prefectureText, { color: colors.text }]}>{prefectureLabel}</Text>
         </Pressable>
@@ -249,7 +264,7 @@ export default function TravelLunchNewScreen() {
           ]}
         >
           {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.photoPreview} />
+            <SafeImage uri={imageUri} style={styles.photoPreview} />
           ) : (
             <View style={styles.photoPlaceholder}>
               <Text style={[styles.photoPlus, { color: colors.subText }]}>＋</Text>
@@ -420,6 +435,17 @@ export default function TravelLunchNewScreen() {
         onClose={() => setPaywallVisible(false)}
         onPurchased={() => handleSave()}
         trigger="prefectureLimit"
+      />
+      <BadgeCelebrationModal
+        visible={badgeCelebrationVisible}
+        badge={celebrationBadge}
+        prefName={celebrationPrefName}
+        earnedCount={celebrationCount}
+        isPurchased={badgeCollectionPurchased}
+        onClose={() => {
+          setBadgeCelebrationVisible(false);
+          router.back();
+        }}
       />
     </SafeAreaView>
   );

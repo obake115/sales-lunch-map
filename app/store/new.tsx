@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,8 +14,11 @@ import { t } from '@/src/i18n';
 import { purchaseUnlimited, restorePurchases } from '@/src/purchases';
 import { useStores } from '@/src/state/StoresContext';
 import { useThemeColors } from '@/src/state/ThemeContext';
-import { getPostLimitState, grantDailyRewardedSlot, type PostLimitState } from '@/src/storage';
+import { earnFoodBadge, getEarnedFoodBadges, getPostLimitState, getStores, getTravelLunchProgress, grantDailyRewardedSlot, isFoodBadgeCollectionPurchased, type PostLimitState } from '@/src/storage';
 import { usePremium } from '@/src/state/PremiumContext';
+import { BadgeCelebrationModal } from '@/src/components/BadgeCelebrationModal';
+import { MilestoneShareModal, type MilestoneType } from '@/src/components/MilestoneShareModal';
+import { getFoodBadge, type FoodBadge } from '@/src/domain/foodBadges';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
@@ -22,24 +26,21 @@ import { PremiumPaywall } from '@/src/components/PremiumPaywall';
 import { coordToPrefectureId } from '@/src/domain/prefectureLookup';
 import { canShowPaywall } from '@/src/paywallTrigger';
 
+// Colors are resolved at render time via useThemeColors()
 const UI = {
   card: {
     borderRadius: 20,
     padding: 14,
-    backgroundColor: '#E9E4DA',
   } as const,
   input: {
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#E9E4DA',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
   } as const,
   primaryBtn: {
-    backgroundColor: '#4F78FF',
     paddingVertical: 12,
     borderRadius: 28,
     alignItems: 'center',
@@ -50,7 +51,6 @@ const UI = {
     backgroundColor: 'rgba(0,0,0,0.3)',
   } as const,
   paywallSheet: {
-    backgroundColor: '#E9E4DA',
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingHorizontal: 18,
@@ -66,31 +66,25 @@ const UI = {
   paywallTitle: {
     fontFamily: fonts.extraBold,
     fontSize: 19,
-    color: '#111827',
     marginBottom: 6,
   } as const,
   paywallSubtitle: {
-    color: '#6B7280',
     fontSize: 14,
     marginBottom: 12,
   } as const,
   valueCard: {
     borderRadius: 14,
-    backgroundColor: '#E9E4DA',
     padding: 12,
     marginBottom: 14,
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
   } as const,
   paywallValueTitle: {
     fontFamily: fonts.extraBold,
-    color: '#111827',
     marginBottom: 4,
   } as const,
   paywallValueSub: {
-    color: '#6B7280',
     fontSize: 12,
     marginBottom: 8,
   } as const,
@@ -102,15 +96,12 @@ const UI = {
   } as const,
   planName: {
     fontFamily: fonts.extraBold,
-    color: '#111827',
   } as const,
   priceLabel: {
     fontFamily: fonts.extraBold,
-    color: '#111827',
   } as const,
   primaryCta: {
     borderRadius: 28,
-    backgroundColor: '#4F78FF',
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 10,
@@ -121,29 +112,21 @@ const UI = {
   } as const,
   adCta: {
     borderRadius: 12,
-    backgroundColor: '#E9E4DA',
     paddingVertical: 12,
     alignItems: 'center',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
   } as const,
-  adCtaDisabled: {
-    backgroundColor: '#D5D0C6',
-  } as const,
   adCtaText: {
-    color: '#111827',
     fontFamily: fonts.extraBold,
   } as const,
   adUsedText: {
-    color: '#6B7280',
     marginTop: 6,
     textAlign: 'center',
     fontSize: 12,
   } as const,
   assureText: {
-    color: '#6B7280',
     marginTop: 8,
   } as const,
   paywallIconBtn: {
@@ -152,11 +135,9 @@ const UI = {
   } as const,
   paywallIconText: {
     fontFamily: fonts.extraBold,
-    color: '#111827',
   } as const,
   restoreText: {
     fontSize: 12,
-    color: '#6B7280',
     fontFamily: fonts.bold,
   } as const,
   toast: {
@@ -207,6 +188,7 @@ export default function StoreNewScreen() {
 
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
+  const [url, setUrl] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [mapRegion, setMapRegion] = useState<Region | null>(null);
@@ -220,10 +202,26 @@ export default function StoreNewScreen() {
     latitude: number;
     longitude: number;
     note?: string;
+    url?: string;
   } | null>(null);
   const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(sharedPhotoUri ?? null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [mapExpanded, setMapExpanded] = useState(false);
+  const [badgeCelebrationVisible, setBadgeCelebrationVisible] = useState(false);
+  const [celebrationBadge, setCelebrationBadge] = useState<FoodBadge | null>(null);
+  const [celebrationPrefName, setCelebrationPrefName] = useState('');
+  const [celebrationCount, setCelebrationCount] = useState(0);
+  const [goBackAfterBadge, setGoBackAfterBadge] = useState(false);
+  const [badgeCollectionPurchased, setBadgeCollectionPurchased] = useState(false);
+  const [milestoneVisible, setMilestoneVisible] = useState(false);
+  const [milestoneType, setMilestoneType] = useState<MilestoneType>('newPref');
+  const [milestoneVisited, setMilestoneVisited] = useState(0);
+  const [milestoneStoreCount, setMilestoneStoreCount] = useState(0);
+
+  useEffect(() => {
+    isFoodBadgeCollectionPurchased().then(setBadgeCollectionPurchased);
+  }, []);
 
   const canSave = latitude != null && longitude != null && !saving;
 
@@ -279,6 +277,40 @@ export default function StoreNewScreen() {
     }, 2000);
   }, []);
 
+  const checkAndShowBadge = useCallback(async (storeLat: number, storeLng: number): Promise<boolean> => {
+    const prefId = coordToPrefectureId(storeLat, storeLng);
+    if (!prefId) return false;
+    const isNew = await earnFoodBadge(prefId);
+    if (!isNew) return false;
+    const badge = getFoodBadge(prefId);
+    if (!badge) return false;
+    const earned = await getEarnedFoodBadges();
+    const prefName = t(`prefectures.${prefId}`) as string;
+    setCelebrationBadge(badge);
+    setCelebrationPrefName(prefName);
+    setCelebrationCount(earned.length);
+    setBadgeCelebrationVisible(true);
+    return true;
+  }, []);
+
+  const checkAndShowMilestone = useCallback(async (): Promise<boolean> => {
+    const [allStores, visited] = await Promise.all([getStores(), getTravelLunchProgress()]);
+    const storeCount = allStores.length;
+    setMilestoneVisited(visited);
+    setMilestoneStoreCount(storeCount);
+    if (storeCount === 50) {
+      setMilestoneType('fiftyStores');
+      setMilestoneVisible(true);
+      return true;
+    }
+    if (visited === 10) {
+      setMilestoneType('tenPrefs');
+      setMilestoneVisible(true);
+      return true;
+    }
+    return false;
+  }, []);
+
   const autoSavePending = useCallback(
     async (message: string) => {
       const draft = pendingSaveDraft;
@@ -291,17 +323,27 @@ export default function StoreNewScreen() {
           await updateStore(created.id, { photoUri, photoUris: [photoUri] });
         }
         logStoreRegistered({ store_name: draft.name });
-        showToast(message);
-        setTimeout(() => {
-          router.back();
-        }, 600);
+        const badgeShown = await checkAndShowBadge(draft.latitude, draft.longitude);
+        if (badgeShown) {
+          setGoBackAfterBadge(true);
+        } else {
+          const milestoneShown = await checkAndShowMilestone();
+          if (milestoneShown) {
+            setGoBackAfterBadge(true);
+          } else {
+            showToast(message);
+            setTimeout(() => {
+              router.back();
+            }, 600);
+          }
+        }
       } catch (e: any) {
         Alert.alert(t('common.saveFailed'), e?.message ?? t('common.tryAgain'));
       } finally {
         setSaving(false);
       }
     },
-    [addStore, pendingSaveDraft, router, showToast]
+    [addStore, pendingSaveDraft, router, showToast, checkAndShowMilestone]
   );
 
   const showRewardedAd = useCallback(async (): Promise<boolean> => {
@@ -348,31 +390,47 @@ export default function StoreNewScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 110 }}>
-        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
           <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeNew.nameLabel')}</Text>
           <TextInput
             value={name}
             onChangeText={setName}
             placeholder={t('storeNew.namePlaceholder')}
-            style={[UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
+            style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
+            placeholderTextColor={colors.subText}
             {...INPUT_PROPS}
           />
         </NeuCard>
 
-        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
           <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeNew.memoLabel')}</Text>
           <TextInput
             value={note}
             onChangeText={setNote}
             placeholder={t('storeNew.memoPlaceholder')}
-            style={[UI.input, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
+            style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
+            placeholderTextColor={colors.subText}
             multiline
             {...INPUT_PROPS}
           />
         </NeuCard>
 
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeNew.urlLabel')}</Text>
+          <TextInput
+            value={url}
+            onChangeText={setUrl}
+            placeholder={t('storeNew.urlPlaceholder')}
+            style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
+            placeholderTextColor={colors.subText}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </NeuCard>
+
         {photoUri ? (
-          <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+          <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
             <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeNew.photoLabel')}</Text>
             <View style={{ alignItems: 'center' }}>
               <Image source={{ uri: photoUri }} style={{ width: '100%', height: 200, borderRadius: 14 }} resizeMode="cover" />
@@ -381,52 +439,88 @@ export default function StoreNewScreen() {
               </Pressable>
             </View>
           </NeuCard>
-        ) : null}
+        ) : (
+          <Pressable
+            onPress={async () => {
+              const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (!permission.granted) {
+                Alert.alert(t('storeNew.photoPermissionTitle'), t('storeNew.photoPermissionBody'));
+                return;
+              }
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                quality: 0.8,
+              });
+              if (result.canceled) return;
+              const uri = result.assets?.[0]?.uri;
+              if (uri) setPhotoUri(uri);
+            }}
+            style={{ ...UI.input, backgroundColor: colors.card, shadowColor: colors.shadowDark, alignItems: 'center', paddingVertical: 14 }}>
+            <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>+ {t('storeNew.addPhoto')}</Text>
+          </Pressable>
+        )}
 
-        <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
-          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 6, color: colors.text }}>{t('storeNew.locationTitle')}</Text>
-          <Text style={{ color: colors.subText, marginBottom: 10 }}>{t('storeNew.locationHelp')}</Text>
-          <View
-            style={{
-              borderRadius: 16,
-              overflow: 'hidden',
-              backgroundColor: colors.card,
-              height: 240,
-            }}>
-            {region ? (
-              <MapView
-                style={{ flex: 1 }}
-                region={region}
-                onRegionChangeComplete={(next) => {
-                  setMapRegion(next);
-                }}
-                onPress={(e) => {
-                  const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
-                  setLatitude(lat);
-                  setLongitude(lng);
-                  setMapRegion(toRegion(lat, lng));
-                }}
-                showsUserLocation>
-                {latitude != null && longitude != null && (
-                  <Marker
-                    coordinate={{ latitude, longitude }}
-                    title={displayName}
-                    draggable
-                    onDragEnd={(e) => {
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Pressable onPress={() => setMapExpanded((v) => !v)}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }}>{t('storeNew.locationTitle')}</Text>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 14, color: colors.primary }}>
+                {mapExpanded ? '▲' : t('storeNew.locationChange')}
+              </Text>
+            </View>
+            {!mapExpanded && (
+              <Text style={{ color: colors.subText, marginTop: 6, fontSize: 13 }}>
+                {latitude != null ? `📍 ${t('storeNew.locationNearby')}` : t('storeNew.locationLoading')}
+              </Text>
+            )}
+          </Pressable>
+          {mapExpanded && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ color: colors.subText, marginBottom: 10, fontSize: 13 }}>{t('storeNew.locationHelp')}</Text>
+              <View
+                style={{
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  backgroundColor: colors.card,
+                  height: 240,
+                }}>
+                {region ? (
+                  <MapView
+                    style={{ flex: 1 }}
+                    region={region}
+                    onRegionChangeComplete={(next) => {
+                      setMapRegion(next);
+                    }}
+                    onPress={(e) => {
                       const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
                       setLatitude(lat);
                       setLongitude(lng);
                       setMapRegion(toRegion(lat, lng));
                     }}
-                  />
+                    showsUserLocation>
+                    {latitude != null && longitude != null && (
+                      <Marker
+                        coordinate={{ latitude, longitude }}
+                        title={displayName}
+                        draggable
+                        onDragEnd={(e) => {
+                          const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
+                          setLatitude(lat);
+                          setLongitude(lng);
+                          setMapRegion(toRegion(lat, lng));
+                        }}
+                      />
+                    )}
+                  </MapView>
+                ) : (
+                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: colors.subText }}>{t('storeNew.locationLoading')}</Text>
+                  </View>
                 )}
-              </MapView>
-            ) : (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: colors.subText }}>{t('storeNew.locationLoading')}</Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
         </NeuCard>
 
         <Pressable
@@ -447,6 +541,7 @@ export default function StoreNewScreen() {
                     latitude: latitude as number,
                     longitude: longitude as number,
                     note: note.trim() || undefined,
+                    url: url.trim() || undefined,
                   });
                   setPremiumPaywallTrigger('prefDuplicate');
                   setPremiumPaywallVisible(true);
@@ -465,6 +560,7 @@ export default function StoreNewScreen() {
                 latitude: latitude as number,
                 longitude: longitude as number,
                 note: note.trim() || undefined,
+                url: url.trim() || undefined,
               });
               setPaywallVisible(true);
               return;
@@ -477,13 +573,19 @@ export default function StoreNewScreen() {
                 latitude: latitude as number,
                 longitude: longitude as number,
                 note: note.trim() || undefined,
+                url: url.trim() || undefined,
               });
               if (photoUri && created?.id) {
                 await updateStore(created.id, { photoUri, photoUris: [photoUri] });
               }
               logStoreRegistered({ store_name: storeName });
-              await maybeShowInterstitial(isPremiumUser);
-              router.back();
+              const badgeShown = await checkAndShowBadge(latitude as number, longitude as number);
+              if (badgeShown) {
+                setGoBackAfterBadge(true);
+              } else {
+                await maybeShowInterstitial(isPremiumUser);
+                router.back();
+              }
             } catch (e: any) {
               Alert.alert(t('common.saveFailed'), e?.message ?? t('common.tryAgain'));
             } finally {
@@ -492,12 +594,15 @@ export default function StoreNewScreen() {
           }}
           style={{
             ...UI.primaryBtn,
-            backgroundColor: canSave ? UI.primaryBtn.backgroundColor : colors.chipBg,
+            backgroundColor: canSave ? colors.primary : colors.chipBg,
           }}>
           <Text style={{ color: canSave ? 'white' : colors.subText, fontFamily: fonts.extraBold }}>
             {t('storeNew.saveButton')}
           </Text>
         </Pressable>
+        <Text style={{ textAlign: 'center', color: colors.subText, fontSize: 12, fontFamily: fonts.medium, marginTop: 4 }}>
+          {t('storeNew.laterHint')}
+        </Text>
       </ScrollView>
       <BottomAdBanner />
       <Modal visible={paywallVisible} transparent animationType="slide" onRequestClose={() => {}}>
@@ -557,7 +662,7 @@ export default function StoreNewScreen() {
                 setPaywallVisible(false);
                 await autoSavePending(t('storeNew.purchaseSuccess'));
               }}
-              style={UI.primaryCta}>
+              style={[UI.primaryCta, { backgroundColor: colors.primary }]}>
               <Text style={UI.primaryCtaText}>{t('storeNew.purchaseCta')}</Text>
             </Pressable>
             <Pressable
@@ -582,7 +687,7 @@ export default function StoreNewScreen() {
                 setPaywallVisible(false);
                 await autoSavePending(t('storeNew.rewardSuccess'));
               }}
-              style={[UI.adCta, { backgroundColor: colors.card, shadowColor: colors.shadowDark }, !limitState?.canWatchRewardAd ? [UI.adCtaDisabled, { backgroundColor: colors.chipBg }] : null]}>
+              style={[UI.adCta, { backgroundColor: !limitState?.canWatchRewardAd ? colors.chipBg : colors.card, shadowColor: colors.shadowDark }]}>
               <Text style={[UI.adCtaText, { color: colors.text }]}>{t('storeNew.rewardCta')}</Text>
             </Pressable>
             {!limitState?.canWatchRewardAd ? <Text style={[UI.adUsedText, { color: colors.subText }]}>{t('storeNew.rewardUsed')}</Text> : null}
@@ -592,7 +697,7 @@ export default function StoreNewScreen() {
               onPress={() => setPaywallVisible(false)}
               disabled={isProcessingUnlock}
               style={{ marginTop: 10, alignItems: 'center' }}>
-              <Text style={{ color: '#4F78FF', fontFamily: fonts.extraBold }}>{t('common.cancel')}</Text>
+              <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </View>
@@ -613,7 +718,12 @@ export default function StoreNewScreen() {
                   await updateStore(created.id, { photoUri, photoUris: [photoUri] });
                 }
                 logStoreRegistered({ store_name: draft.name });
-                router.back();
+                const badgeShown = await checkAndShowBadge(draft.latitude, draft.longitude);
+                if (badgeShown) {
+                  setGoBackAfterBadge(true);
+                } else {
+                  router.back();
+                }
               } catch (e: any) {
                 Alert.alert(t('common.saveFailed'), e?.message ?? t('common.tryAgain'));
               } finally {
@@ -630,6 +740,33 @@ export default function StoreNewScreen() {
           }
         }}
         trigger={premiumPaywallTrigger}
+      />
+      <BadgeCelebrationModal
+        visible={badgeCelebrationVisible}
+        badge={celebrationBadge}
+        prefName={celebrationPrefName}
+        earnedCount={celebrationCount}
+        isPurchased={badgeCollectionPurchased}
+        onClose={() => {
+          setBadgeCelebrationVisible(false);
+          if (goBackAfterBadge) {
+            setGoBackAfterBadge(false);
+            router.back();
+          }
+        }}
+      />
+      <MilestoneShareModal
+        visible={milestoneVisible}
+        milestoneType={milestoneType}
+        visitedCount={milestoneVisited}
+        storeCount={milestoneStoreCount}
+        onClose={() => {
+          setMilestoneVisible(false);
+          if (goBackAfterBadge) {
+            setGoBackAfterBadge(false);
+            router.back();
+          }
+        }}
       />
       {toastMessage ? (
         <View style={UI.toast}>

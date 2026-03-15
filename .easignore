@@ -1,0 +1,25 @@
+# Dependencies (installed on EAS build server)
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native generated (CNG rebuilds these)
+/ios
+/android
+
+# Build artifacts
+*.log
+build.log
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Other projects
+geo-memo-reminder-app/

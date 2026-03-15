@@ -27,6 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { t } from '@/src/i18n';
 import type { Store } from '@/src/models';
 import { useThemeColors } from '@/src/state/ThemeContext';
+import { SafeImage } from '@/src/ui/SafeImage';
 import { useStores } from '@/src/state/StoresContext';
 import { getMemos } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
@@ -39,7 +40,6 @@ const UI = {
     padding: 14,
   } as const,
   primaryBtn: {
-    backgroundColor: '#4F78FF',
     paddingVertical: 12,
     borderRadius: 28,
     alignItems: 'center',
@@ -428,8 +428,8 @@ export default function MapScreen() {
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <Pressable
                   onPress={() => router.push({ pathname: '/store/[id]', params: { id: selectedStore.id } })}
-                  style={{ flex: 1, ...UI.primaryBtn }}>
-                  <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('map.detail')}</Text>
+                  style={{ flex: 1, ...UI.primaryBtn, backgroundColor: colors.primary }}>
+                  <Text style={{ color: '#FFFFFF', fontFamily: fonts.extraBold }}>{t('map.detail')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => openGoogleMaps(selectedStore)}
@@ -478,7 +478,7 @@ export default function MapScreen() {
                       {(item.photoUris?.length ?? 0) > 0 ? (
                         <View style={{ flexDirection: 'row', gap: 4 }}>
                           {(item.photoUris ?? []).slice(0, 3).map((uri, i) => (
-                            <Image key={i} source={{ uri }} style={[UI.storeImage, { backgroundColor: colors.chipBg, width: 44, height: 44 }]} />
+                            <SafeImage key={i} uri={uri} style={[UI.storeImage, { backgroundColor: colors.chipBg, width: 44, height: 44 }]} />
                           ))}
                           {(item.photoUris?.length ?? 0) > 3 && (
                             <View style={[UI.storeImage, UI.storeImagePlaceholder, { backgroundColor: colors.chipBg, width: 44, height: 44 }]}>
@@ -487,7 +487,7 @@ export default function MapScreen() {
                           )}
                         </View>
                       ) : item.photoUri ? (
-                        <Image source={{ uri: item.photoUri }} style={[UI.storeImage, { backgroundColor: colors.chipBg }]} />
+                        <SafeImage uri={item.photoUri} style={[UI.storeImage, { backgroundColor: colors.chipBg }]} />
                       ) : (
                         <View style={[UI.storeImage, UI.storeImagePlaceholder, { backgroundColor: colors.chipBg }]}>
                           <Text style={[UI.storeImageText, { color: colors.subText }]}>{t('map.addPhoto')}</Text>

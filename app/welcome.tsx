@@ -7,6 +7,7 @@ import { logLogin } from '@/src/analytics';
 import { t } from '@/src/i18n';
 import { restorePurchases } from '@/src/purchases';
 import { useAuth } from '@/src/state/AuthContext';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { setHasSeenOnboarding, setHasSeenWelcome } from '@/src/storage';
 import { checkCloudDataExists, downloadAllData } from '@/src/sync/firestoreSync';
 import type { PhotoSyncProgress } from '@/src/sync/storageSync';
@@ -17,6 +18,7 @@ import type { User } from 'firebase/auth';
 export default function WelcomeScreen() {
   const router = useRouter();
   const { signInWithApple, signInWithGoogle, signInAsGuest, error } = useAuth();
+  const colors = useThemeColors();
   const [busy, setBusy] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
   const prevError = useRef<string | null>(null);
@@ -109,11 +111,11 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#E9E4DA', justifyContent: 'center', padding: 24 }}>
-      <Text style={{ fontSize: 24, fontFamily: fonts.extraBold, color: '#1F2937', textAlign: 'center', marginBottom: 8 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 24 }}>
+      <Text style={{ fontSize: 24, fontFamily: fonts.extraBold, color: colors.text, textAlign: 'center', marginBottom: 8 }}>
         {t('auth.welcomeTitle')}
       </Text>
-      <Text style={{ color: '#6B7280', textAlign: 'center', marginBottom: 32, lineHeight: 20 }}>
+      <Text style={{ color: colors.subText, textAlign: 'center', marginBottom: 32, lineHeight: 20 }}>
         {t('auth.welcomeSubtitle')}
       </Text>
 
@@ -122,7 +124,7 @@ export default function WelcomeScreen() {
           <View style={{ alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <ActivityIndicator />
             {restoreStatus && (
-              <Text style={{ color: '#6B7280', fontSize: 13, fontFamily: fonts.bold, textAlign: 'center' }}>
+              <Text style={{ color: colors.subText, fontSize: 13, fontFamily: fonts.bold, textAlign: 'center' }}>
                 {restoreStatus}
               </Text>
             )}
@@ -158,15 +160,15 @@ export default function WelcomeScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: colors.card,
             borderRadius: 28,
             paddingVertical: 14,
             borderWidth: 1,
-            borderColor: '#D1D5DB',
+            borderColor: colors.border,
             opacity: busy ? 0.5 : 1,
           }}>
           <FontAwesome name="google" size={18} color="#4285F4" />
-          <Text style={{ color: '#1F2937', fontFamily: fonts.bold, fontSize: 16 }}>
+          <Text style={{ color: colors.text, fontFamily: fonts.bold, fontSize: 16 }}>
             {t('auth.continueWithGoogle')}
           </Text>
         </Pressable>
@@ -181,25 +183,25 @@ export default function WelcomeScreen() {
             paddingVertical: 14,
             opacity: busy ? 0.5 : 1,
           }}>
-          <Text style={{ color: '#6B7280', fontFamily: fonts.bold, fontSize: 16 }}>
+          <Text style={{ color: colors.subText, fontFamily: fonts.bold, fontSize: 16 }}>
             {t('auth.continueAsGuest')}
           </Text>
         </Pressable>
       </NeuCard>
 
-      <Text style={{ color: '#9CA3AF', textAlign: 'center', marginTop: 20, fontSize: 12, lineHeight: 18 }}>
+      <Text style={{ color: colors.subText, textAlign: 'center', marginTop: 20, fontSize: 12, lineHeight: 18 }}>
         {t('auth.guestHint')}
       </Text>
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16, gap: 4 }}>
         <Pressable onPress={() => router.push('/privacy')} hitSlop={8}>
-          <Text style={{ color: '#9CA3AF', fontSize: 11, textDecorationLine: 'underline' }}>
+          <Text style={{ color: colors.subText, fontSize: 11, textDecorationLine: 'underline' }}>
             {t('settings.privacyPolicy')}
           </Text>
         </Pressable>
-        <Text style={{ color: '#D1D5DB', fontSize: 11 }}>|</Text>
+        <Text style={{ color: colors.border, fontSize: 11 }}>|</Text>
         <Pressable onPress={() => router.push('/terms')} hitSlop={8}>
-          <Text style={{ color: '#9CA3AF', fontSize: 11, textDecorationLine: 'underline' }}>
+          <Text style={{ color: colors.subText, fontSize: 11, textDecorationLine: 'underline' }}>
             {t('settings.termsOfService')}
           </Text>
         </Pressable>

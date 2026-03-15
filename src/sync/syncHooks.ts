@@ -1,7 +1,12 @@
 import { firebaseAuth } from '../firebase';
 import type { AlbumPhoto, Memo, Store, TravelLunchEntry } from '../models';
 
+// Guard to prevent re-upload loops during batch download
+let _batchSyncing = false;
+export function setBatchSyncing(v: boolean) { _batchSyncing = v; }
+
 function getLoggedInUid(): string | null {
+  if (_batchSyncing) return null; // skip all sync during batch download
   const user = firebaseAuth.currentUser;
   if (!user || user.isAnonymous) return null;
   return user.uid;

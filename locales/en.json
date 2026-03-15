@@ -47,6 +47,7 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "stats": "Stats",
+    "foodBadges": "Food Badges",
     "shareTarget": "Add photo to"
   },
   "onboarding": {
@@ -55,18 +56,26 @@
     "slides": {
       "welcome": {
         "title": "Fill your Japan, one lunch at a time.",
-        "body": "Your lunch memories become a map."
+        "body": "With every lunch, your 47-prefecture\nmap comes alive."
       },
-      "easy": {
-        "title": "Today's lunch, a special memory.",
-        "body": "From the diner by the station\nto the hidden gem on a trip."
+      "record": {
+        "title": "One button, fully recorded.",
+        "body": "Map, Travel Lunch, Shared Map, Album.\n4 ways to save your lunch."
+      },
+      "badges": {
+        "title": "Collect all 47 food badges.",
+        "body": "Earn a local specialty badge\nfor each prefecture you conquer."
+      },
+      "share": {
+        "title": "Build maps with friends.",
+        "body": "Create shared maps to collect\nlunch spots with friends and family."
       },
       "free": {
-        "title": "Find your favorites, anytime.",
-        "body": "\"I want to go back there\"\n— always at your fingertips.",
+        "title": "Start for free.",
+        "body": "All core features are free.\nUpgrade to Premium for unlimited use.",
         "premium": "Go unlimited with Premium.",
-        "freeNote": "* Record up to 10 spots for free",
-        "planChangeHint": "You can change your plan anytime"
+        "freeNote": "Try up to 10 spots for free",
+        "planChangeHint": "Upgrade anytime if you love it"
       }
     }
   },
@@ -76,10 +85,17 @@
     "namePlaceholder": "e.g. Set meal spot before the site",
     "memoLabel": "Memo (optional)",
     "memoPlaceholder": "e.g. Fast daily specials. Quiet after 1 PM",
+    "urlLabel": "URL (optional)",
+    "urlPlaceholder": "e.g. https://tabelog.com/...",
     "photoLabel": "Shared photo",
     "photoRemove": "Remove photo",
+    "addPhoto": "Add photo",
+    "photoPermissionTitle": "Photo access required",
+    "photoPermissionBody": "Please allow access to add a photo.",
     "locationTitle": "Select a location",
     "locationHelp": "Tap the map to drop a pin.",
+    "locationNearby": "Near current location",
+    "locationChange": "Change location",
     "locationLoading": "Getting your location…",
     "saveButton": "Add to list",
     "adUnavailableTitle": "Ads unavailable",
@@ -104,7 +120,8 @@
     "rewardCta": "Watch an ad to add +1 (once today)",
     "rewardUsed": "Already used today",
     "assureKeep": "* Your existing 10 posts stay saved",
-    "assureRestore": "* Restore purchases from the top-right"
+    "assureRestore": "* Restore purchases from the top-right",
+    "laterHint": "You can add details later"
   },
   "storeDetail": {
     "notFound": "Lunch spot not found.",
@@ -147,15 +164,16 @@
     "memoPlaceholder": "e.g. Less crowded after 2 PM",
     "urlLabel": "URL",
     "urlPlaceholder": "e.g. https://tabelog.com/...",
-    "remindTitle": "Reminder settings (details)",
-    "remindOn": "ON",
-    "remindOff": "OFF",
+    "addPhoto": "Add photo",
+    "deletePhotoTitle": "Delete this photo?",
+    "deletePhotoBody": "This photo will be removed.",
     "shareButton": "Share with friends",
     "shareAppMessage": "Found this place on Lunch Map!",
     "saveBack": "Save and go back",
     "deleteTitle": "Delete this?",
     "deleteBody": "This lunch spot will be deleted.",
-    "deleteConfirm": "Delete"
+    "deleteConfirm": "Delete",
+    "otherInfo": "Other"
   },
   "shared": {
     "title": "Shared Map",
@@ -201,6 +219,7 @@
     "addStore": "Add a place",
     "storeNamePlaceholder": "Place name",
     "memoPlaceholder": "Memo (optional)",
+    "urlPlaceholder": "URL (optional)",
     "location": "Location",
     "locationTitle": "Location required",
     "locationBody": "Please allow location access to get your current position.",
@@ -332,7 +351,67 @@
     "collectionTitle": "Travel Lunch Log",
     "collectionSub": "Record lunch across 47 prefectures",
     "collectionProgress": "%{count}/47",
-    "addStore": "Add memories"
+    "addStore": "Add memories",
+    "progressTitle": "Your Japan is getting filled in",
+    "progressRemaining": "%{count} prefectures to go",
+    "progressEmpty": "Record your first prefecture!",
+    "firstTimeCta": "Record your first lunch",
+    "firstTimeTitle": "Start collecting lunch memories",
+    "firstTimeBody": "Record lunches across 47 prefectures\nand fill in your Japan map",
+    "recordLunch": "Record Lunch",
+    "dailyPickLabel": "Today's Lunch",
+    "dailyPickPrompt": "Record today's memory",
+    "progressPercent": "%{percent}% complete",
+    "viewCollection": "View collection",
+    "recentPref": "Recent: %{name}",
+    "navSectionTitle": "Look back",
+    "navMapDesc": "View saved places on the map",
+    "navSharedDesc": "Maps shared with friends",
+    "navAlbumDesc": "Your lunch photo collection",
+    "navCollectionDesc": "Check prefecture progress",
+    "navBadgesDesc": "View earned food badges",
+    "actionMap": "Add to Map",
+    "actionMapDesc": "Register a place on the map",
+    "actionShared": "Shared Map",
+    "actionSharedDesc": "Share places with friends",
+    "actionAlbum": "Album",
+    "actionAlbumDesc": "Save lunch photos",
+    "navStatsDesc": "Analyze your lunch records",
+    "tutorialStep1": "Tap here first!",
+    "tutorialStep2": "Record your\nfirst prefecture!",
+    "tutorialRecommend": "Recommended",
+    "tutorialMapHint": "Pin nearby spots on the map",
+    "tutorialTravelHint": "Record prefectures and conquer Japan!",
+    "tutorialSharedHint": "Share spots with friends",
+    "tutorialAlbumHint": "Collect your lunch photos",
+    "tutorialSkip": "Later",
+    "tutorialCompleteTitle": "First step, congrats!",
+    "tutorialCompleteBody": "Your Japan lunch conquest has begun!\nKeep filling in those prefectures.",
+    "tutorialCompleteHint1": "Add more anytime from \"+Record Lunch\"",
+    "tutorialCompleteHint2": "Check out your Food Badges too",
+    "tutorialCompleteButton": "Let's go!",
+    "statsPreviewTitle": "Stats Dashboard",
+    "statsPreviewBody": "Analyze your lunch records\nfrom various perspectives",
+    "statsFeature1": "Lunch calendar to see your active days",
+    "statsFeature2": "Cuisine & prefecture rankings",
+    "statsFeature3": "Monthly lunch count chart",
+    "statsFeature4": "Favorite lunches list",
+    "statsUnlock": "Unlock with Premium",
+    "statsClose": "Later",
+    "actionTravel": "Travel Lunch",
+    "actionTravelDesc": "Record your prefecture memories"
+  },
+  "milestone": {
+    "newPrefTitle": "%{prefName} conquered!",
+    "newPrefBody": "%{count} prefectures visited — %{percent}% complete",
+    "tenPrefsTitle": "10 prefectures conquered!",
+    "tenPrefsBody": "You've covered about 1/5 of Japan! Keep going!",
+    "fiftyStoresTitle": "50 lunches recorded!",
+    "fiftyStoresBody": "%{storeCount} lunch spots and counting. Amazing!",
+    "badgeTitle": "New badge earned!",
+    "badgeBody": "%{count} prefectures visited — %{percent}% complete",
+    "share": "Share",
+    "shareText": "Conquering Japan's lunches! %{count}/47 prefectures (%{percent}%)"
   },
   "map": {
     "photoPermissionTitle": "Photo access required",
@@ -383,7 +462,7 @@
   },
   "collection": {
     "title": "Your collection",
-    "hint": "Tap the map to select a prefecture.",
+    "hint": "Tap to select a prefecture. Pinch to zoom.",
     "cardTitleRecent": "Recent memories",
     "cardTitleSelected": "Memories in %{name}",
     "legendVisited": "Has memories",
@@ -391,7 +470,16 @@
     "emptyBody": "No memories yet.",
     "deleteTitle": "Delete this memory?",
     "deleteBody": "\"%{name}\" will be deleted.",
-    "deleteConfirm": "Delete"
+    "deleteConfirm": "Delete",
+    "badgeToggle": "Food Badges",
+    "bgLabel": "Background",
+    "bgNone": "None",
+    "bgSakura": "Sakura",
+    "bgSeasonal": "Seasonal",
+    "bgStamp": "Travel Note",
+    "bgNavy": "Navy",
+    "bgWashi": "Washi",
+    "bgPastel": "Pastel"
   },
   "pref": {
     "photoPermissionTitle": "Photo access required",
@@ -499,9 +587,6 @@
     "timeMinutesAgo": "%{count}m ago",
     "timeHoursAgo": "%{count}h ago",
     "timeDaysAgo": "%{count}d ago",
-    "weatherSunny": "Sunny",
-    "weatherCloudy": "Cloudy",
-    "weatherRain": "Rain"
   },
   "album": {
     "title": "Album",
@@ -517,6 +602,7 @@
     "emptyTitle": "No photos yet",
     "emptyBody": "Capture your lunch memories with photos",
     "pickDate": "Select a date",
+    "tapToCrop": "Tap to crop / resize",
     "select": "Select",
     "deleteTitle": "Delete this photo?",
     "deleteBody": "This photo will be removed from the album.",
@@ -574,7 +660,8 @@
     "cloudCount": "Account: %{count}",
     "uploading": "Uploading photos... (%{current}/%{total})",
     "downloading": "Downloading photos... (%{current}/%{total})",
-    "photoSyncFailed": "Some photos failed to sync (%{count})"
+    "photoSyncFailed": "Some photos failed to sync (%{count})",
+    "successWithPhotoFail": "Data migrated. However, %{count} photo(s) failed to transfer."
   },
   "settings": {
     "title": "Settings",
@@ -583,8 +670,8 @@
     "restoreNone": "No purchases to restore.",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
-    "backupTitle": "Data Backup",
-    "backupManage": "Manage Backup"
+    "backupTitle": "Cloud Sync",
+    "backupManage": "Manage sync"
   },
   "loginBonus": {
     "title": "Today's login",
@@ -635,6 +722,33 @@
       "label": "Rookie",
       "description": "Grow your profile to earn badges"
     }
+  },
+  "foodBadges": {
+    "homeTitle": "Food Badges",
+    "homeProgress": "%{count} / 47 earned",
+    "homeDetail": "Collection →",
+    "homeSubFree": "Showing first 5 badges",
+    "homeSubPurchased": "View your collection on the map",
+    "progress": "Food Badge Collection",
+    "descriptionFree": "Free version shows your first 5 food badges",
+    "descriptionPurchased": "Your earned food badges on the Japan map",
+    "collectionTitle": "All Badges",
+    "celebrationTitle": "Food Badge Earned!",
+    "celebrationProgress": "%{count} / 47",
+    "celebrationLockedHint": "Unlock the collection to view this badge",
+    "freeNote": "Free version shows your first 5 food badges.\nUnlock to reveal all 47 prefectures.",
+    "lockedBadge": "Unlock to view",
+    "paywallTitle": "Food Badge Collection",
+    "paywallBody": "Unlock all 47 prefecture food badges\nand complete your Japan map!\nSNS sharing included",
+    "paywallOnetime": "One-time purchase, no extra fees",
+    "unlockButton": "Unlock Food Badges",
+    "shareButton": "Share on SNS",
+    "shareTitle": "My LunchMap",
+    "shareSubtitle": "Filling in Japan one lunch at a time",
+    "shareMessage": "Conquering Japan's lunches! %{count}/47 #LunchMap\nhttps://apps.apple.com/jp/app/%E3%83%A9%E3%83%B3%E3%83%81%E3%83%9E%E3%83%83%E3%83%97-lunchmap/id6758890590",
+    "shareWatermark": "#LunchMap",
+    "lockedTitle": "Premium Only",
+    "lockedBody": "This background is available with Premium or Food Badge purchase"
   },
   "shareCard": {
     "minutes": " min",
@@ -688,8 +802,6 @@
     "albumBody": "Save lunch photos to your album. Browse by date and keep your food memories.",
     "travelTitle": "Travel Lunch Log",
     "travelBody": "Record meals across all 47 prefectures with photos, ratings, and notes. Aim for a complete collection!",
-    "remindTitle": "Reminder Notifications",
-    "remindBody": "Get notified when you're near a saved spot. Check the bell icon for details.",
     "favoriteTitle": "Favorites & Next Picks",
     "favoriteBody": "Star your favorite spots. They'll appear in 'Today's Pick' for easy access."
   },
@@ -703,6 +815,9 @@
     "walkMinutes": "%{minutes} min walk"
   },
   "stats": {
+    "premiumTitle": "Stats is a Premium Feature",
+    "premiumBody": "View lunch trends, rankings,\ncalendar and detailed statistics",
+    "unlockButton": "Unlock Premium",
     "title": "Stats Dashboard",
     "monthSuffix": "",
     "totalLunches": "Lunches",

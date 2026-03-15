@@ -114,7 +114,7 @@ export async function deleteAllCloudData(uid: string): Promise<void> {
 
 // --- Upload all local data to Firestore ---
 
-export async function uploadAllData(uid: string, onProgress?: (p: PhotoSyncProgress) => void): Promise<void> {
+export async function uploadAllData(uid: string, onProgress?: (p: PhotoSyncProgress) => void): Promise<{ photoFailCount: number }> {
   const storage = await getStorage();
   const [stores, memos, entries, settings] = await Promise.all([
     storage.getStores(),
@@ -152,12 +152,24 @@ export async function uploadAllData(uid: string, onProgress?: (p: PhotoSyncProgr
 
   // Upload photos to Firebase Storage
   const { uploadAllPhotos } = await import('./storageSync');
-  await uploadAllPhotos(uid, onProgress);
+  const photoFailCount = await uploadAllPhotos(uid, onProgress);
+  return { photoFailCount };
 }
 
 // --- Download all data from Firestore to local ---
 
-export async function downloadAllData(uid: string, onProgress?: (p: PhotoSyncProgress) => void): Promise<void> {
+export async function downloadAllData(uid: string, onProgress?: (p: PhotoSyncProgress) => void): Promise<{ photoFailCount: number }> {
+  // Prevent sync hooks from re-uploading data we're downloading
+  const { setBatchSyncing } = await import('./syncHooks');
+  setBatchSyncing(true);
+  try {
+    return await _downloadAllDataInner(uid, onProgress);
+  } finally {
+    setBatchSyncing(false);
+  }
+}
+
+async function _downloadAllDataInner(uid: string, onProgress?: (p: PhotoSyncProgress) => void): Promise<{ photoFailCount: number }> {
   // 1. Download all cloud data first (before touching local data)
   const [settingsDoc, placesSnap, memosSnap, travelSnap] = await Promise.all([
     getDoc(doc(firebaseDb, 'users', uid, 'data', 'settings')),
@@ -260,7 +272,8 @@ export async function downloadAllData(uid: string, onProgress?: (p: PhotoSyncPro
 
   // Download photos from Firebase Storage
   const { downloadAllPhotos } = await import('./storageSync');
-  await downloadAllPhotos(uid, onProgress);
+  const photoFailCount = await downloadAllPhotos(uid, onProgress);
+  return { photoFailCount };
 }
 
 // --- Single-item sync helpers ---

@@ -61,16 +61,9 @@ const UI = {
     shadowOpacity: 0.4,
     shadowRadius: 4,
   } as const,
-  chipActive: {
-    backgroundColor: '#FEF3C7',
-  } as const,
   chipText: {
     fontSize: 12,
     fontFamily: fonts.bold,
-    color: '#374151',
-  } as const,
-  chipTextActive: {
-    color: '#B45309',
   } as const,
   sortChip: {
     paddingHorizontal: 12,
@@ -118,15 +111,8 @@ const UI = {
     paddingHorizontal: 12,
     borderRadius: 10,
   } as const,
-  modalBtnPrimary: {
-    backgroundColor: '#F59E0B',
-  } as const,
   modalBtnText: {
-    color: '#374151',
     fontFamily: fonts.bold,
-  } as const,
-  modalBtnTextPrimary: {
-    color: '#FFFFFF',
   } as const,
 } as const;
 
@@ -249,7 +235,7 @@ export default function StoreListSearchScreen() {
                 setFilterVisible(true);
               }}
               style={[UI.chip, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
-              <Text style={UI.chipText}>{t('list.filterButton')}</Text>
+              <Text style={[UI.chipText, { color: colors.text }]}>{t('list.filterButton')}</Text>
             </Pressable>
             <TextInput
               value={query}
@@ -281,10 +267,10 @@ export default function StoreListSearchScreen() {
                 style={[
                   UI.sortChip,
                   { backgroundColor: colors.card, shadowColor: colors.shadowDark },
-                  active && UI.chipActive,
+                  active && { backgroundColor: colors.accentBg },
                   isNearestDisabled && { opacity: 0.4 },
                 ]}>
-                <Text style={[UI.chipText, active && UI.chipTextActive]}>
+                <Text style={[UI.chipText, { color: colors.text }, active && { color: colors.accentText }]}>
                   {mode === 'newest' ? t('list.sortNewest') : mode === 'favorites' ? t('list.sortFavorites') : t('list.sortNearest')}
                 </Text>
               </Pressable>
@@ -300,7 +286,7 @@ export default function StoreListSearchScreen() {
             <Text style={{ fontSize: 13, color: colors.subText, textAlign: 'center' }}>{t('list.emptyBody')}</Text>
             <Pressable
               onPress={() => router.push('/map')}
-              style={{ marginTop: 8, backgroundColor: '#4F78FF', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 28 }}>
+              style={{ marginTop: 8, backgroundColor: colors.primary, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 28 }}>
               <Text style={{ color: 'white', fontFamily: fonts.bold }}>{t('list.emptyCta')}</Text>
             </Pressable>
           </View>
@@ -352,8 +338,8 @@ export default function StoreListSearchScreen() {
                           active ? prev.filter((t) => t !== tag) : [...prev, tag]
                         )
                       }
-                      style={[UI.chip, { backgroundColor: colors.card, shadowColor: colors.shadowDark }, active && UI.chipActive]}>
-                      <Text style={[UI.chipText, active && UI.chipTextActive]}>{tagLabel(tag)}</Text>
+                      style={[UI.chip, { backgroundColor: colors.card, shadowColor: colors.shadowDark }, active && { backgroundColor: colors.accentBg }]}>
+                      <Text style={[UI.chipText, { color: colors.text }, active && { color: colors.accentText }]}>{tagLabel(tag)}</Text>
                     </Pressable>
                   );
                 })}
@@ -366,15 +352,15 @@ export default function StoreListSearchScreen() {
                   setFilterVisible(false);
                 }}
                 style={[UI.modalBtn, { backgroundColor: colors.chipBg }]}>
-                <Text style={UI.modalBtnText}>{t('common.cancel')}</Text>
+                <Text style={[UI.modalBtnText, { color: colors.text }]}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
                   setSelectedTags(draftTags);
                   setFilterVisible(false);
                 }}
-                style={[UI.modalBtn, { backgroundColor: colors.chipBg }, UI.modalBtnPrimary]}>
-                <Text style={[UI.modalBtnText, UI.modalBtnTextPrimary]}>{t('list.apply')}</Text>
+                style={[UI.modalBtn, { backgroundColor: colors.accent }]}>
+                <Text style={[UI.modalBtnText, { color: '#FFFFFF' }]}>{t('list.apply')}</Text>
               </Pressable>
             </View>
           </NeuCard>

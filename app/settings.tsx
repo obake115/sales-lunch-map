@@ -8,18 +8,17 @@ import { t } from '@/src/i18n';
 import { restorePurchases, logOutPurchases } from '@/src/purchases';
 import { clearAllLocalData } from '@/src/storage';
 import { useAuth, type LinkResult } from '@/src/state/AuthContext';
-import { useThemeMode } from '@/src/state/ThemeContext';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { authMethod, user, linkAccount, signOut, deleteAccount } = useAuth();
-  const { themeMode } = useThemeMode();
+  const colors = useThemeColors();
   const [busy, setBusy] = useState(false);
-  const isDark = themeMode === 'navy';
-  const textColor = isDark ? '#FFFFFF' : '#1F2937';
-  const subColor = isDark ? '#94A3B8' : '#6B7280';
+  const textColor = colors.text;
+  const subColor = colors.subText;
 
   const handleLink = async (provider: 'apple' | 'google') => {
     if (busy) return;
@@ -227,7 +226,7 @@ export default function SettingsScreen() {
                 opacity: busy ? 0.5 : 1,
               }}>
               <FontAwesome name="google" size={16} color="#4285F4" />
-              <Text style={{ color: '#1F2937', fontFamily: fonts.bold }}>
+              <Text style={{ color: colors.text, fontFamily: fonts.bold }}>
                 {t('auth.linkGoogle')}
               </Text>
             </Pressable>
@@ -262,7 +261,7 @@ export default function SettingsScreen() {
                 justifyContent: 'center',
                 borderRadius: 24,
                 paddingVertical: 12,
-                backgroundColor: isDark ? '#1E293B' : '#F3F4F6',
+                backgroundColor: colors.chipBg,
                 opacity: busy ? 0.5 : 1,
               }}>
               <Text style={{ color: '#EF4444', fontFamily: fonts.bold }}>
@@ -321,7 +320,7 @@ export default function SettingsScreen() {
             justifyContent: 'center',
             borderRadius: 24,
             paddingVertical: 12,
-            backgroundColor: isDark ? '#1E293B' : '#F3F4F6',
+            backgroundColor: colors.chipBg,
             opacity: busy ? 0.5 : 1,
           }}>
           <Text style={{ color: textColor, fontFamily: fonts.bold }}>
@@ -351,7 +350,7 @@ export default function SettingsScreen() {
           <FontAwesome name="angle-right" size={18} color={subColor} />
         </Pressable>
 
-        <View style={{ height: 1, backgroundColor: isDark ? '#334155' : '#D5D0C6' }} />
+        <View style={{ height: 1, backgroundColor: colors.border }} />
 
         <Pressable
           onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'preview' } })}
@@ -372,7 +371,7 @@ export default function SettingsScreen() {
           <FontAwesome name="angle-right" size={18} color={subColor} />
         </Pressable>
 
-        <View style={{ height: 1, backgroundColor: isDark ? '#334155' : '#D5D0C6' }} />
+        <View style={{ height: 1, backgroundColor: colors.border }} />
 
         <Pressable
           onPress={() => router.push('/post-limit-info')}
@@ -410,7 +409,7 @@ export default function SettingsScreen() {
           <FontAwesome name="angle-right" size={18} color={subColor} />
         </Pressable>
 
-        <View style={{ height: 1, backgroundColor: isDark ? '#334155' : '#D5D0C6' }} />
+        <View style={{ height: 1, backgroundColor: colors.border }} />
 
         <Pressable
           onPress={() => router.push('/terms')}

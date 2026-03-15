@@ -15,38 +15,18 @@ import {
 } from 'react-native';
 
 import { fonts } from '@/src/ui/fonts';
+import { SafeImage } from '@/src/ui/SafeImage';
 import { t } from '@/src/i18n';
 import { deleteTravelLunchEntry, getTravelLunchEntries, toggleTravelLunchFavorite } from '@/src/storage';
-import { useThemeMode } from '@/src/state/ThemeContext';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import type { TravelLunchEntry } from '@/src/models';
 
 export default function TravelPrefDetailScreen() {
   const router = useRouter();
   const { prefCode } = useLocalSearchParams<{ prefCode?: string }>();
   const prefectureId = typeof prefCode === 'string' ? prefCode : '';
-  const { themeMode } = useThemeMode();
+  const colors = useThemeColors();
   const [entries, setEntries] = useState<TravelLunchEntry[]>([]);
-
-  const colors = useMemo(() => {
-    if (themeMode === 'navy') {
-      return {
-        background: '#0F172A',
-        card: '#111827',
-        text: '#E5E7EB',
-        subText: '#9CA3AF',
-        border: '#334155',
-        accent: '#3B82F6',
-      };
-    }
-    return {
-      background: '#E9E4DA',
-      card: '#E9E4DA',
-      text: '#111827',
-      subText: '#6B7280',
-      border: '#D5D0C6',
-      accent: '#3B82F6',
-    };
-  }, [themeMode]);
 
   const prefName = useMemo(() => {
     if (!prefectureId) return t('pref.fallback');
@@ -65,7 +45,7 @@ export default function TravelPrefDetailScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.headerBack}>
           <Text style={[styles.headerBackText, { color: colors.text }]}>←</Text>
@@ -82,8 +62,8 @@ export default function TravelPrefDetailScreen() {
           <Text style={[styles.emptyText, { color: colors.subText }]}>{t('travel.prefDetailEmpty')}</Text>
         }
         renderItem={({ item }) => (
-          <View style={[styles.card, { backgroundColor: colors.card, shadowColor: '#C8C3B9', shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }]}>
-            <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
+          <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadowDark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }]}>
+            <SafeImage uri={item.imageUri} style={[styles.cardImage, { backgroundColor: colors.border }]} />
             <View style={styles.cardBody}>
               <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
                 {item.restaurantName}
@@ -111,7 +91,7 @@ export default function TravelPrefDetailScreen() {
               ) : null}
               {item.url ? (
                 <Pressable onPress={() => Linking.openURL(item.url!)} style={{ marginTop: 4 }}>
-                  <Text style={{ color: '#4F78FF', textDecorationLine: 'underline', fontFamily: fonts.medium, fontSize: 12 }} numberOfLines={1}>
+                  <Text style={{ color: colors.primary, textDecorationLine: 'underline', fontFamily: fonts.medium, fontSize: 12 }} numberOfLines={1}>
                     {item.url}
                   </Text>
                 </Pressable>
@@ -143,7 +123,7 @@ export default function TravelPrefDetailScreen() {
                     ]
                   );
                 }}
-                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2' }}>
+                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: colors.dangerBg }}>
                 <Text style={{ color: '#B91C1C', fontFamily: fonts.extraBold }}>−</Text>
               </Pressable>
               </View>
@@ -187,7 +167,6 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: 160,
-    backgroundColor: '#D5D0C6',
   },
   cardBody: {
     padding: 12,

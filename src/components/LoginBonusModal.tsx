@@ -63,7 +63,7 @@ export function LoginBonusModal({ visible, streak, totalDays, onClose }: Props) 
           }}>{t('loginBonus.subtitle')}</Text>
           <Animated.View style={[{
             alignSelf: 'center',
-            backgroundColor: '#FDE68A',
+            backgroundColor: colors.accentBg,
             borderRadius: 18,
             paddingHorizontal: 14,
             paddingVertical: 8,
@@ -71,7 +71,7 @@ export function LoginBonusModal({ visible, streak, totalDays, onClose }: Props) 
           }, badgeAnimStyle]}>
             <Text style={{
               fontFamily: fonts.extraBold,
-              color: '#92400E',
+              color: colors.accentText,
             }}>{t('loginBonus.badge')}</Text>
           </Animated.View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -90,7 +90,7 @@ export function LoginBonusModal({ visible, streak, totalDays, onClose }: Props) 
           )}
           <Pressable onPress={onClose} style={{
             marginTop: 12,
-            backgroundColor: '#4F78FF',
+            backgroundColor: colors.primary,
             paddingVertical: 12,
             borderRadius: 28,
             alignItems: 'center',

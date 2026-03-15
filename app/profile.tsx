@@ -27,13 +27,11 @@ const UI = {
   headerTitle: {
     fontSize: 22,
     fontFamily: fonts.extraBold,
-    color: '#111827',
     letterSpacing: 0.2,
   } as const,
   card: {
     borderRadius: 20,
     padding: 14,
-    backgroundColor: '#E9E4DA',
   } as const,
   statRow: {
     flexDirection: 'row',
@@ -41,61 +39,34 @@ const UI = {
     marginBottom: 10,
   } as const,
   statLabel: {
-    color: '#6B7280',
     fontFamily: fonts.bold,
   } as const,
   statValue: {
-    color: '#111827',
     fontFamily: fonts.extraBold,
   } as const,
   sectionTitle: {
     fontSize: 16,
     fontFamily: fonts.extraBold,
-    color: '#111827',
     marginBottom: 8,
   } as const,
-  badgePill: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FDE68A',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 10,
-  } as const,
-  badgeText: {
-    fontFamily: fonts.extraBold,
-    color: '#92400E',
-  } as const,
-  styleSub: {
-    color: '#6B7280',
-  } as const,
+  styleSub: {} as const,
   themeRow: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 10,
   } as const,
   themeBtn: {
-    backgroundColor: '#E9E4DA',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    shadowColor: '#C8C3B9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-  } as const,
-  themeBtnActive: {
-    backgroundColor: '#DBEAFE',
   } as const,
   themeBtnText: {
     fontFamily: fonts.extraBold,
-    color: '#111827',
   } as const,
   profileAvatar: {
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: '#FDE68A',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -103,7 +74,6 @@ const UI = {
   } as const,
   profileAvatarText: {
     fontFamily: fonts.extraBold,
-    color: '#92400E',
   } as const,
   profileAvatarImage: {
     width: 84,
@@ -112,20 +82,7 @@ const UI = {
   } as const,
   profileAvatarHint: {
     textAlign: 'center',
-    color: '#6B7280',
     marginBottom: 8,
-  } as const,
-  profileName: {
-    textAlign: 'center',
-    fontFamily: fonts.extraBold,
-    fontSize: 16,
-    color: '#111827',
-  } as const,
-  profileSubtitle: {
-    textAlign: 'center',
-    color: '#6B7280',
-    marginTop: 4,
-    marginBottom: 10,
   } as const,
   profileStats: {
     marginTop: 8,
@@ -138,58 +95,32 @@ const UI = {
   } as const,
   profileBadge: {
     marginTop: 12,
-    backgroundColor: '#FDF4FF',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: 'center',
   } as const,
   profileBadgeText: {
-    color: '#7C3AED',
     fontFamily: fonts.extraBold,
   } as const,
   profileSaveBtn: {
     marginTop: 10,
     borderRadius: 12,
-    backgroundColor: '#E9E4DA',
     paddingVertical: 8,
     alignItems: 'center',
-    shadowColor: '#C8C3B9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
   } as const,
   profileSaveText: {
-    color: '#111827',
     fontFamily: fonts.bold,
   } as const,
   nameInput: {
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#E9E4DA',
     marginTop: 8,
-    shadowColor: '#C8C3B9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
   } as const,
   nameHint: {
-    color: '#6B7280',
     marginTop: 6,
     textAlign: 'center',
-    fontSize: 12,
-  } as const,
-  settingRow: {
-    paddingVertical: 10,
-  } as const,
-  settingLabel: {
-    fontFamily: fonts.extraBold,
-    color: '#111827',
-  } as const,
-  settingSub: {
-    color: '#6B7280',
-    marginTop: 4,
     fontSize: 12,
   } as const,
 } as const;
@@ -263,7 +194,7 @@ function WeeklyActivityChart({ stores, colors }: { stores: { createdAt?: number 
                   width: 16,
                   height: barHeight,
                   borderRadius: 4,
-                  backgroundColor: count > 0 ? '#4F78FF' : colors.chipBg,
+                  backgroundColor: count > 0 ? colors.primary : colors.chipBg,
                 }}
               />
               <Text style={{ fontSize: 10, color: colors.subText, marginTop: 4 }}>{labels[i]}</Text>
@@ -371,11 +302,11 @@ export default function ProfileScreen() {
               setAvatarUri(uri);
               await setProfileAvatarUri(uri);
             }}
-            style={UI.profileAvatar}>
+            style={[UI.profileAvatar, { backgroundColor: colors.accentBg }]}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={UI.profileAvatarImage} />
             ) : (
-              <Text style={UI.profileAvatarText}>{initials}</Text>
+              <Text style={[UI.profileAvatarText, { color: colors.accentText }]}>{initials}</Text>
             )}
           </Pressable>
           <Text style={[UI.profileAvatarHint, { color: colors.subText }]}>{t('profile.changePhoto')}</Text>
@@ -383,7 +314,7 @@ export default function ProfileScreen() {
             value={profileName}
             onChangeText={setProfileNameState}
             placeholder={t('profile.namePlaceholder')}
-            style={[UI.nameInput, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark }]}
+            style={[UI.nameInput, { backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, color: colors.text }]}
           />
           <Text style={[UI.nameHint, { color: colors.subText }]}>{t('profile.nameHint')}</Text>
 
@@ -434,8 +365,8 @@ export default function ProfileScreen() {
                 { cancelable: true }
               );
             }}
-            style={UI.profileBadge}>
-            <Text style={UI.profileBadgeText}>
+            style={[UI.profileBadge, { backgroundColor: colors.accentBg }]}>
+            <Text style={[UI.profileBadgeText, { color: colors.accentText }]}>
               👑 {selectedBadge?.label ?? (achievedBadges[0]?.label ?? t('profile.badges.selectTitle'))}
             </Text>
           </Pressable>
@@ -455,13 +386,13 @@ export default function ProfileScreen() {
           <View style={UI.themeRow}>
             <Pressable
               onPress={() => { setThemeMode('warm'); logThemeChanged({ theme: 'warm' }); }}
-              style={{ ...UI.themeBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(themeMode === 'warm' ? UI.themeBtnActive : null) }}>
-              <Text style={[UI.themeBtnText, { color: colors.text }]}>{t('profile.themeWarm')}</Text>
+              style={{ ...UI.themeBtn, backgroundColor: themeMode === 'warm' ? colors.accentBg : colors.chipBg, shadowColor: colors.shadowDark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }}>
+              <Text style={[UI.themeBtnText, { color: themeMode === 'warm' ? colors.accentText : colors.text }]}>{t('profile.themeWarm')}</Text>
             </Pressable>
             <Pressable
               onPress={() => { setThemeMode('navy'); logThemeChanged({ theme: 'navy' }); }}
-              style={{ ...UI.themeBtn, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(themeMode === 'navy' ? UI.themeBtnActive : null) }}>
-              <Text style={[UI.themeBtnText, { color: colors.text }]}>{t('profile.themeNavy')}</Text>
+              style={{ ...UI.themeBtn, backgroundColor: themeMode === 'navy' ? colors.accentBg : colors.chipBg, shadowColor: colors.shadowDark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 }}>
+              <Text style={[UI.themeBtnText, { color: themeMode === 'navy' ? colors.accentText : colors.text }]}>{t('profile.themeNavy')}</Text>
             </Pressable>
           </View>
         </NeuCard>
@@ -501,8 +432,8 @@ export default function ProfileScreen() {
             <Text style={{ color: colors.subText }}>{t('profile.badges.empty')}</Text>
           ) : (
             achievedBadges.map((badge) => (
-              <View key={badge.id} style={UI.badgePill}>
-                <Text style={UI.badgeText}>{badge.label}</Text>
+              <View key={badge.id} style={{ alignSelf: 'flex-start', backgroundColor: colors.accentBg, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 10 }}>
+                <Text style={{ fontFamily: fonts.extraBold, color: colors.accentText }}>{badge.label}</Text>
               </View>
             ))
           )}

@@ -12,6 +12,7 @@ import { useShareIntent } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
 import { LogBox } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 // Suppress uncatchable expo-notifications error on iOS Simulator
@@ -87,6 +88,7 @@ const SCREEN_NAMES: Record<string, string> = {
   '/everyone': 'Everyone',
   '/shared': 'SharedMaps',
   '/reminders': 'Reminders',
+  '/album': 'Album',
   '/store/new': 'StoreNew',
   '/travel/new': 'TravelNew',
   '/travel/pref-list': 'TravelPrefList',
@@ -94,6 +96,7 @@ const SCREEN_NAMES: Record<string, string> = {
   '/settings': 'Settings',
   '/guide': 'Guide',
   '/stats': 'Stats',
+  '/food-badges': 'FoodBadges',
   '/data-migration': 'DataMigration',
   '/onboarding': 'Onboarding',
   '/post-limit-info': 'PostLimitInfo',
@@ -158,6 +161,7 @@ function RootLayoutNav() {
         };
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider value={theme}>
       <AppProviders>
         <Stack screenOptions={{
@@ -165,7 +169,7 @@ function RootLayoutNav() {
           headerTitleStyle: { fontFamily: fonts.bold },
           headerBackButtonDisplayMode: 'minimal',
         }}>
-          <Stack.Screen name="index" options={{ title: t('nav.home') }} />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ title: t('nav.profile') }} />
           <Stack.Screen name="list" options={{ title: t('nav.list') }} />
           <Stack.Screen name="map" options={{ headerShown: false }} />
@@ -183,6 +187,7 @@ function RootLayoutNav() {
           <Stack.Screen name="shared" options={{ title: t('nav.shared') }} />
           <Stack.Screen name="shared/[id]" options={{ title: t('nav.shared') }} />
           <Stack.Screen name="reminders" options={{ title: t('nav.reminders') }} />
+          <Stack.Screen name="album" options={{ title: t('nav.reminders') }} />
           <Stack.Screen name="store/new" options={{ title: t('nav.storeNew') }} />
           <Stack.Screen name="store/[id]" options={{ title: t('nav.storeDetail') }} />
           <Stack.Screen name="travel/new" options={{ title: t('nav.travelNew') }} />
@@ -190,10 +195,11 @@ function RootLayoutNav() {
           <Stack.Screen name="travel/pref/[prefCode]" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
-          <Stack.Screen name="data-migration" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="data-migration" options={{ title: t('settings.backupTitle') }} />
           <Stack.Screen name="onboarding" options={{ title: t('nav.onboarding') }} />
           <Stack.Screen name="guide" options={{ title: t('nav.guide') }} />
           <Stack.Screen name="stats" options={{ title: t('nav.stats') }} />
+          <Stack.Screen name="food-badges" options={{ title: t('nav.foodBadges') }} />
           <Stack.Screen name="post-limit-info" options={{ title: t('nav.postLimitInfo') }} />
           <Stack.Screen name="share-target" options={{ title: t('nav.shareTarget'), presentation: 'modal' }} />
           <Stack.Screen name="privacy" options={{ title: t('nav.privacy') }} />
@@ -201,5 +207,6 @@ function RootLayoutNav() {
         </Stack>
       </AppProviders>
     </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

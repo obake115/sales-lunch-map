@@ -2,16 +2,19 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, Image, InteractionManager, Pressable, Text, View, useWindowDimensions, type ImageStyle } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { Alert, Image, InteractionManager, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, withDelay } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
 import { LoginBonusModal } from '@/src/components/LoginBonusModal';
+import { MilestoneShareModal, type MilestoneType } from '@/src/components/MilestoneShareModal';
 import { PremiumPaywall } from '@/src/components/PremiumPaywall';
-import { TravelLunchCard } from '@/components/TravelLunchCard';
+
 import { formatYmd } from '@/src/domain/date';
 import { t } from '@/src/i18n';
 import { getCurrentBadge } from '@/src/domain/badges';
-import { claimLoginBonusIfNeeded, getHasSeenOnboarding, getHasSeenWelcome, getLastPaywallShownAt, getLoginBonusState, getNearbyShownCount, getProfileAvatarUri, getSelectedBadgeId, getStores, getTravelLunchProgress, setLastPaywallShownAt, getPaywallFivePrefShown, setPaywallFivePrefShown, getDistinctPrefectureCount, getAdImpressionCount } from '@/src/storage';
+import { backfillFoodBadges, claimLoginBonusIfNeeded, getEarnedFoodBadges, getHasSeenOnboarding, getHasSeenWelcome, getHasSeenTutorial, setHasSeenTutorial, getLastPaywallShownAt, getLoginBonusState, getNearbyShownCount, getProfileAvatarUri, getSelectedBadgeId, getStores, getTravelLunchEntries, getTravelLunchProgress, setLastPaywallShownAt, getPaywallFivePrefShown, setPaywallFivePrefShown, getDistinctPrefectureCount, getAdImpressionCount, isFoodBadgeCollectionPurchased } from '@/src/storage';
 import type { Store } from '@/src/models';
 import { usePremium } from '@/src/state/PremiumContext';
 import { useThemeColors, useThemeMode } from '@/src/state/ThemeContext';
@@ -21,28 +24,10 @@ import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
 import { canShowPaywall } from '@/src/paywallTrigger';
 
-const QUICK_PADDING_H = 32;
-const QUICK_GAP = 8;
-const QUICK_ICON_SIZE = 76;
+
 
 const UI = {
-  card: {
-    borderRadius: 20,
-    padding: 10,
-    backgroundColor: '#E9E4DA',
-  } as const,
-  input: {
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#E9E4DA',
-    shadowColor: '#C8C3B9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-  } as const,
   primaryBtn: {
-    backgroundColor: '#4F78FF',
     paddingVertical: 12,
     borderRadius: 28,
     alignItems: 'center',
@@ -50,138 +35,24 @@ const UI = {
   buttonText: {
     fontFamily: fonts.medium,
   } as const,
-  secondaryBtn: {
-    backgroundColor: '#E9E4DA',
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#C8C3B9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-  } as const,
-  dangerBtn: {
-    backgroundColor: '#FEF2F2',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  } as const,
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  } as const,
-  headerTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
-    color: '#111827',
-  } as const,
-  headerActions: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  } as const,
   iconBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C8C3B9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
   } as const,
   profileBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C8C3B9',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
   } as const,
   profileImage: {
     width: 34,
     height: 34,
     borderRadius: 17,
-  } as const,
-  quickContainer: {
-    marginTop: 12,
-  } as const,
-  quickRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  } as const,
-  quickItem: {
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  } as const,
-  quickLabel: {
-    marginTop: 4,
-    fontSize: 12,
-    fontFamily: fonts.medium,
-    color: '#555',
-    textAlign: 'center',
-  } as const,
-  quickImage: {
-    width: QUICK_ICON_SIZE,
-    height: QUICK_ICON_SIZE,
-  } as const,
-  storeImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 14,
-    backgroundColor: '#D5D0C6',
-  } as const,
-  storeImagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as const,
-  storeImageText: {
-    color: '#6B7280',
-    fontFamily: fonts.bold,
-    fontSize: 12,
-  } as const,
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 6,
-  } as const,
-  tagChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#D5D0C6',
-  } as const,
-  tagText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontFamily: fonts.bold,
-  } as const,
-  listBtn: {
-    marginBottom: 12,
-    borderRadius: 14,
-    backgroundColor: '#F59E0B',
-    paddingVertical: 10,
-    alignItems: 'center',
-  } as const,
-  listBtnText: {
-    color: '#FFFFFF',
-    fontFamily: fonts.bold,
-  } as const,
-  titleText: {
-    fontFamily: fonts.bold,
-  } as const,
-  bodyText: {
-    fontFamily: fonts.regular,
   } as const,
 } as const;
 
@@ -206,49 +77,324 @@ function getGreeting(): string {
   return t('home.greetingEvening');
 }
 
+/**
+ * Smart daily pick using scoring:
+ *  - Favorite: +3
+ *  - Staleness (not visited recently): +0~4
+ *  - Time-band match: +2 if lunch hour & quick tag
+ *  - Genre diversity (different mood from yesterday): +2
+ *  - Seeded random factor: +0~2 (varies by day for fairness)
+ */
 function getDailyPick(stores: Store[]): Store | null {
   if (stores.length === 0) return null;
-  const favorites = stores.filter((s) => s.isFavorite);
-  const pool = favorites.length > 0 ? favorites : stores;
+
   const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
-  return pool[dayOfYear % pool.length];
+  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
+  const hour = now.getHours();
+  const isLunchTime = hour >= 11 && hour < 14;
+
+  // Simple seeded pseudo-random (deterministic per day)
+  const seed = (dayOfYear * 2654435761) >>> 0;
+  const rand = (i: number) => (((seed + i * 1013904223) >>> 0) % 1000) / 1000;
+
+  // Yesterday's pick mood (for diversity)
+  const yesterdaySeed = ((dayOfYear - 1) * 2654435761) >>> 0;
+
+  const scored = stores.map((store, i) => {
+    let score = 0;
+
+    // Favorite boost
+    if (store.isFavorite) score += 3;
+
+    // Staleness: older = more likely to be recommended
+    const ageMs = now.getTime() - (store.updatedAt ?? store.createdAt ?? 0);
+    const ageDays = ageMs / 86400000;
+    score += Math.min(4, ageDays / 7); // max +4 after 4 weeks
+
+    // Time-band match: lunch time prefers quick stores
+    if (isLunchTime && store.moodTags?.includes('サクッと')) score += 2;
+
+    // Genre diversity: different mood tags from yesterday's top pick
+    const yesterdayIdx = yesterdaySeed % stores.length;
+    const yesterdayMoods = new Set(stores[yesterdayIdx]?.moodTags ?? []);
+    const hasDifferentMood = (store.moodTags ?? []).some((t) => !yesterdayMoods.has(t));
+    if (hasDifferentMood || !store.moodTags?.length) score += 2;
+
+    // Seeded random factor for fairness
+    score += rand(i) * 2;
+
+    return { store, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].store;
 }
 
-function QuickTile({
-  item,
-  width,
+
+function ProgressHero({
+  visitedCount,
+  foodBadgeCount,
+  recentPrefName,
   colors,
+  onPress,
+  onBadgePress,
 }: {
-  item: { key: string; label: string; source: any; onPress: () => void };
-  width: number;
+  visitedCount: number;
+  foodBadgeCount: number;
+  recentPrefName: string | null;
   colors: ReturnType<typeof useThemeColors>;
+  onPress: () => void;
+  onBadgePress: () => void;
 }) {
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
+  const remaining = 47 - visitedCount;
+  const progress = visitedCount / 47;
+  const percent = Math.round(progress * 100);
+  const heroScale = useSharedValue(0.96);
+  const heroOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    heroScale.value = withSpring(1, { damping: 12, stiffness: 120 });
+    heroOpacity.value = withTiming(1, { duration: 500 });
+  }, []);
+
+  const heroAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heroScale.value }],
+    opacity: heroOpacity.value,
+  }));
+
+  const svgSize = 96;
+  const strokeWidth = 7;
+  const radius = (svgSize - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - progress);
+
+  return (
+    <Animated.View style={heroAnimStyle}>
+      <NeuCard style={{ padding: 18, backgroundColor: colors.card, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Pressable onPress={onPress} style={{ width: svgSize, height: svgSize, alignItems: 'center', justifyContent: 'center' }}>
+            <Svg width={svgSize} height={svgSize} style={{ position: 'absolute' }}>
+              <Circle
+                cx={svgSize / 2}
+                cy={svgSize / 2}
+                r={radius}
+                stroke={colors.chipBg}
+                strokeWidth={strokeWidth}
+                fill="none"
+              />
+              <Circle
+                cx={svgSize / 2}
+                cy={svgSize / 2}
+                r={radius}
+                stroke={colors.accent}
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                transform={`rotate(-90 ${svgSize / 2} ${svgSize / 2})`}
+              />
+            </Svg>
+            <Text style={{ fontSize: 28, fontFamily: fonts.extraBold, color: colors.accent }}>
+              {visitedCount}
+            </Text>
+            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.subText, marginTop: -2 }}>
+              / 47
+            </Text>
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text, marginBottom: 2 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+              {t('home.progressTitle')}
+            </Text>
+            {visitedCount === 0 ? (
+              <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: colors.accent }}>
+                {t('home.progressEmpty')}
+              </Text>
+            ) : (
+              <>
+                <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: colors.subText }}>
+                  {t('home.progressRemaining', { count: remaining })}
+                  {'  '}
+                  <Text style={{ fontFamily: fonts.bold, color: colors.accent }}>
+                    {t('home.progressPercent', { percent })}
+                  </Text>
+                </Text>
+                {recentPrefName && (
+                  <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.subText, marginTop: 2 }}>
+                    {t('home.recentPref', { name: recentPrefName })}
+                  </Text>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+      </NeuCard>
+    </Animated.View>
+  );
+}
+
+function RecordLunchFAB({
+  colors,
+  onOpen,
+}: {
+  colors: ReturnType<typeof useThemeColors>;
+  onOpen: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const scale = useSharedValue(0);
+  const btnScale = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = withDelay(400, withSpring(1, { damping: 10, stiffness: 140 }));
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: btnScale.value }],
+  }));
+
   return (
-    <Pressable
-      style={[UI.quickItem, { width }]}
-      onPress={item.onPress}
-      onPressIn={() => { scale.value = withTiming(0.92, { duration: 100 }); }}
-      onPressOut={() => { scale.value = withTiming(1, { duration: 100 }); }}
-      hitSlop={8}>
-      <Animated.View style={animatedStyle}>
-        <Image source={item.source} style={UI.quickImage} resizeMode="contain" />
-      </Animated.View>
-      <Text style={[UI.quickLabel, { color: colors.subText }]} numberOfLines={1} ellipsizeMode="tail">
-        {item.label}
-      </Text>
-    </Pressable>
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          right: 20,
+          bottom: Math.max(insets.bottom, 16) + 16,
+          zIndex: 100,
+        },
+        animStyle,
+      ]}>
+      <Pressable
+        onPress={onOpen}
+        onPressIn={() => { btnScale.value = withTiming(0.9, { duration: 100 }); }}
+        onPressOut={() => { btnScale.value = withTiming(1, { duration: 100 }); }}>
+        <Animated.View
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.primary,
+              paddingVertical: 12,
+              paddingHorizontal: 18,
+              borderRadius: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.15,
+              shadowRadius: 6,
+              elevation: 6,
+              gap: 6,
+            },
+            pressStyle,
+          ]}>
+          <FontAwesome name="plus" size={14} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontFamily: fonts.extraBold, fontSize: 14 }}>
+            {t('home.recordLunch')}
+          </Text>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function ActionMenu({
+  visible,
+  colors,
+  onSelect,
+  onClose,
+  highlightTravel,
+}: {
+  visible: boolean;
+  colors: ReturnType<typeof useThemeColors>;
+  onSelect: (route: string) => void;
+  onClose: () => void;
+  highlightTravel?: boolean;
+}) {
+  const tutorialHints: Record<string, string> = {
+    map: t('home.tutorialMapHint'),
+    travel: t('home.tutorialTravelHint'),
+    shared: t('home.tutorialSharedHint'),
+    album: t('home.tutorialAlbumHint'),
+  };
+
+  const items: { key: string; icon?: any; faIcon?: string; faColor?: string; label: string; desc: string; route: string }[] = [
+    { key: 'map', icon: require('@/assets/images/quick-map.png'), label: t('home.actionMap'), desc: t('home.actionMapDesc'), route: '/store/new' },
+    { key: 'travel', icon: require('@/assets/images/collection-cover.png'), label: t('home.actionTravel'), desc: t('home.actionTravelDesc'), route: '/travel/new' },
+    { key: 'shared', icon: require('@/assets/images/quick-shared.png'), label: t('home.actionShared'), desc: t('home.actionSharedDesc'), route: '/shared' },
+    { key: 'album', icon: require('@/assets/images/quick-album.png'), label: t('home.actionAlbum'), desc: t('home.actionAlbumDesc'), route: '/reminders' },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }} onPress={onClose}>
+        <Pressable onPress={() => {}} style={{
+          backgroundColor: colors.card,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingTop: 20,
+          paddingBottom: 36,
+          paddingHorizontal: 20,
+        }}>
+          <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.chipBg, alignSelf: 'center', marginBottom: 16 }} />
+          <Text style={{ fontSize: 17, fontFamily: fonts.extraBold, color: colors.text, marginBottom: 16 }}>
+            {t('home.recordLunch')}
+          </Text>
+          {items.map((item) => {
+            const isTutorial = highlightTravel;
+            const isRecommended = isTutorial && item.key === 'travel';
+            return (
+              <View key={item.key}>
+                <Pressable
+                  onPress={() => { onClose(); onSelect(item.route); }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 12,
+                    paddingHorizontal: isRecommended ? 10 : 0,
+                    gap: 14,
+                    borderRadius: isRecommended ? 14 : 0,
+                    backgroundColor: isRecommended ? `${colors.accent}15` : 'transparent',
+                    borderWidth: isRecommended ? 2 : 0,
+                    borderColor: isRecommended ? colors.accent : 'transparent',
+                  }}>
+                  {item.icon ? (
+                    <Image source={item.icon} style={{ width: 48, height: 48 }} resizeMode="contain" />
+                  ) : (
+                    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: (item.faColor ?? colors.primary) + '18', alignItems: 'center', justifyContent: 'center' }}>
+                      <FontAwesome name={item.faIcon as any} size={22} color={item.faColor ?? colors.primary} />
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text }}>
+                        {item.label}
+                      </Text>
+                      {isRecommended && (
+                        <View style={{ backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 9, fontFamily: fonts.extraBold, color: '#FFFFFF' }}>
+                            {t('home.tutorialRecommend')}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: isTutorial ? colors.text : colors.subText }}>
+                      {isTutorial ? tutorialHints[item.key] : item.desc}
+                    </Text>
+                  </View>
+                  <FontAwesome name="chevron-right" size={12} color={colors.subText} />
+                </Pressable>
+              </View>
+            );
+          })}
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
 export default function StoreListScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [travelProgress, setTravelProgress] = useState(0);
   const { themeMode } = useThemeMode();
@@ -262,39 +408,23 @@ export default function StoreListScreen() {
   const [badgeLabel, setBadgeLabel] = useState<string | null>(null);
   const [dailyPick, setDailyPick] = useState<Store | null>(null);
   const [allStoresCount, setAllStoresCount] = useState(0);
+  const [foodBadgeCount, setFoodBadgeCount] = useState(0);
+  const [foodBadgePurchased, setFoodBadgePurchased] = useState(false);
+  const [todayStore, setTodayStore] = useState<Store | null>(null);
+  const [recentPrefName, setRecentPrefName] = useState<string | null>(null);
+  const [milestoneVisible, setMilestoneVisible] = useState(false);
+  const [milestoneType, setMilestoneType] = useState<MilestoneType>('newPref');
+  const [actionMenuVisible, setActionMenuVisible] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState<0 | 1 | 2>(0); // 0=off, 1=FAB highlight, 2=menu highlight
+  const [tutorialComplete, setTutorialComplete] = useState(false);
+  const tutorialPendingRef = useRef(false); // tracks if user went to travel/new from tutorial
   const loginBonusShownRef = useRef(false);
   const [loginBonusVisible, setLoginBonusVisible] = useState(false);
   const [loginBonusStreak, setLoginBonusStreak] = useState(0);
   const [loginBonusTotalDays, setLoginBonusTotalDays] = useState(0);
+  const [statsPreviewVisible, setStatsPreviewVisible] = useState(false);
+  const insets = useSafeAreaInsets();
 
-  const quickItemWidth = useMemo(
-    () => (width - QUICK_PADDING_H * 2 - QUICK_GAP * 3) / 4,
-    [width]
-  );
-  const quickItems = useMemo(
-    () => [
-      { key: 'map', label: t('nav.map'), source: require('@/assets/images/quick-map.png'), onPress: () => router.push('/map') },
-      {
-        key: 'collab',
-        label: t('nav.shared'),
-        source: require('@/assets/images/quick-shared.png'),
-        onPress: () => router.push('/shared'),
-      },
-      {
-        key: 'all',
-        label: t('nav.everyone'),
-        source: require('@/assets/images/quick-everyone.png'),
-        onPress: () => router.push('/everyone'),
-      },
-      {
-        key: 'album',
-        label: t('nav.reminders'),
-        source: require('@/assets/images/quick-album.png'),
-        onPress: () => router.push('/reminders'),
-      },
-    ],
-    [router]
-  );
 
   useEffect(() => {
     preloadInterstitial();
@@ -363,7 +493,8 @@ export default function StoreListScreen() {
     useCallback(() => {
       let mounted = true;
       (async () => {
-        const [uri, progress, lastShown, bonusState, stores, nearbyCount, selectedBadge] = await Promise.all([
+        await backfillFoodBadges();
+        const [uri, progress, lastShown, bonusState, stores, nearbyCount, selectedBadge, foodBadges, badgePurchased] = await Promise.all([
           getProfileAvatarUri(),
           getTravelLunchProgress(),
           getLastPaywallShownAt(),
@@ -371,6 +502,8 @@ export default function StoreListScreen() {
           getStores(),
           getNearbyShownCount(),
           getSelectedBadgeId(),
+          getEarnedFoodBadges(),
+          isFoodBadgeCollectionPurchased(),
         ]);
         if (!mounted) return;
 
@@ -381,6 +514,27 @@ export default function StoreListScreen() {
         setLoginStreak(bonusState.streak);
         setDailyPick(getDailyPick(stores));
         setAllStoresCount(stores.length);
+        setFoodBadgeCount(foodBadges.length);
+        setFoodBadgePurchased(badgePurchased);
+
+        // Today's store
+        const todayS = stores.find((s) => formatYmd(new Date(s.createdAt)) === today);
+        setTodayStore(todayS ?? null);
+
+        // Recent prefecture
+        const travelEntries = await getTravelLunchEntries();
+        if (travelEntries.length > 0) {
+          const recentPrefId = travelEntries[0].prefectureId;
+          setRecentPrefName(t(`prefectures.${recentPrefId}`) as string);
+        } else {
+          setRecentPrefName(null);
+        }
+
+        // Tutorial completion check
+        if (tutorialPendingRef.current && travelEntries.length > 0) {
+          tutorialPendingRef.current = false;
+          setTimeout(() => setTutorialComplete(true), 500);
+        }
         const badge = getCurrentBadge({
           storesCount: stores.length,
           favoritesCount: stores.filter((s) => s.isFavorite).length,
@@ -437,49 +591,38 @@ export default function StoreListScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ flex: 1, padding: 16, paddingTop: 24, paddingBottom: 110 }}>
-        {(badgeLabel || loginStreak >= 2) && (
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            {loginStreak >= 2 && (
-              <View style={{ backgroundColor: '#FDE68A', borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 }}>
-                <Text style={{ fontSize: 9, fontFamily: fonts.extraBold, color: '#92400E' }}>
-                  🔥 {t('home.streakBadge', { count: loginStreak })}
-                </Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+
+        {/* ── Header ── */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 22, fontFamily: fonts.extraBold, color: colors.text }}>
+              {getGreeting()}
+            </Text>
+            {(badgeLabel || loginStreak >= 2) && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                {loginStreak >= 2 && (
+                  <View style={{ backgroundColor: colors.accentBg, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 10, fontFamily: fonts.extraBold, color: colors.accentText }}>
+                      🔥 {t('home.streakBadge', { count: loginStreak })}
+                    </Text>
+                  </View>
+                )}
+                {badgeLabel && (
+                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.accent }} numberOfLines={1}>
+                    {badgeLabel}
+                  </Text>
+                )}
               </View>
             )}
-            {badgeLabel && (
-              <Text style={{ fontSize: 10, fontFamily: fonts.extraBold, color: '#F59E0B' }} numberOfLines={1}>
-                {badgeLabel}
-              </Text>
-            )}
           </View>
-        )}
-        <View style={UI.headerRow}>
-          <Text style={[UI.headerTitle, { flex: 1, color: colors.text }]} numberOfLines={1}>
-            {getGreeting()}
-          </Text>
-          <View style={UI.headerActions}>
-              <Pressable
-                onPress={async () => {
-                  const allStores = await getStores();
-                  const storeCount = allStores.length;
-                  const reminderCount = allStores.filter((s) => s.remindEnabled).length;
-                  Alert.alert(t('home.noticeTitle'), t('home.noticeBody', { storeCount, reminderCount }));
-                }}
-                style={[UI.iconBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
-                <FontAwesome name="bell-o" size={18} color="#F59E0B" />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push('/stats')}
-                style={[UI.iconBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
-                <FontAwesome name="bar-chart" size={16} color="#F59E0B" />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push('/settings')}
-                style={[UI.iconBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
-                <FontAwesome name="cog" size={18} color="#6B7280" />
-              </Pressable>
-            <Pressable onPress={() => router.push('/profile')} style={[UI.profileBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              style={[UI.iconBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 }]}>
+              <FontAwesome name="cog" size={18} color={colors.subText} />
+            </Pressable>
+            <Pressable onPress={() => router.push('/profile')} style={[UI.profileBtn, { backgroundColor: colors.card, shadowColor: colors.shadowDark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 }]}>
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={UI.profileImage} />
               ) : (
@@ -489,61 +632,79 @@ export default function StoreListScreen() {
           </View>
         </View>
 
-        {/* Today's Pick Card */}
-        {allStoresCount > 0 && dailyPick ? (
+        {/* ── Hero: Prefecture Progress ── */}
+        {allStoresCount === 0 && travelProgress === 0 ? (
           <NeuCard
-            style={{ padding: 14, marginBottom: 12, backgroundColor: colors.card }}
-            onPress={() => router.push({ pathname: '/store/[id]', params: { id: dailyPick.id } })}>
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: '#F59E0B', marginBottom: 4 }}>
-              {t('home.todayPick')}
+            style={{ padding: 24, backgroundColor: colors.card, alignItems: 'center' }}
+            onPress={() => router.push('/travel/new')}>
+            <Text style={{ fontSize: 18, fontFamily: fonts.bold, color: colors.text, textAlign: 'center', marginBottom: 8 }}>
+              {t('home.firstTimeTitle')}
             </Text>
-            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: colors.text }} numberOfLines={1}>
-              {dailyPick.name}
+            <Text style={{ fontSize: 14, fontFamily: fonts.regular, color: colors.subText, textAlign: 'center', lineHeight: 22, marginBottom: 20 }}>
+              {t('home.firstTimeBody')}
             </Text>
-            {dailyPick.note ? (
-              <Text style={{ fontSize: 13, color: colors.subText, marginTop: 2 }} numberOfLines={2}>
-                {dailyPick.note}
+            <View style={[UI.primaryBtn, { paddingHorizontal: 32, backgroundColor: colors.primary }]}>
+              <Text style={{ color: '#FFFFFF', fontFamily: fonts.bold, fontSize: 15 }}>
+                {t('home.firstTimeCta')}
               </Text>
-            ) : null}
+            </View>
           </NeuCard>
-        ) : allStoresCount === 0 ? (
-          <NeuCard
-            style={{ padding: 14, marginBottom: 12, backgroundColor: colors.card }}
-            onPress={() => router.push('/map')}>
-            <Text style={{ fontSize: 14, color: colors.subText, textAlign: 'center' }}>
-              {t('home.todayPickEmpty')}
-            </Text>
-          </NeuCard>
-        ) : null}
+        ) : (
+          <ProgressHero
+            visitedCount={travelProgress}
+            foodBadgeCount={foodBadgeCount}
+            recentPrefName={recentPrefName}
+            colors={colors}
+            onPress={() => router.push('/collection')}
+            onBadgePress={() => router.push('/food-badges')}
+          />
+        )}
 
-        <View style={[UI.quickContainer, { paddingHorizontal: QUICK_PADDING_H }]}>
-          <View style={[UI.quickRow, { columnGap: QUICK_GAP, justifyContent: 'center' }]}>
-            {quickItems.map((item) => (
-              <QuickTile key={item.key} item={item} width={quickItemWidth} colors={colors} />
+        {/* ── Quick Nav ── */}
+        <View style={{ marginTop: 18 }}>
+          <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: colors.subText, marginBottom: 10 }}>
+            {t('home.navSectionTitle')}
+          </Text>
+          <View style={{ gap: 8 }}>
+            {[
+              { icon: 'map-marker' as const, label: t('nav.map'), desc: t('home.navMapDesc'), route: '/map', iconColor: '#E67E22' },
+              { icon: 'users' as const, label: t('nav.shared'), desc: t('home.navSharedDesc'), route: '/shared', iconColor: '#3498DB' },
+              { icon: 'photo' as const, label: t('nav.reminders'), desc: t('home.navAlbumDesc'), route: '/reminders', iconColor: '#2ECC71' },
+              { icon: 'globe' as const, label: t('nav.collection'), desc: t('home.navCollectionDesc'), route: '/collection', iconColor: '#9B59B6' },
+              { icon: 'cutlery' as const, label: t('nav.foodBadges'), desc: t('home.navBadgesDesc'), route: '/food-badges', iconColor: '#E74C3C' },
+              { icon: 'bar-chart' as const, label: t('nav.stats'), desc: t('home.navStatsDesc'), route: '/stats', iconColor: '#F39C12', premiumOnly: true },
+            ].map((item) => (
+              <Pressable
+                key={item.route}
+                onPress={() => {
+                  if ((item as any).premiumOnly && !isPremium) {
+                    setStatsPreviewVisible(true);
+                    return;
+                  }
+                  router.push(item.route as any);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 14, padding: 12, shadowColor: colors.shadowDark, shadowOffset: { width: 1, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 }}>
+                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: `${item.iconColor}18`, alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome name={item.icon} size={15} color={item.iconColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontFamily: fonts.bold, color: colors.text }}>{item.label}</Text>
+                  <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.subText }}>{item.desc}</Text>
+                </View>
+                {(item as any).premiumOnly && !isPremium ? (
+                  <FontAwesome name="lock" size={12} color={colors.accent} />
+                ) : (
+                  <FontAwesome name="chevron-right" size={10} color={colors.subText} />
+                )}
+              </Pressable>
             ))}
           </View>
         </View>
 
-        <TravelLunchCard
-          iconSource={require('@/assets/images/collection-cover.png')}
-          visitedCount={travelProgress}
-          title={t('home.collectionTitle')}
-          subtitle={t('home.collectionSub')}
-          ctaLabel={t('home.addStore')}
-          onPress={() => router.push('/collection')}
-          onAdd={() => router.push('/travel/new')}
-        />
-
-        <NeuCard
-          style={{ padding: 14, marginTop: 8, marginBottom: 4, backgroundColor: colors.card }}
-          onPress={() => router.push('/stats')}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <FontAwesome name="bar-chart" size={20} color="#F59E0B" />
-            <Text style={{ fontSize: 15, fontFamily: fonts.bold, color: colors.text }}>{t('nav.stats')}</Text>
-          </View>
-        </NeuCard>
-
-        <InlineAdBanner />
+        {/* ── Ad ── */}
+        <View style={{ marginTop: 14 }}>
+          <InlineAdBanner />
+        </View>
 
         {!isPremium && !adFreeShownToday && (
           <Pressable
@@ -552,16 +713,16 @@ export default function StoreListScreen() {
               alignSelf: 'center',
               paddingVertical: 8,
               paddingHorizontal: 16,
-              marginTop: 4,
+              marginTop: 8,
             }}
           >
-            <Text style={{ color: '#4F78FF', fontSize: 13, fontFamily: fonts.bold }}>
+            <Text style={{ color: colors.primary, fontSize: 13, fontFamily: fonts.bold }}>
               {t('paywall.homeAdFree')}
             </Text>
           </Pressable>
         )}
 
-      </View>
+      </ScrollView>
 
       <PremiumPaywall
         visible={paywallVisible}
@@ -574,6 +735,243 @@ export default function StoreListScreen() {
         totalDays={loginBonusTotalDays}
         onClose={() => setLoginBonusVisible(false)}
       />
+      <MilestoneShareModal
+        visible={milestoneVisible}
+        milestoneType={milestoneType}
+        visitedCount={travelProgress}
+        storeCount={allStoresCount}
+        onClose={() => setMilestoneVisible(false)}
+      />
+      <ActionMenu
+        visible={actionMenuVisible}
+        colors={colors}
+        highlightTravel={tutorialStep === 2}
+        onSelect={(route) => {
+          if (tutorialStep === 2) {
+            setTutorialStep(0);
+            setHasSeenTutorial(true);
+            if (route === '/travel/new') tutorialPendingRef.current = true;
+          }
+          router.push(route as any);
+        }}
+        onClose={() => {
+          setActionMenuVisible(false);
+          if (tutorialStep === 2) {
+            setTutorialStep(0);
+            setHasSeenTutorial(true);
+          }
+        }}
+      />
+      <RecordLunchFAB colors={colors} onOpen={() => {
+        setActionMenuVisible(true);
+        if (tutorialStep === 1) setTutorialStep(2);
+      }} />
+
+      {/* ── Tutorial overlay — Step 1: highlight FAB ── */}
+      {tutorialStep === 1 && (
+        <Pressable
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 99,
+            justifyContent: 'flex-end',
+            alignItems: 'flex-end',
+          }}
+          onPress={() => {
+            setTutorialStep(0);
+            setHasSeenTutorial(true);
+          }}
+        >
+          {/* Speech bubble above FAB */}
+          <View style={{
+            position: 'absolute',
+            right: 20,
+            bottom: Math.max(insets.bottom, 16) + 72,
+            alignItems: 'center',
+          }}>
+            <View style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              paddingHorizontal: 18,
+              paddingVertical: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              maxWidth: 200,
+            }}>
+              <Text style={{ fontSize: 15, fontFamily: fonts.extraBold, color: '#111827', textAlign: 'center' }}>
+                {t('home.tutorialStep1')}
+              </Text>
+            </View>
+            {/* Triangle */}
+            <View style={{
+              width: 0, height: 0,
+              borderLeftWidth: 10,
+              borderRightWidth: 10,
+              borderTopWidth: 10,
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+              borderTopColor: '#FFFFFF',
+              marginTop: -1,
+            }} />
+          </View>
+
+          {/* Skip button */}
+          <Pressable
+            onPress={() => {
+              setTutorialStep(0);
+              setHasSeenTutorial(true);
+            }}
+            style={{
+              position: 'absolute',
+              top: insets.top + 16,
+              right: 20,
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontFamily: fonts.bold, fontSize: 13 }}>
+              {t('home.tutorialSkip')}
+            </Text>
+          </Pressable>
+        </Pressable>
+      )}
+
+      {/* ── Tutorial Complete Modal ── */}
+      <Modal visible={tutorialComplete} transparent animationType="fade" onRequestClose={() => setTutorialComplete(false)}>
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.45)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        }}>
+          <NeuCard style={{
+            width: 310,
+            backgroundColor: colors.card,
+            borderRadius: 24,
+            padding: 28,
+            alignItems: 'center',
+          }}>
+            <Text style={{ fontSize: 48, marginBottom: 12 }}>🎉</Text>
+            <Text style={{
+              fontSize: 22,
+              fontFamily: fonts.extraBold,
+              color: colors.text,
+              textAlign: 'center',
+              marginBottom: 8,
+            }}>
+              {t('home.tutorialCompleteTitle')}
+            </Text>
+            <Text style={{
+              fontSize: 14,
+              fontFamily: fonts.medium,
+              color: colors.subText,
+              textAlign: 'center',
+              lineHeight: 22,
+              marginBottom: 20,
+            }}>
+              {t('home.tutorialCompleteBody')}
+            </Text>
+
+            {/* Hints */}
+            <View style={{ width: '100%', gap: 8, marginBottom: 24 }}>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: `${colors.accent}12`,
+                borderRadius: 12,
+                padding: 12,
+              }}>
+                <Text style={{ fontSize: 16 }}>💡</Text>
+                <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text, flex: 1 }}>
+                  {t('home.tutorialCompleteHint1')}
+                </Text>
+              </View>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: `${colors.accent}12`,
+                borderRadius: 12,
+                padding: 12,
+              }}>
+                <Text style={{ fontSize: 16 }}>🏅</Text>
+                <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text, flex: 1 }}>
+                  {t('home.tutorialCompleteHint2')}
+                </Text>
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => setTutorialComplete(false)}
+              style={{
+                width: '100%',
+                backgroundColor: colors.primary,
+                paddingVertical: 14,
+                borderRadius: 28,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontFamily: fonts.extraBold, fontSize: 16 }}>
+                {t('home.tutorialCompleteButton')}
+              </Text>
+            </Pressable>
+          </NeuCard>
+        </View>
+      </Modal>
+
+      {/* ── Stats Preview Modal (free users) ── */}
+      <Modal visible={statsPreviewVisible} transparent animationType="fade" onRequestClose={() => setStatsPreviewVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <NeuCard style={{ width: 340, backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' }}>
+            <Text style={{ fontSize: 40, marginBottom: 8 }}>📊</Text>
+            <Text style={{ fontSize: 20, fontFamily: fonts.extraBold, color: colors.text, textAlign: 'center', marginBottom: 6 }}>
+              {t('home.statsPreviewTitle')}
+            </Text>
+            <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: colors.subText, textAlign: 'center', lineHeight: 20, marginBottom: 16 }}>
+              {t('home.statsPreviewBody')}
+            </Text>
+
+            <View style={{ width: '100%', gap: 8, marginBottom: 20 }}>
+              {[
+                { emoji: '📅', text: t('home.statsFeature1') },
+                { emoji: '🏆', text: t('home.statsFeature2') },
+                { emoji: '📈', text: t('home.statsFeature3') },
+                { emoji: '⭐', text: t('home.statsFeature4') },
+              ].map((f, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: `${colors.accent}10`, borderRadius: 12, padding: 10 }}>
+                  <Text style={{ fontSize: 18 }}>{f.emoji}</Text>
+                  <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: colors.text, flex: 1 }}>{f.text}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Pressable
+              onPress={() => {
+                setStatsPreviewVisible(false);
+                setPaywallTrigger('stats');
+                setPaywallVisible(true);
+              }}
+              style={{ width: '100%', backgroundColor: colors.accent, paddingVertical: 14, borderRadius: 28, alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ color: '#FFFFFF', fontFamily: fonts.extraBold, fontSize: 16 }}>
+                {t('home.statsUnlock')}
+              </Text>
+            </Pressable>
+
+            <Pressable onPress={() => setStatsPreviewVisible(false)} style={{ paddingVertical: 8 }}>
+              <Text style={{ fontSize: 14, fontFamily: fonts.medium, color: colors.subText }}>
+                {t('home.statsClose')}
+              </Text>
+            </Pressable>
+          </NeuCard>
+        </View>
+      </Modal>
     </View>
   );
 }

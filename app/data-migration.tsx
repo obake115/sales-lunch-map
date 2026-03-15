@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 
@@ -20,6 +20,12 @@ export default function DataMigrationScreen() {
   const [localCount, setLocalCount] = useState<number | null>(null);
   const [cloudCount, setCloudCount] = useState<number | null>(null);
   const [photoProgress, setPhotoProgress] = useState<PhotoSyncProgress | null>(null);
+  const navigation = useNavigation();
+
+  // Disable swipe-back while syncing to prevent accidental interruption
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !busy });
+  }, [busy, navigation]);
 
   useEffect(() => {
     (async () => {
@@ -41,13 +47,16 @@ export default function DataMigrationScreen() {
     setBusy(true);
     setPhotoProgress(null);
     try {
-      await uploadAllData(user.uid, setPhotoProgress);
+      const result = await uploadAllData(user.uid, setPhotoProgress);
       setPhotoProgress(null);
-      Alert.alert('', t('migration.success'), [
+      const msg = result.photoFailCount > 0
+        ? t('migration.successWithPhotoFail', { count: result.photoFailCount })
+        : t('migration.success');
+      Alert.alert('', msg, [
         { text: t('common.ok'), onPress: () => router.replace('/') },
       ]);
-    } catch {
-      Alert.alert('', t('migration.failed'));
+    } catch (e) {
+      Alert.alert('', t('migration.failed') + `\n${e}`);
     } finally {
       setBusy(false);
       setPhotoProgress(null);
@@ -59,14 +68,17 @@ export default function DataMigrationScreen() {
     setBusy(true);
     setPhotoProgress(null);
     try {
-      await downloadAllData(user.uid, setPhotoProgress);
+      const result = await downloadAllData(user.uid, setPhotoProgress);
       setPhotoProgress(null);
       await restorePurchases();
-      Alert.alert('', t('migration.success'), [
+      const msg = result.photoFailCount > 0
+        ? t('migration.successWithPhotoFail', { count: result.photoFailCount })
+        : t('migration.success');
+      Alert.alert('', msg, [
         { text: t('common.ok'), onPress: () => router.replace('/') },
       ]);
-    } catch {
-      Alert.alert('', t('migration.failed'));
+    } catch (e) {
+      Alert.alert('', t('migration.failed') + `\n${e}`);
     } finally {
       setBusy(false);
       setPhotoProgress(null);
@@ -112,7 +124,7 @@ export default function DataMigrationScreen() {
           onPress={handleUpload}
           disabled={busy}
           style={{
-            backgroundColor: '#FFA726',
+            backgroundColor: colors.accent,
             borderRadius: 24,
             paddingVertical: 14,
             alignItems: 'center',

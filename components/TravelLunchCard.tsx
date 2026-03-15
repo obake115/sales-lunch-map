@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
+import { t } from '@/src/i18n';
 import { useThemeColors } from '@/src/state/ThemeContext';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
@@ -61,27 +62,24 @@ export function TravelLunchCard({
           {subtitle}
         </Text>
         <View style={[styles.progressBar, { backgroundColor: colors.chipBg }]}>
-          <Animated.View style={[styles.progressFill, progressStyle]} />
+          <Animated.View style={[styles.progressFill, { backgroundColor: colors.accent }, progressStyle]} />
         </View>
       </Pressable>
-      <Pressable
-        onPress={(event) => {
-          event?.stopPropagation?.();
-          onAdd?.(event);
-        }}
-        style={styles.cta}
-      >
-        <Text style={styles.ctaText}>{ctaLabel}</Text>
-      </Pressable>
+      <View style={styles.linkRow}>
+        <Pressable onPress={onPress}>
+          <Text style={[styles.linkText, { color: colors.primary }]}>
+            {t('home.viewCollection')} →
+          </Text>
+        </Pressable>
+      </View>
     </NeuCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 0,
+    marginBottom: 0,
     padding: 16,
     borderRadius: 20,
   },
@@ -124,20 +122,13 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
   },
-  cta: {
-    marginTop: 12,
-    height: 44,
-    width: '100%',
-    borderRadius: 28,
-    backgroundColor: '#4F78FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  linkRow: {
+    marginTop: 10,
+    alignItems: 'flex-end',
   },
-  ctaText: {
-    color: '#FFFFFF',
+  linkText: {
+    fontSize: 13,
     fontFamily: fonts.bold,
-    fontSize: 16,
   },
 });

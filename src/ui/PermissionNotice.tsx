@@ -2,19 +2,18 @@ import { useEffect, useState } from 'react';
 import { Text, View, Pressable } from 'react-native';
 import { fonts } from '@/src/ui/fonts';
 import { t } from '@/src/i18n';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { getPermissionState, requestAllNeededPermissions, type PermissionState } from '../permissions';
 import { NeuCard } from './NeuCard';
 
 const UI = {
   card: {
-    backgroundColor: '#E9E4DA',
     padding: 14,
     borderRadius: 20,
     marginBottom: 12,
   } as const,
   primaryBtn: {
     marginTop: 10,
-    backgroundColor: '#4F78FF',
     paddingVertical: 12,
     borderRadius: 28,
     alignItems: 'center',
@@ -22,6 +21,7 @@ const UI = {
 } as const;
 
 export function PermissionNotice() {
+  const colors = useThemeColors();
   const [state, setState] = useState<PermissionState | null>(null);
 
   useEffect(() => {
@@ -41,10 +41,10 @@ export function PermissionNotice() {
   if (missingNotifications) lines.push(t('permissionNotice.notificationsMissing'));
 
   return (
-    <NeuCard style={UI.card}>
-      <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6 }}>{t('permissionNotice.title')}</Text>
+    <NeuCard style={[UI.card, { backgroundColor: colors.card }]}>
+      <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('permissionNotice.title')}</Text>
       {lines.map((t) => (
-        <Text key={t} style={{ color: '#374151', marginBottom: 4 }}>
+        <Text key={t} style={{ color: colors.subText, marginBottom: 4 }}>
           {t}
         </Text>
       ))}
@@ -53,8 +53,8 @@ export function PermissionNotice() {
           const next = await requestAllNeededPermissions();
           setState(next);
         }}
-        style={UI.primaryBtn}>
-        <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('permissionNotice.allow')}</Text>
+        style={[UI.primaryBtn, { backgroundColor: colors.primary }]}>
+        <Text style={{ color: '#FFFFFF', fontFamily: fonts.extraBold }}>{t('permissionNotice.allow')}</Text>
       </Pressable>
     </NeuCard>
   );

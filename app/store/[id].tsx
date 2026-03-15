@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, ImageBackground, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
-import { logReminderSetup, logStoreDeleted } from '@/src/analytics';
+import { logStoreDeleted } from '@/src/analytics';
 import { ShareCard } from '@/src/components/ShareCard';
 import { t } from '@/src/i18n';
 import { maybeShowInterstitial, preloadInterstitial } from '@/src/interstitialAd';
@@ -15,17 +16,16 @@ import { updateStore } from '@/src/storage';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { fonts } from '@/src/ui/fonts';
 import { NeuCard } from '@/src/ui/NeuCard';
+import { SafeImage, SafeImageBackground } from '@/src/ui/SafeImage';
 
 const UI = {
   card: {
     borderRadius: 20,
     padding: 14,
-    backgroundColor: '#E9E4DA',
   } as const,
   cardImage: {
     borderRadius: 20,
     padding: 0,
-    backgroundColor: '#E9E4DA',
     overflow: 'hidden',
   } as const,
   cardOverlay: {
@@ -36,8 +36,6 @@ const UI = {
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#E9E4DA',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -46,23 +44,16 @@ const UI = {
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#E9E4DA',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
   } as const,
-  chipActive: {
-    backgroundColor: '#DBEAFE',
-  } as const,
   primaryBtn: {
-    backgroundColor: '#4F78FF',
     paddingVertical: 12,
     borderRadius: 28,
     alignItems: 'center',
   } as const,
   dangerBtn: {
-    backgroundColor: '#FEF2F2',
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
@@ -85,7 +76,6 @@ const TIME_BAND_LABELS: Record<NonNullable<Store['timeBand']>, string> = {
   '30': 'storeDetail.timeBands.30',
   '30+': 'storeDetail.timeBands.30plus',
 };
-const RADIUS_OPTIONS = [100, 200, 300, 400, 500];
 const MOOD_TAGS = [
   { value: 'サクッと', label: 'storeDetail.mood.quick' },
   { value: 'ゆっくり', label: 'storeDetail.mood.relaxed' },
@@ -105,12 +95,13 @@ export default function PlaceDetailScreen() {
   const { isPremium } = usePremium();
   const { stores, deleteStore, refresh } = useStores();
   const shareCardRef = useRef<View>(null);
+  const [quickInfoExpanded, setQuickInfoExpanded] = useState(false);
+  const [otherExpanded, setOtherExpanded] = useState(false);
 
   useEffect(() => {
     preloadInterstitial();
   }, []);
   const store = useMemo(() => stores.find((s) => s.id === storeId) ?? null, [stores, storeId]);
-  const [showReminder, setShowReminder] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [draftNote, setDraftNote] = useState('');
   const [draftUrl, setDraftUrl] = useState('');
@@ -152,16 +143,73 @@ export default function PlaceDetailScreen() {
     return current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
   };
 
+  const pickPhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('album.photoPermissionTitle'), t('album.photoPermissionBody'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    const uri = result.assets?.[0]?.uri;
+    if (!uri) return;
+    const currentUris = store.photoUris ?? (store.photoUri ? [store.photoUri] : []);
+    const newUris = [...currentUris, uri];
+    await setField({ photoUri: newUris[0], photoUris: newUris });
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}>
         {(store.photoUris?.length ?? 0) > 1 ? (
           <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: -4 }}>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                 {store.photoUris!.map((uri, i) => (
-                  <Image key={i} source={{ uri }} style={{ width: 160, height: 160, borderRadius: 16 }} />
+                  <View key={i} style={{ position: 'relative' }}>
+                    <SafeImage uri={uri} style={{ width: 160, height: 160, borderRadius: 16 }} />
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert(t('storeDetail.deletePhotoTitle'), t('storeDetail.deletePhotoBody'), [
+                          { text: t('common.cancel'), style: 'cancel' },
+                          {
+                            text: t('storeDetail.deleteConfirm'),
+                            style: 'destructive',
+                            onPress: async () => {
+                              const remaining = (store.photoUris ?? []).filter((_, idx) => idx !== i);
+                              await setField({
+                                photoUris: remaining.length > 0 ? remaining : undefined,
+                                photoUri: remaining.length > 0 ? remaining[0] : undefined,
+                              });
+                            },
+                          },
+                        ]);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        width: 26,
+                        height: 26,
+                        borderRadius: 13,
+                        backgroundColor: 'rgba(0,0,0,0.55)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <Text style={{ color: '#FFFFFF', fontFamily: fonts.bold, fontSize: 14, lineHeight: 16 }}>×</Text>
+                    </Pressable>
+                  </View>
                 ))}
+                <Pressable
+                  onPress={pickPhoto}
+                  style={{ width: 80, height: 160, borderRadius: 16, backgroundColor: colors.inputBg, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 28, color: colors.subText }}>+</Text>
+                  <Text style={{ fontSize: 11, color: colors.subText, fontFamily: fonts.bold, marginTop: 4 }}>{t('storeDetail.addPhoto')}</Text>
+                </Pressable>
               </View>
             </ScrollView>
             <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
@@ -177,7 +225,7 @@ export default function PlaceDetailScreen() {
               />
               <Pressable
                 onPress={() => setField({ isFavorite: !store.isFavorite })}
-                style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
+                style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? { backgroundColor: colors.accentBg } : null) }}>
                 <Text style={{ fontFamily: fonts.extraBold }}>
                   {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
                 </Text>
@@ -185,141 +233,200 @@ export default function PlaceDetailScreen() {
             </NeuCard>
           </>
         ) : store.photoUri ? (
-          <NeuCard style={UI.cardImage}>
-            <ImageBackground source={{ uri: store.photoUri }} style={{ width: '100%' }} imageStyle={{ borderRadius: 20 }}>
-              <View style={UI.cardOverlay}>
-                <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10 }}>{t('storeDetail.nameLabel')}</Text>
-                <TextInput
-                  value={draftName}
-                  onChangeText={setDraftName}
-                  onBlur={saveTextFields}
-                  placeholder={t('storeDetail.namePlaceholder')}
-                  style={UI.input}
-                  {...INPUT_PROPS}
-                />
-                <Pressable
-                  onPress={() => setField({ isFavorite: !store.isFavorite })}
-                  style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
-                  <Text style={{ fontFamily: fonts.extraBold }}>
-                    {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
-                  </Text>
-                </Pressable>
-              </View>
-            </ImageBackground>
-          </NeuCard>
+          <>
+            <NeuCard style={UI.cardImage}>
+              <SafeImageBackground uri={store.photoUri} style={{ width: '100%' }} imageStyle={{ borderRadius: 20 }}>
+                <View style={UI.cardOverlay}>
+                  <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10 }}>{t('storeDetail.nameLabel')}</Text>
+                  <TextInput
+                    value={draftName}
+                    onChangeText={setDraftName}
+                    onBlur={saveTextFields}
+                    placeholder={t('storeDetail.namePlaceholder')}
+                    style={UI.input}
+                    {...INPUT_PROPS}
+                  />
+                  <Pressable
+                    onPress={() => setField({ isFavorite: !store.isFavorite })}
+                    style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? { backgroundColor: colors.accentBg } : null) }}>
+                    <Text style={{ fontFamily: fonts.extraBold }}>
+                      {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
+                    </Text>
+                  </Pressable>
+                </View>
+              </SafeImageBackground>
+            </NeuCard>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                onPress={pickPhoto}
+                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, alignItems: 'center', flex: 1 }}>
+                <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>+ {t('storeDetail.addPhoto')}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  Alert.alert(t('storeDetail.deletePhotoTitle'), t('storeDetail.deletePhotoBody'), [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('storeDetail.deleteConfirm'),
+                      style: 'destructive',
+                      onPress: async () => {
+                        await setField({ photoUri: undefined, photoUris: undefined });
+                      },
+                    },
+                  ]);
+                }}
+                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, alignItems: 'center' }}>
+                <Text style={{ fontFamily: fonts.extraBold, color: '#EF4444' }}>{t('storeDetail.deleteConfirm')}</Text>
+              </Pressable>
+            </View>
+          </>
         ) : (
-          <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
-            <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeDetail.nameLabel')}</Text>
-            <TextInput
-              value={draftName}
-              onChangeText={setDraftName}
-              onBlur={saveTextFields}
-              placeholder={t('storeDetail.namePlaceholder')}
-              style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
-              placeholderTextColor={colors.subText}
-              {...INPUT_PROPS}
-            />
+          <>
+            <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeDetail.nameLabel')}</Text>
+              <TextInput
+                value={draftName}
+                onChangeText={setDraftName}
+                onBlur={saveTextFields}
+                placeholder={t('storeDetail.namePlaceholder')}
+                style={{ ...UI.input, backgroundColor: colors.inputBg, shadowColor: colors.shadowDark, color: colors.text }}
+                placeholderTextColor={colors.subText}
+                {...INPUT_PROPS}
+              />
+              <Pressable
+                onPress={() => setField({ isFavorite: !store.isFavorite })}
+                style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? { backgroundColor: colors.accentBg } : null) }}>
+                <Text style={{ fontFamily: fonts.extraBold }}>
+                  {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
+                </Text>
+              </Pressable>
+            </NeuCard>
             <Pressable
-              onPress={() => setField({ isFavorite: !store.isFavorite })}
-              style={{ marginTop: 12, ...UI.chip, ...(store.isFavorite ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold }}>
-                {store.isFavorite ? t('storeDetail.favoriteOn') : t('storeDetail.favoriteOff')}
-              </Text>
+              onPress={pickPhoto}
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, alignItems: 'center' }}>
+              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>+ {t('storeDetail.addPhoto')}</Text>
             </Pressable>
-          </NeuCard>
+          </>
         )}
 
         <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
-          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 10, color: colors.text }}>{t('storeDetail.quickInfo')}</Text>
-          <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.waitTime')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-            {TIME_BANDS.map((band) => (
-              <Pressable
-                key={band}
-                onPress={() => setField({ timeBand: store.timeBand === band ? undefined : band })}
-                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.timeBand === band ? UI.chipActive : null) }}>
-                <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t(TIME_BAND_LABELS[band])}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Pressable onPress={() => setQuickInfoExpanded((v) => !v)}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }}>{t('storeDetail.quickInfo')}</Text>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 14, color: colors.subText }}>
+                {quickInfoExpanded ? '▲' : '▼'}
+              </Text>
+            </View>
+          </Pressable>
+          {quickInfoExpanded && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.waitTime')}</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                {TIME_BANDS.map((band) => (
+                  <Pressable
+                    key={band}
+                    onPress={() => setField({ timeBand: store.timeBand === band ? undefined : band })}
+                    style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.timeBand === band ? { backgroundColor: colors.accentBg } : null) }}>
+                    <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t(TIME_BAND_LABELS[band])}</Text>
+                  </Pressable>
+                ))}
+              </View>
 
-          <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.seating')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-            <Pressable
-              onPress={() => setField({ seating: store.seating === 'counter' ? undefined : 'counter' })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'counter' ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.seatingCounter')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setField({ seating: store.seating === 'table' ? undefined : 'table' })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'table' ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.seatingTable')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setField({ seating: store.seating === 'horigotatsu' ? undefined : 'horigotatsu' })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'horigotatsu' ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.seatingHorigotatsu')}</Text>
-            </Pressable>
-          </View>
+              <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.seating')}</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                <Pressable
+                  onPress={() => setField({ seating: store.seating === 'counter' ? undefined : 'counter' })}
+                  style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'counter' ? { backgroundColor: colors.accentBg } : null) }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.seatingCounter')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setField({ seating: store.seating === 'table' ? undefined : 'table' })}
+                  style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'table' ? { backgroundColor: colors.accentBg } : null) }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.seatingTable')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setField({ seating: store.seating === 'horigotatsu' ? undefined : 'horigotatsu' })}
+                  style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.seating === 'horigotatsu' ? { backgroundColor: colors.accentBg } : null) }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.seatingHorigotatsu')}</Text>
+                </Pressable>
+              </View>
 
-          <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.moodScene')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-            {MOOD_TAGS.map((tag) => (
-              <Pressable
-                key={tag.value}
-                onPress={() => setField({ moodTags: toggleTag(store.moodTags, tag.value) })}
-                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.moodTags?.includes(tag.value) ? UI.chipActive : null) }}>
-                <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t(tag.label)}</Text>
-              </Pressable>
-            ))}
-            {SCENE_TAGS.map((tag) => (
-              <Pressable
-                key={tag.value}
-                onPress={() => setField({ sceneTags: toggleTag(store.sceneTags, tag.value) })}
-                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.sceneTags?.includes(tag.value) ? UI.chipActive : null) }}>
-                <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t(tag.label)}</Text>
-              </Pressable>
-            ))}
-          </View>
+              <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.moodScene')}</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                {MOOD_TAGS.map((tag) => (
+                  <Pressable
+                    key={tag.value}
+                    onPress={() => setField({ moodTags: toggleTag(store.moodTags, tag.value) })}
+                    style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.moodTags?.includes(tag.value) ? { backgroundColor: colors.accentBg } : null) }}>
+                    <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t(tag.label)}</Text>
+                  </Pressable>
+                ))}
+                {SCENE_TAGS.map((tag) => (
+                  <Pressable
+                    key={tag.value}
+                    onPress={() => setField({ sceneTags: toggleTag(store.sceneTags, tag.value) })}
+                    style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.sceneTags?.includes(tag.value) ? { backgroundColor: colors.accentBg } : null) }}>
+                    <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t(tag.label)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+        </NeuCard>
 
-          <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.parking')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-            <Pressable
-              onPress={() => setField({ parking: store.parking === 1 ? undefined : 1 })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.parking === 1 ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.parkingYes')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setField({ parking: store.parking === 0 ? undefined : 0 })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.parking === 0 ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.parkingNo')}</Text>
-            </Pressable>
-          </View>
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Pressable onPress={() => setOtherExpanded((v) => !v)}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }}>{t('storeDetail.otherInfo')}</Text>
+              <Text style={{ fontFamily: fonts.extraBold, fontSize: 14, color: colors.subText }}>
+                {otherExpanded ? '▲' : '▼'}
+              </Text>
+            </View>
+          </Pressable>
+          {otherExpanded && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.parking')}</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                <Pressable
+                  onPress={() => setField({ parking: store.parking === 1 ? undefined : 1 })}
+                  style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.parking === 1 ? { backgroundColor: colors.accentBg } : null) }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.parkingYes')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setField({ parking: store.parking === 0 ? undefined : 0 })}
+                  style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.parking === 0 ? { backgroundColor: colors.accentBg } : null) }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.parkingNo')}</Text>
+                </Pressable>
+              </View>
 
-          <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.smoking')}</Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            <Pressable
-              onPress={() => setField({ smoking: store.smoking === 1 ? undefined : 1 })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.smoking === 1 ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.smokingAllowed')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setField({ smoking: store.smoking === 0 ? undefined : 0 })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.smoking === 0 ? UI.chipActive : null) }}>
-              <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.smokingNo')}</Text>
-            </Pressable>
-          </View>
+              <Text style={{ fontFamily: fonts.extraBold, marginBottom: 6, color: colors.text }}>{t('storeDetail.smoking')}</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                <Pressable
+                  onPress={() => setField({ smoking: store.smoking === 1 ? undefined : 1 })}
+                  style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.smoking === 1 ? { backgroundColor: colors.accentBg } : null) }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.smokingAllowed')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setField({ smoking: store.smoking === 0 ? undefined : 0 })}
+                  style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.smoking === 0 ? { backgroundColor: colors.accentBg } : null) }}>
+                  <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.smokingNo')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </NeuCard>
 
-          <Text style={{ fontFamily: fonts.extraBold, marginTop: 12, marginBottom: 6, color: colors.text }}>{t('storeDetail.shareTitle')}</Text>
+        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
+          <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, marginBottom: 6, color: colors.text }}>{t('storeDetail.shareTitle')}</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             <Pressable
               onPress={() => setField({ shareToEveryone: true })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.shareToEveryone ? UI.chipActive : null) }}>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.shareToEveryone ? { backgroundColor: colors.accentBg } : null) }}>
               <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.shareOn')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setField({ shareToEveryone: false })}
-              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(!store.shareToEveryone ? UI.chipActive : null) }}>
+              style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(!store.shareToEveryone ? { backgroundColor: colors.accentBg } : null) }}>
               <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{t('storeDetail.shareOff')}</Text>
             </Pressable>
           </View>
@@ -354,42 +461,11 @@ export default function PlaceDetailScreen() {
           />
           {draftUrl ? (
             <Pressable onPress={() => Linking.openURL(draftUrl)} style={{ marginTop: 8 }}>
-              <Text style={{ color: '#4F78FF', textDecorationLine: 'underline', fontFamily: fonts.medium, fontSize: 13 }} numberOfLines={1}>
+              <Text style={{ color: colors.primary, textDecorationLine: 'underline', fontFamily: fonts.medium, fontSize: 13 }} numberOfLines={1}>
                 {draftUrl}
               </Text>
             </Pressable>
           ) : null}
-        </NeuCard>
-
-        <NeuCard style={{ ...UI.card, backgroundColor: colors.card }}>
-          <Pressable onPress={() => setShowReminder((v) => !v)}>
-            <Text style={{ fontFamily: fonts.extraBold, fontSize: 16, color: colors.text }}>{t('storeDetail.remindTitle')}</Text>
-          </Pressable>
-          {showReminder && (
-            <View style={{ marginTop: 10, gap: 8 }}>
-              <Pressable
-                onPress={() => {
-                  const next = !store.remindEnabled;
-                  logReminderSetup({ store_id: store.id, enabled: next });
-                  setField({ remindEnabled: next });
-                }}
-                style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.remindEnabled ? UI.chipActive : null) }}>
-                <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>
-                  {store.remindEnabled ? t('storeDetail.remindOn') : t('storeDetail.remindOff')}
-                </Text>
-              </Pressable>
-              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                {RADIUS_OPTIONS.map((radius) => (
-                  <Pressable
-                    key={radius}
-                    onPress={() => setField({ remindRadiusM: radius })}
-                    style={{ ...UI.chip, backgroundColor: colors.card, shadowColor: colors.shadowDark, ...(store.remindRadiusM === radius ? UI.chipActive : null) }}>
-                    <Text style={{ fontFamily: fonts.extraBold, color: colors.text }}>{radius}m</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          )}
         </NeuCard>
 
         <Pressable

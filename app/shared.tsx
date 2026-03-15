@@ -17,12 +17,10 @@ const UI = {
   card: {
     borderRadius: 20,
     padding: 14,
-    backgroundColor: '#E9E4DA',
   } as const,
   heroCard: {
     borderRadius: 20,
     padding: 14,
-    backgroundColor: '#E9E4DA',
   } as const,
   heroImage: {
     width: '100%',
@@ -33,25 +31,20 @@ const UI = {
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#E9E4DA',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
   } as const,
   primaryBtn: {
-    backgroundColor: '#F59E0B',
     paddingVertical: 12,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   } as const,
   secondaryBtn: {
-    backgroundColor: '#E9E4DA',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -65,10 +58,8 @@ const UI = {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -78,11 +69,9 @@ const UI = {
     textAlign: 'center',
     fontFamily: fonts.extraBold,
     fontSize: 16,
-    color: '#111827',
   } as const,
   headerSub: {
     textAlign: 'center',
-    color: '#6B7280',
     marginBottom: 12,
   } as const,
   infoRow: {
@@ -95,16 +84,13 @@ const UI = {
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#E9E4DA',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#C8C3B9',
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.4,
     shadowRadius: 2,
   } as const,
   infoText: {
-    color: '#6B7280',
     flex: 1,
   } as const,
 } as const;
@@ -238,7 +224,7 @@ export default function SharedMapsScreen() {
           <Text style={{ color: colors.subText, marginTop: 6 }}>{t('shared.heroBody')}</Text>
           {loading ? (
             <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <ActivityIndicator size="small" color="#F59E0B" />
+              <ActivityIndicator size="small" color={colors.accent} />
               <Text style={{ color: colors.subText }}>{t('shared.preparing')}</Text>
             </View>
           ) : null}
@@ -287,9 +273,9 @@ export default function SharedMapsScreen() {
               style={{
                 marginTop: 12,
                 ...UI.primaryBtn,
-                backgroundColor: canUseShared ? UI.primaryBtn.backgroundColor : '#F8C27A',
+                backgroundColor: canUseShared ? colors.accent : '#F8C27A',
               }}>
-              <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('shared.createButton')}</Text>
+              <Text style={{ color: colors.card, fontFamily: fonts.extraBold }}>{t('shared.createButton')}</Text>
             </Pressable>
           ) : null}
         </NeuCard>
@@ -423,8 +409,8 @@ export default function SharedMapsScreen() {
                       requestCameraPermission();
                     }
                   }}
-                  style={{ ...UI.primaryBtn, backgroundColor: '#F59E0B', paddingVertical: 10 }}>
-                  <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('shared.scanWithCamera')}</Text>
+                  style={{ ...UI.primaryBtn, backgroundColor: colors.accent, paddingVertical: 10 }}>
+                  <Text style={{ color: colors.card, fontFamily: fonts.extraBold }}>{t('shared.scanWithCamera')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleLibraryScan}
@@ -439,8 +425,8 @@ export default function SharedMapsScreen() {
                 </Text>
                 <Pressable
                   onPress={() => requestCameraPermission()}
-                  style={{ ...UI.primaryBtn, backgroundColor: '#F59E0B', paddingVertical: 10, paddingHorizontal: 16 }}>
-                  <Text style={{ color: 'white', fontFamily: fonts.extraBold }}>{t('shared.allowCamera')}</Text>
+                  style={{ ...UI.primaryBtn, backgroundColor: colors.accent, paddingVertical: 10, paddingHorizontal: 16 }}>
+                  <Text style={{ color: colors.card, fontFamily: fonts.extraBold }}>{t('shared.allowCamera')}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -466,7 +452,7 @@ export default function SharedMapsScreen() {
             )}
 
             <Pressable onPress={() => setQrVisible(false)} style={{ marginTop: 12, alignItems: 'center' }}>
-              <Text style={{ color: '#4F78FF', fontFamily: fonts.extraBold }}>{t('common.close')}</Text>
+              <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{t('common.close')}</Text>
             </Pressable>
           </NeuCard>
         </View>

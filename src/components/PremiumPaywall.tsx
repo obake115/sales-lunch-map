@@ -25,6 +25,7 @@ import { fonts } from '@/src/ui/fonts';
 import { t } from '../i18n';
 import { getAvailablePackages, purchasePackage, restorePurchases, type PlanPackage } from '../purchases';
 import { usePremium } from '../state/PremiumContext';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { logPaywallShown, logPaywallDismissed } from '../analytics';
 import { recordPaywallShown, recordPaywallDismissed } from '../paywallTrigger';
 import { GradientBox } from './GradientBox';
@@ -60,12 +61,13 @@ const { width: SCREEN_W } = Dimensions.get('window');
 // ─── Sub-components ──────────────────────────────
 
 function BenefitCard({ icon, title, body }: { icon: string; title: string; body: string }) {
+  const colors = useThemeColors();
   return (
-    <View style={s.benefitCard}>
-      <Text style={s.benefitIcon}>{icon}</Text>
-      <View style={s.benefitTextWrap}>
-        <Text style={s.benefitTitle}>{title}</Text>
-        <Text style={s.benefitBody}>{body}</Text>
+    <View style={[UI.benefitCard, { backgroundColor: colors.inputBg }]}>
+      <Text style={UI.benefitIcon}>{icon}</Text>
+      <View style={UI.benefitTextWrap}>
+        <Text style={[UI.benefitTitle, { color: colors.text }]}>{title}</Text>
+        <Text style={[UI.benefitBody, { color: colors.subText }]}>{body}</Text>
       </View>
     </View>
   );
@@ -76,6 +78,7 @@ function BenefitCard({ icon, title, body }: { icon: string; title: string; body:
 export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manual' }: Props) {
   const { refreshPremium } = usePremium();
   const router = useRouter();
+  const colors = useThemeColors();
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
@@ -282,41 +285,41 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={s.container}>
+      <View style={[UI.container, { backgroundColor: colors.bg }]}>
         {/* ── Header ── */}
-        <View style={s.header}>
-          <Pressable onPress={handleClose} style={s.closeBtn} hitSlop={12}>
-            <Text style={s.closeBtnText}>✕</Text>
+        <View style={UI.header}>
+          <Pressable onPress={handleClose} style={[UI.closeBtn, { backgroundColor: colors.border }]} hitSlop={12}>
+            <Text style={[UI.closeBtnText, { color: colors.subText }]}>✕</Text>
           </Pressable>
           <Pressable
             onPress={handleRestore}
             disabled={restoring}
             accessibilityRole="button"
             hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-            style={s.restoreBtn}
+            style={UI.restoreBtn}
           >
             {restoring ? (
               <ActivityIndicator size="small" color="#6366F1" />
             ) : (
-              <Text style={s.restoreBtnText}>{t('storeNew.restore')}</Text>
+              <Text style={UI.restoreBtnText}>{t('storeNew.restore')}</Text>
             )}
           </Pressable>
         </View>
 
         <ScrollView
-          contentContainerStyle={s.scrollContent}
+          contentContainerStyle={UI.scrollContent}
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
           {/* ── Hero Title ── */}
-          <View style={s.heroSection}>
-            <Text style={s.heroEmoji}>✨</Text>
-            <Text style={s.title}>{t('paywall.title')}</Text>
-            <Text style={s.subtitle}>{t('paywall.subtitle')}</Text>
+          <View style={UI.heroSection}>
+            <Text style={UI.heroEmoji}>✨</Text>
+            <Text style={[UI.title, { color: colors.text }]}>{t('paywall.title')}</Text>
+            <Text style={[UI.subtitle, { color: colors.subText }]}>{t('paywall.subtitle')}</Text>
           </View>
 
           {/* ── Benefits ── */}
-          <View style={s.benefits}>
+          <View style={UI.benefits}>
             <BenefitCard
               icon="🗺"
               title={t('paywall.feature1Title').replace(/^🗺\s*/, '')}
@@ -338,18 +341,18 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
           {loadingPackages ? (
             <ActivityIndicator size="small" color="#6366F1" style={{ marginVertical: 24 }} />
           ) : loadError ? (
-            <View style={s.errorBox}>
-              <Text style={s.errorText}>{t('purchases.packageUnavailable')}</Text>
-              <Text style={s.errorHint}>{t('purchases.packageUnavailableHint')}</Text>
-              <Pressable onPress={loadPackages} style={s.retryBtn}>
-                <Text style={s.retryBtnText}>{t('purchases.retry')}</Text>
+            <View style={UI.errorBox}>
+              <Text style={[UI.errorText, { color: colors.subText }]}>{t('purchases.packageUnavailable')}</Text>
+              <Text style={[UI.errorHint, { color: colors.subText }]}>{t('purchases.packageUnavailableHint')}</Text>
+              <Pressable onPress={loadPackages} style={UI.retryBtn}>
+                <Text style={UI.retryBtnText}>{t('purchases.retry')}</Text>
               </Pressable>
               {debugInfo != null && (
-                <Text style={s.debugText}>{debugInfo}</Text>
+                <Text style={[UI.debugText, { color: colors.subText, backgroundColor: colors.inputBg }]}>{debugInfo}</Text>
               )}
             </View>
           ) : (
-            <View style={s.planList}>
+            <View style={UI.planList}>
               {/* ── Annual Hero Card (with micro-animation) ── */}
               <Animated.View style={annualAnimStyle}>
                 <Pressable
@@ -357,53 +360,53 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
                   accessibilityRole="button"
                   accessibilityState={{ selected: selectedPlan === 'annual' }}
                   style={[
-                    s.annualOuter,
-                    selectedPlan === 'annual' && s.annualOuterSelected,
+                    UI.annualOuter,
+                    selectedPlan === 'annual' && UI.annualOuterSelected,
                   ]}
                 >
                   <GradientBox
                     colors={selectedPlan === 'annual' ? ['#4F46E5', '#7C3AED'] : ['#6366F1', '#818CF8']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={s.annualInner}
+                    style={UI.annualInner}
                   >
                     {/* Best Value badge */}
-                    <View style={s.bestBadge}>
-                      <Text style={s.bestBadgeText}>{t('paywall.bestValue')}</Text>
+                    <View style={[UI.bestBadge, { backgroundColor: colors.accentBg }]}>
+                      <Text style={[UI.bestBadgeText, { color: colors.accentText }]}>{t('paywall.bestValue')}</Text>
                     </View>
 
                     {/* OFF badge */}
                     {annualMetrics.offPercent > 0 && (
-                      <View style={s.offBadge}>
-                        <Text style={s.offBadgeText}>
+                      <View style={[UI.offBadge, { backgroundColor: colors.accentBg }]}>
+                        <Text style={[UI.offBadgeText, { color: colors.accentText }]}>
                           {t('paywall.planAnnualOff', { percent: annualMetrics.offPercent })}
                         </Text>
                       </View>
                     )}
 
-                    <Text style={s.annualLabel}>{t('paywall.planAnnual')}</Text>
+                    <Text style={UI.annualLabel}>{t('paywall.planAnnual')}</Text>
 
                     {/* Billed amount — must be the most prominent pricing element */}
-                    <Text style={s.annualPrice}>{getPlanPrice('annual')}</Text>
+                    <Text style={UI.annualPrice}>{getPlanPrice('annual')}</Text>
 
                     {/* Equiv monthly price (subordinate) */}
-                    <Text style={s.annualEquiv}>
+                    <Text style={UI.annualEquiv}>
                       {t('paywall.planAnnualEquiv', { monthlyEquiv: annualMetrics.monthlyEquiv.toLocaleString() })}
                     </Text>
 
                     {/* Saving callout (subordinate) */}
                     {annualMetrics.saving > 0 && (
-                      <View style={s.savingBadge}>
-                        <Text style={s.savingText}>
+                      <View style={UI.savingBadge}>
+                        <Text style={UI.savingText}>
                           {t('paywall.annualSaving', { saving: annualMetrics.saving.toLocaleString() })}
                         </Text>
                       </View>
                     )}
 
-                    <Text style={s.annualSocial}>{t('paywall.planAnnualSub')}</Text>
+                    <Text style={UI.annualSocial}>{t('paywall.planAnnualSub')}</Text>
 
                     {/* Cancel note inside card */}
-                    <Text style={s.annualCancel}>{t('paywall.annualCancelNote')}</Text>
+                    <Text style={UI.annualCancel}>{t('paywall.annualCancelNote')}</Text>
                   </GradientBox>
                 </Pressable>
               </Animated.View>
@@ -413,20 +416,24 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
                 onPress={() => setSelectedPlan('monthly')}
                 accessibilityRole="button"
                 accessibilityState={{ selected: selectedPlan === 'monthly' }}
-                style={[s.planCard, selectedPlan === 'monthly' && s.planCardSelected]}
+                style={[
+                  UI.planCard,
+                  { borderColor: colors.border, backgroundColor: colors.card },
+                  selectedPlan === 'monthly' && { borderColor: '#6366F1', borderWidth: 2.5, backgroundColor: colors.inputBg },
+                ]}
               >
-                <View style={s.planRadio}>
-                  <View style={[s.radioOuter, selectedPlan === 'monthly' && s.radioOuterActive]}>
-                    {selectedPlan === 'monthly' && <View style={s.radioInner} />}
+                <View style={UI.planRadio}>
+                  <View style={[UI.radioOuter, { borderColor: colors.border }, selectedPlan === 'monthly' && UI.radioOuterActive]}>
+                    {selectedPlan === 'monthly' && <View style={UI.radioInner} />}
                   </View>
                 </View>
-                <View style={s.planInfo}>
-                  <Text style={[s.planLabel, selectedPlan === 'monthly' && s.planLabelActive]}>
+                <View style={UI.planInfo}>
+                  <Text style={[UI.planLabel, { color: colors.text }, selectedPlan === 'monthly' && UI.planLabelActive]}>
                     {t('paywall.planMonthly')}
                   </Text>
-                  <Text style={s.planSub}>{t('paywall.planMonthlySub')}</Text>
+                  <Text style={[UI.planSub, { color: colors.subText }]}>{t('paywall.planMonthlySub')}</Text>
                 </View>
-                <Text style={[s.planPrice, selectedPlan === 'monthly' && s.planPriceActive]}>
+                <Text style={[UI.planPrice, { color: colors.text }, selectedPlan === 'monthly' && UI.planPriceActive]}>
                   {getPlanPrice('monthly')}
                 </Text>
               </Pressable>
@@ -437,20 +444,24 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
                   onPress={() => setSelectedPlan('lifetime')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: selectedPlan === 'lifetime' }}
-                  style={[s.lifetimeCard, selectedPlan === 'lifetime' && s.lifetimeCardSelected]}
+                  style={[
+                    UI.lifetimeCard,
+                    { borderColor: colors.border, backgroundColor: colors.inputBg },
+                    selectedPlan === 'lifetime' && { borderColor: '#6366F1', borderWidth: 2, backgroundColor: colors.inputBg },
+                  ]}
                 >
-                  <View style={s.planRadio}>
-                    <View style={[s.radioOuter, selectedPlan === 'lifetime' && s.radioOuterActive]}>
-                      {selectedPlan === 'lifetime' && <View style={s.radioInner} />}
+                  <View style={UI.planRadio}>
+                    <View style={[UI.radioOuter, { borderColor: colors.border }, selectedPlan === 'lifetime' && UI.radioOuterActive]}>
+                      {selectedPlan === 'lifetime' && <View style={UI.radioInner} />}
                     </View>
                   </View>
-                  <View style={s.planInfo}>
-                    <Text style={[s.lifetimeLabel, selectedPlan === 'lifetime' && s.planLabelActive]}>
+                  <View style={UI.planInfo}>
+                    <Text style={[UI.lifetimeLabel, { color: colors.subText }, selectedPlan === 'lifetime' && UI.planLabelActive]}>
                       {t('paywall.planLifetime')}
                     </Text>
-                    <Text style={s.lifetimeSub}>{t('paywall.planLifetimeSub')}</Text>
+                    <Text style={[UI.lifetimeSub, { color: colors.subText }]}>{t('paywall.planLifetimeSub')}</Text>
                   </View>
-                  <Text style={[s.lifetimePrice, selectedPlan === 'lifetime' && s.planPriceActive]}>
+                  <Text style={[UI.lifetimePrice, { color: colors.subText }, selectedPlan === 'lifetime' && UI.planPriceActive]}>
                     {getPlanPrice('lifetime')}
                   </Text>
                 </Pressable>
@@ -460,56 +471,56 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
 
           {/* __DEV__ debug info (本番では非表示) */}
           {__DEV__ && debugInfo != null && !loadError && (
-            <Text style={s.debugText}>{debugInfo}</Text>
+            <Text style={[UI.debugText, { color: colors.subText, backgroundColor: colors.inputBg }]}>{debugInfo}</Text>
           )}
 
           {/* ── CTA Button (dynamic label) ── */}
-          <Animated.View style={[s.ctaWrap, ctaAnimStyle]}>
+          <Animated.View style={[UI.ctaWrap, ctaAnimStyle]}>
             <Pressable
               onPress={handlePurchase}
               disabled={ctaDisabled}
               onPressIn={() => { ctaScale.value = withTiming(0.96, { duration: 80 }); }}
               onPressOut={() => { ctaScale.value = withTiming(1, { duration: 120 }); }}
               accessibilityRole="button"
-              style={[s.ctaOuter, ctaDisabled && { opacity: 0.5 }]}
+              style={[UI.ctaOuter, ctaDisabled && { opacity: 0.5 }]}
             >
               <GradientBox
                 colors={['#4F46E5', '#7C3AED']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={s.ctaGradient}
+                style={UI.ctaGradient}
               >
                 {purchasing ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <Text style={s.ctaText}>{ctaLabel}</Text>
+                  <Text style={UI.ctaText}>{ctaLabel}</Text>
                 )}
               </GradientBox>
             </Pressable>
           </Animated.View>
 
           {/* ── Footer ── */}
-          <Text style={s.cancelNote}>{t('paywall.cancelNote')}</Text>
+          <Text style={[UI.cancelNote, { color: colors.subText }]}>{t('paywall.cancelNote')}</Text>
 
-          <View style={s.footerLinks}>
+          <View style={UI.footerLinks}>
             <Pressable onPress={() => router.push('/privacy')} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
-              <Text style={s.footerLink}>{t('settings.privacyPolicy')}</Text>
+              <Text style={[UI.footerLink, { color: colors.subText }]}>{t('settings.privacyPolicy')}</Text>
             </Pressable>
-            <Text style={s.footerSep}>|</Text>
+            <Text style={[UI.footerSep, { color: colors.border }]}>|</Text>
             <Pressable onPress={() => router.push('/terms')} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
-              <Text style={s.footerLink}>{t('settings.termsOfService')}</Text>
+              <Text style={[UI.footerLink, { color: colors.subText }]}>{t('settings.termsOfService')}</Text>
             </Pressable>
-            <Text style={s.footerSep}>|</Text>
+            <Text style={[UI.footerSep, { color: colors.border }]}>|</Text>
             <Pressable
               onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}
               hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
-              <Text style={s.footerLink}>{t('paywall.manageSubscriptions')}</Text>
+              <Text style={[UI.footerLink, { color: colors.subText }]}>{t('paywall.manageSubscriptions')}</Text>
             </Pressable>
           </View>
 
-          <Text style={s.note}>{t('paywall.subscriptionTerms')}</Text>
-          <Text style={s.note}>{t('paywall.subscriptionCancel')}</Text>
-          <Text style={s.note}>{t('paywall.restoreNote')}</Text>
+          <Text style={[UI.note, { color: colors.subText }]}>{t('paywall.subscriptionTerms')}</Text>
+          <Text style={[UI.note, { color: colors.subText }]}>{t('paywall.subscriptionCancel')}</Text>
+          <Text style={[UI.note, { color: colors.subText }]}>{t('paywall.restoreNote')}</Text>
         </ScrollView>
       </View>
     </Modal>
@@ -518,10 +529,9 @@ export function PremiumPaywall({ visible, onClose, onPurchased, trigger = 'manua
 
 // ─── Styles ──────────────────────────────────────
 
-const s = StyleSheet.create({
+const UI = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F2',
   },
 
   // ── Header ──
@@ -537,13 +547,11 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E8E3D9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeBtnText: {
     fontSize: 16,
-    color: '#6B7280',
     fontFamily: fonts.bold,
   },
   restoreBtn: {
@@ -575,13 +583,11 @@ const s = StyleSheet.create({
   title: {
     fontSize: 26,
     fontFamily: fonts.extraBold,
-    color: '#1F2937',
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
     fontFamily: fonts.medium,
-    color: '#6B7280',
     textAlign: 'center',
     marginTop: 6,
   },
@@ -594,7 +600,6 @@ const s = StyleSheet.create({
   benefitCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0EDE7',
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -609,13 +614,11 @@ const s = StyleSheet.create({
   benefitTitle: {
     fontSize: 15,
     fontFamily: fonts.extraBold,
-    color: '#1F2937',
     marginBottom: 2,
   },
   benefitBody: {
     fontSize: 13,
     fontFamily: fonts.medium,
-    color: '#6B7280',
     lineHeight: 18,
   },
 
@@ -646,7 +649,6 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    backgroundColor: '#FDE68A',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderBottomRightRadius: 14,
@@ -654,13 +656,11 @@ const s = StyleSheet.create({
   bestBadgeText: {
     fontSize: 11,
     fontFamily: fonts.extraBold,
-    color: '#92400E',
   },
   offBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#FDE68A',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderBottomLeftRadius: 14,
@@ -668,7 +668,6 @@ const s = StyleSheet.create({
   offBadgeText: {
     fontSize: 11,
     fontFamily: fonts.extraBold,
-    color: '#92400E',
   },
   annualLabel: {
     fontSize: 16,
@@ -720,14 +719,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#DDD8CE',
-    backgroundColor: '#FFFFFF',
     padding: 16,
-  },
-  planCardSelected: {
-    borderColor: '#6366F1',
-    borderWidth: 2.5,
-    backgroundColor: '#FAFAFF',
   },
   planRadio: {
     marginRight: 14,
@@ -737,7 +729,6 @@ const s = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#C5C0B6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -756,7 +747,6 @@ const s = StyleSheet.create({
   planLabel: {
     fontSize: 15,
     fontFamily: fonts.extraBold,
-    color: '#1F2937',
   },
   planLabelActive: {
     color: '#4F46E5',
@@ -764,13 +754,11 @@ const s = StyleSheet.create({
   planSub: {
     fontSize: 12,
     fontFamily: fonts.medium,
-    color: '#9CA3AF',
     marginTop: 2,
   },
   planPrice: {
     fontSize: 17,
     fontFamily: fonts.extraBold,
-    color: '#1F2937',
     marginLeft: 8,
   },
   planPriceActive: {
@@ -783,30 +771,20 @@ const s = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#E5E1D8',
-    backgroundColor: '#FAFAF8',
     padding: 14,
-  },
-  lifetimeCardSelected: {
-    borderColor: '#6366F1',
-    borderWidth: 2,
-    backgroundColor: '#FAFAFF',
   },
   lifetimeLabel: {
     fontSize: 14,
     fontFamily: fonts.bold,
-    color: '#6B7280',
   },
   lifetimeSub: {
     fontSize: 11,
     fontFamily: fonts.medium,
-    color: '#B0ACA4',
     marginTop: 2,
   },
   lifetimePrice: {
     fontSize: 15,
     fontFamily: fonts.bold,
-    color: '#6B7280',
     marginLeft: 8,
   },
 
@@ -839,7 +817,6 @@ const s = StyleSheet.create({
   cancelNote: {
     fontSize: 13,
     fontFamily: fonts.medium,
-    color: '#6B7280',
     textAlign: 'center',
     marginBottom: 14,
   },
@@ -853,17 +830,14 @@ const s = StyleSheet.create({
   footerLink: {
     fontSize: 12,
     fontFamily: fonts.medium,
-    color: '#9CA3AF',
     textDecorationLine: 'underline',
   },
   footerSep: {
     fontSize: 12,
-    color: '#D1D5DB',
   },
   note: {
     fontSize: 12,
     fontFamily: fonts.medium,
-    color: '#B0ACA4',
     textAlign: 'center',
     marginBottom: 4,
     lineHeight: 17,
@@ -878,7 +852,6 @@ const s = StyleSheet.create({
   errorText: {
     fontSize: 14,
     fontFamily: fonts.medium,
-    color: '#6B7280',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -896,7 +869,6 @@ const s = StyleSheet.create({
   errorHint: {
     fontSize: 12,
     fontFamily: fonts.medium,
-    color: '#9CA3AF',
     textAlign: 'center',
     marginBottom: 14,
     lineHeight: 17,
@@ -904,11 +876,9 @@ const s = StyleSheet.create({
   debugText: {
     fontSize: 10,
     fontFamily: fonts.medium,
-    color: '#B0ACA4',
     textAlign: 'center',
     marginTop: 10,
     padding: 8,
-    backgroundColor: '#F3F0EA',
     borderRadius: 8,
     overflow: 'hidden',
   },

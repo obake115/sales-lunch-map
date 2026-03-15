@@ -254,6 +254,103 @@ export async function purchasePackage(pkg: PlanPackage): Promise<PurchaseOutcome
   }
 }
 
+/** Purchase food badge collection (non-consumable) from the "food_badge" offering. */
+export async function purchaseFoodBadgeCollection(): Promise<PurchaseOutcome> {
+  const ok = await ensureConfigured();
+  if (!ok) return { success: false, message: t('purchases.configMissing') };
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return { success: false, message: t('purchases.unavailable') };
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    const offering = offerings?.all?.['food_badge'] ?? null;
+    if (!offering) {
+      console.warn('[RC] food_badge offering not found');
+      return { success: false, message: t('purchases.packageMissing') };
+    }
+    const pkg = offering.availablePackages?.[0];
+    if (!pkg) {
+      console.warn('[RC] food_badge offering has 0 packages');
+      return { success: false, message: t('purchases.packageMissing') };
+    }
+    console.log('[RC] purchaseFoodBadge: productId=%s, price=%s',
+      pkg.product?.identifier, pkg.product?.priceString);
+    await Purchases.purchasePackage(pkg);
+    return { success: true };
+  } catch (error: any) {
+    if (error?.userCancelled) return { success: false, cancelled: true };
+    console.error('[RC] purchaseFoodBadge error:', error?.message);
+    return { success: false, message: t('purchases.failed') };
+  }
+}
+
+/** Get the price string for the food badge collection offering. */
+export async function getFoodBadgePrice(): Promise<string | null> {
+  const ok = await ensureConfigured();
+  if (!ok) return null;
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return null;
+  try {
+    const offerings = await Purchases.getOfferings();
+    const offering = offerings?.all?.['food_badge'] ?? null;
+    const pkg = offering?.availablePackages?.[0];
+    return pkg?.product?.priceString ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// --- Map background individual purchases ---
+
+const BG_OFFERING_MAP: Record<string, string> = {
+  sakura: 'map_bg_sakura',
+  seasonal: 'map_bg_seasonal',
+  navy: 'map_bg_navy',
+};
+
+export async function purchaseMapBackground(bgId: string): Promise<PurchaseOutcome> {
+  const offeringId = BG_OFFERING_MAP[bgId];
+  if (!offeringId) return { success: false, message: 'Invalid background' };
+  const ok = await ensureConfigured();
+  if (!ok) return { success: false, message: t('purchases.configMissing') };
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return { success: false, message: t('purchases.unavailable') };
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    const offering = offerings?.all?.[offeringId] ?? null;
+    if (!offering) {
+      console.warn(`[RC] ${offeringId} offering not found`);
+      return { success: false, message: t('purchases.packageMissing') };
+    }
+    const pkg = offering.availablePackages?.[0];
+    if (!pkg) return { success: false, message: t('purchases.packageMissing') };
+    await Purchases.purchasePackage(pkg);
+    return { success: true };
+  } catch (error: any) {
+    if (error?.userCancelled) return { success: false, cancelled: true };
+    console.error(`[RC] purchaseMapBg(${bgId}) error:`, error?.message);
+    return { success: false, message: t('purchases.failed') };
+  }
+}
+
+export async function getMapBgPrice(bgId: string): Promise<string | null> {
+  const offeringId = BG_OFFERING_MAP[bgId];
+  if (!offeringId) return null;
+  const ok = await ensureConfigured();
+  if (!ok) return null;
+  const Purchases = getPurchasesModule();
+  if (!Purchases) return null;
+  try {
+    const offerings = await Purchases.getOfferings();
+    const offering = offerings?.all?.[offeringId] ?? null;
+    const pkg = offering?.availablePackages?.[0];
+    return pkg?.product?.priceString ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Legacy: purchase first available package (kept for backward compatibility). */
 export async function purchaseUnlimited(): Promise<PurchaseOutcome> {
   const ok = await ensureConfigured();

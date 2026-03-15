@@ -13,7 +13,7 @@
   "shareTarget": {
     "title": "どこに追加しますか？",
     "mapTitle": "マップに登録",
-    "mapDesc": "ランチ候補として地図に追加",
+    "mapDesc": "お店を地図に追加",
     "travelTitle": "思い出を追加",
     "travelDesc": "旅先ランチの記録として追加",
     "albumTitle": "アルバムに追加",
@@ -35,10 +35,10 @@
     "kyushu": "九州地方",
     "shikoku": "四国地方",
     "everyone": "みんなで",
-    "shared": "共同マップ",
+    "shared": "共有マップ",
     "reminders": "アルバム",
-    "storeNew": "候補を登録",
-    "storeDetail": "ランチ候補",
+    "storeNew": "お店を登録",
+    "storeDetail": "お店",
     "travelNew": "思い出を追加",
     "onboarding": "はじめに",
     "postLimitInfo": "投稿枠・課金について",
@@ -47,6 +47,7 @@
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
     "stats": "統計",
+    "foodBadges": "名物バッジ",
     "shareTarget": "写真の追加先"
   },
   "onboarding": {
@@ -55,33 +56,48 @@
     "slides": {
       "welcome": {
         "title": "あなたの日本が、埋まっていく。",
-        "body": "ランチの思い出が、地図になる。"
+        "body": "ランチのたびに、47都道府県の\n地図が色づいていく。"
       },
-      "easy": {
-        "title": "今日のランチも、特別な思い出。",
-        "body": "駅前の定食屋も、\n出張先の名店も。"
+      "record": {
+        "title": "ボタンひとつで、記録完了。",
+        "body": "マップ・旅のランチ・共有マップ・アルバム。\n4つの方法でランチを残そう。"
+      },
+      "badges": {
+        "title": "47の名物バッジを、集めよう。",
+        "body": "都道府県を制覇するたびに\nその土地の名物バッジがもらえる。"
+      },
+      "share": {
+        "title": "仲間と、地図をつくろう。",
+        "body": "共有マップで友達や家族と\nランチスポットを集められる。"
       },
       "free": {
-        "title": "また行きたい場所を、いつでも。",
-        "body": "「あの店、また行きたいな」\nが、すぐ見つかる。",
+        "title": "まずは、無料ではじめよう。",
+        "body": "基本機能はすべて無料。\nもっと使いたくなったらプレミアムへ。",
         "premium": "プレミアムで無制限に。",
-        "freeNote": "※ 10件まで無料で記録できます",
-        "planChangeHint": "あとからいつでもプラン変更できます"
+        "freeNote": "まずは無料で10件お試しできます",
+        "planChangeHint": "気に入ったらいつでもアップグレード"
       }
     }
   },
   "storeNew": {
     "unnamed": "名称未設定",
-    "nameLabel": "ランチ候補名（任意）",
+    "nameLabel": "店名（任意）",
     "namePlaceholder": "例：現場前の定食屋",
     "memoLabel": "メモ（任意）",
     "memoPlaceholder": "例：日替わりが早い。13時以降は空いてる",
+    "urlLabel": "URL（任意）",
+    "urlPlaceholder": "例：https://tabelog.com/...",
     "photoLabel": "共有された写真",
     "photoRemove": "写真を削除",
+    "addPhoto": "写真を追加",
+    "photoPermissionTitle": "写真へのアクセスが必要です",
+    "photoPermissionBody": "写真を追加するために許可してください。",
     "locationTitle": "位置を選択",
     "locationHelp": "地図をタップしてピンを置いてください。",
+    "locationNearby": "現在地付近",
+    "locationChange": "位置を変更",
     "locationLoading": "位置情報を取得中…",
-    "saveButton": "候補を登録",
+    "saveButton": "お店を登録",
     "adUnavailableTitle": "広告は利用できません",
     "adUnavailableBody": "開発版ではリワード広告を再生できません。",
     "adPreparingTitle": "広告の準備中です",
@@ -104,11 +120,12 @@
     "rewardCta": "広告を見て +1件追加（今日1回）",
     "rewardUsed": "今日は利用済みです",
     "assureKeep": "※ 既存の10件は削除されません",
-    "assureRestore": "※ 購入の復元は右上から行えます"
+    "assureRestore": "※ 購入の復元は右上から行えます",
+    "laterHint": "あとで詳細を追加できます"
   },
   "storeDetail": {
-    "notFound": "ランチ候補が見つかりません。",
-    "nameLabel": "ランチ候補名",
+    "notFound": "お店が見つかりません。",
+    "nameLabel": "店名",
     "namePlaceholder": "例：現場前の定食屋",
     "favoriteOn": "⭐ 次回候補にする",
     "favoriteOff": "☆ 次回候補にする",
@@ -147,21 +164,22 @@
     "memoPlaceholder": "例：14時以降は空きやすい",
     "urlLabel": "URL",
     "urlPlaceholder": "例：https://tabelog.com/...",
-    "remindTitle": "リマインド設定（詳細内）",
-    "remindOn": "ON",
-    "remindOff": "OFF",
+    "addPhoto": "写真を追加",
+    "deletePhotoTitle": "写真を削除しますか？",
+    "deletePhotoBody": "この写真を削除します。",
     "shareButton": "友達にシェア",
     "shareAppMessage": "「ランチマップ」で見つけたお店です！",
     "saveBack": "保存して戻る",
     "deleteTitle": "削除しますか？",
-    "deleteBody": "このランチ候補を削除します。",
-    "deleteConfirm": "削除"
+    "deleteBody": "このお店を削除します。",
+    "deleteConfirm": "削除",
+    "otherInfo": "その他"
   },
   "shared": {
     "title": "共有マップ",
-    "subtitle": "友達や大切な人とランチ候補を共有できます。",
+    "subtitle": "友達や大切な人とお店を共有できます。",
     "heroTitle": "チームと共有できるマップです",
-    "heroBody": "招待コードを使って、みんなとランチ候補を簡単にシェアできます",
+    "heroBody": "招待コードを使って、みんなとお店を簡単にシェアできます",
     "preparing": "共有機能の準備中…",
     "prepareFailed": "共有機能を準備できませんでした。",
     "retryPrepare": "準備をやり直す",
@@ -201,6 +219,7 @@
     "addStore": "店舗を追加",
     "storeNamePlaceholder": "店舗名",
     "memoPlaceholder": "メモ（任意）",
+    "urlPlaceholder": "URL（任意）",
     "location": "位置情報",
     "locationTitle": "位置情報が必要です",
     "locationBody": "現在地取得のため、位置情報を許可してください。",
@@ -332,7 +351,67 @@
     "collectionTitle": "旅のランチ記録",
     "collectionSub": "47都道府県のランチを記録",
     "collectionProgress": "%{count}/47",
-    "addStore": "思い出を追加"
+    "addStore": "思い出を追加",
+    "progressTitle": "あなたの日本が埋まっていく",
+    "progressRemaining": "残り%{count}県",
+    "progressEmpty": "最初の1県を記録しよう！",
+    "firstTimeCta": "最初のランチを記録する",
+    "firstTimeTitle": "ランチの思い出を集めよう",
+    "firstTimeBody": "47都道府県のランチを記録して\n日本地図を埋めていこう",
+    "recordLunch": "ランチを記録",
+    "dailyPickLabel": "今日のランチ",
+    "dailyPickPrompt": "今日の思い出を記録しよう",
+    "progressPercent": "制覇率 %{percent}%",
+    "viewCollection": "コレクションを見る",
+    "recentPref": "最近: %{name}",
+    "navSectionTitle": "記録をふりかえる",
+    "navMapDesc": "登録したお店を地図で見る",
+    "navSharedDesc": "友達と共有したマップ",
+    "navAlbumDesc": "ランチの写真コレクション",
+    "navCollectionDesc": "都道府県の制覇状況を確認",
+    "navBadgesDesc": "集めた名物バッジを見る",
+    "actionMap": "マップに登録",
+    "actionMapDesc": "お店を地図に追加する",
+    "actionShared": "共有マップ",
+    "actionSharedDesc": "友達とお店を共有する",
+    "actionAlbum": "アルバム",
+    "actionAlbumDesc": "日常のランチ写真を保存する",
+    "navStatsDesc": "ランチの記録を分析する",
+    "tutorialStep1": "まずはここをタップ！",
+    "tutorialStep2": "最初の都道府県を\n記録しよう！",
+    "tutorialRecommend": "おすすめ",
+    "tutorialMapHint": "近くのお店を地図にピン留め",
+    "tutorialTravelHint": "食べた都道府県を記録して制覇！",
+    "tutorialSharedHint": "友達とお店を共有できる",
+    "tutorialAlbumHint": "ランチ写真をコレクション",
+    "tutorialSkip": "あとで",
+    "tutorialCompleteTitle": "最初の一歩、おめでとう！",
+    "tutorialCompleteBody": "これで日本ランチ制覇の旅が始まった！\nどんどん都道府県を埋めていこう。",
+    "tutorialCompleteHint1": "「＋ランチを記録」からいつでも追加できる",
+    "tutorialCompleteHint2": "名物バッジもチェックしてみよう",
+    "tutorialCompleteButton": "さっそく始める！",
+    "statsPreviewTitle": "統計ダッシュボード",
+    "statsPreviewBody": "あなたのランチ記録を分析して\nさまざまな角度から振り返れます",
+    "statsFeature1": "ランチカレンダーで記録した日を確認",
+    "statsFeature2": "料理・都道府県ランキング",
+    "statsFeature3": "月間のランチ数グラフ",
+    "statsFeature4": "お気に入りランチ一覧",
+    "statsUnlock": "プレミアムで解放する",
+    "statsClose": "あとで",
+    "actionTravel": "旅のランチ",
+    "actionTravelDesc": "都道府県の思い出を記録する"
+  },
+  "milestone": {
+    "newPrefTitle": "%{prefName}を制覇！",
+    "newPrefBody": "%{count}都道府県を制覇 — 制覇率 %{percent}%",
+    "tenPrefsTitle": "10都道府県を制覇！",
+    "tenPrefsBody": "日本の約1/5を制覇しました！この調子！",
+    "fiftyStoresTitle": "50ランチ達成！",
+    "fiftyStoresBody": "%{storeCount}件のランチを記録中。すごい！",
+    "badgeTitle": "新しいバッジ獲得！",
+    "badgeBody": "%{count}都道府県を制覇 — 制覇率 %{percent}%",
+    "share": "シェアする",
+    "shareText": "日本ランチ制覇中！%{count}/47都道府県 (制覇率%{percent}%)"
   },
   "map": {
     "photoPermissionTitle": "写真へのアクセスが必要です",
@@ -383,7 +462,7 @@
   },
   "collection": {
     "title": "あなたのコレクション",
-    "hint": "地図をタップして都道府県を選択できます。",
+    "hint": "地図をタップして都道府県を選択。ピンチで拡大できます。",
     "cardTitleRecent": "最近の思い出",
     "cardTitleSelected": "%{name}の思い出",
     "legendVisited": "思い出あり",
@@ -391,7 +470,16 @@
     "emptyBody": "まだ投稿がありません。",
     "deleteTitle": "思い出を削除しますか？",
     "deleteBody": "「%{name}」を削除します。",
-    "deleteConfirm": "削除"
+    "deleteConfirm": "削除",
+    "badgeToggle": "名物バッジ",
+    "bgLabel": "背景",
+    "bgNone": "なし",
+    "bgSakura": "桜",
+    "bgSeasonal": "四季",
+    "bgStamp": "旅ノート",
+    "bgNavy": "ネイビー",
+    "bgWashi": "和紙",
+    "bgPastel": "パステル"
   },
   "pref": {
     "photoPermissionTitle": "写真へのアクセスが必要です",
@@ -450,9 +538,6 @@
     "timeMinutesAgo": "%{count}分前",
     "timeHoursAgo": "%{count}時間前",
     "timeDaysAgo": "%{count}日前",
-    "weatherSunny": "晴れ",
-    "weatherCloudy": "曇り",
-    "weatherRain": "雨"
   },
   "album": {
     "title": "アルバム",
@@ -468,6 +553,7 @@
     "emptyTitle": "まだ写真がありません",
     "emptyBody": "ランチの思い出を写真で残しましょう",
     "pickDate": "日付を選択",
+    "tapToCrop": "タップしてサイズを変更",
     "select": "選択",
     "deleteTitle": "写真を削除しますか？",
     "deleteBody": "この写真をアルバムから削除します。",
@@ -525,7 +611,8 @@
     "cloudCount": "アカウント: %{count}件",
     "uploading": "写真をアップロード中... (%{current}/%{total})",
     "downloading": "写真をダウンロード中... (%{current}/%{total})",
-    "photoSyncFailed": "一部の写真の同期に失敗しました（%{count}件）"
+    "photoSyncFailed": "一部の写真の同期に失敗しました（%{count}件）",
+    "successWithPhotoFail": "データを移行しました。ただし写真%{count}件の転送に失敗しました。"
   },
   "settings": {
     "title": "設定",
@@ -534,8 +621,8 @@
     "restoreNone": "復元できる購入がありません。",
     "privacyPolicy": "プライバシーポリシー",
     "termsOfService": "利用規約",
-    "backupTitle": "データバックアップ",
-    "backupManage": "バックアップを管理"
+    "backupTitle": "クラウド同期",
+    "backupManage": "同期を管理"
   },
   "loginBonus": {
     "title": "今日のログイン",
@@ -613,11 +700,11 @@
     },
     "store_5": {
       "label": "ランチ探索家",
-      "description": "ランチ候補を5件登録"
+      "description": "お店を5件登録"
     },
     "store_20": {
       "label": "ランチマスター",
-      "description": "ランチ候補を20件登録"
+      "description": "お店を20件登録"
     },
     "favorite_5": {
       "label": "推しランチ達成",
@@ -635,6 +722,33 @@
       "label": "見習い",
       "description": "プロフィールを育てて称号を獲得しよう"
     }
+  },
+  "foodBadges": {
+    "homeTitle": "名物バッジ",
+    "homeProgress": "%{count} / 47 獲得",
+    "homeDetail": "コレクション →",
+    "homeSubFree": "最初の5件を表示中",
+    "homeSubPurchased": "日本地図でコレクションを確認",
+    "progress": "名物バッジコレクション",
+    "descriptionFree": "無料版では最初の5件の名物バッジを表示中",
+    "descriptionPurchased": "獲得した名物バッジを日本地図で表示中",
+    "collectionTitle": "バッジ一覧",
+    "celebrationTitle": "名物バッジ獲得！",
+    "celebrationProgress": "現在 %{count} / 47",
+    "celebrationLockedHint": "このバッジは解放後にコレクションで見られます",
+    "freeNote": "無料版では最初の5件の名物バッジを表示中\n買い切りで全47都道府県のコレクションを解放できます",
+    "lockedBadge": "解放すると閲覧できます",
+    "paywallTitle": "名物バッジコレクション",
+    "paywallBody": "全47都道府県の名物バッジを解放して\n日本地図をコンプリートしよう！\nSNSシェア機能も使えます",
+    "paywallOnetime": "買い切り・追加費用なし",
+    "unlockButton": "名物バッジを解放する",
+    "shareButton": "SNSでシェア",
+    "shareTitle": "あなたのLunchMap",
+    "shareSubtitle": "あなたの日本が埋まっていく",
+    "shareMessage": "日本ランチ制覇中！%{count}/47 #LunchMap\nhttps://apps.apple.com/jp/app/%E3%83%A9%E3%83%B3%E3%83%81%E3%83%9E%E3%83%83%E3%83%97-lunchmap/id6758890590",
+    "shareWatermark": "#LunchMap",
+    "lockedTitle": "プレミアム限定",
+    "lockedBody": "この背景はプレミアムプランまたは名物バッジ購入で使えます"
   },
   "shareCard": {
     "minutes": "分",
@@ -677,7 +791,7 @@
   "guide": {
     "intro": "各アイコンの機能と使い方を紹介します。",
     "mapTitle": "マップ",
-    "mapBody": "地図をタップしてピンを追加し、ランチ候補を登録できます。写真・メモ・タグも保存可能。",
+    "mapBody": "地図をタップしてピンを追加し、お店を登録できます。写真・メモ・タグも保存可能。",
     "listTitle": "リスト検索",
     "listBody": "登録したお店を一覧表示。新しい順・お気に入り・近い順でソートや絞り込みができます。",
     "sharedTitle": "共同マップ",
@@ -688,21 +802,22 @@
     "albumBody": "ランチの写真をアルバムに保存。日付で振り返ったり、思い出を残せます。",
     "travelTitle": "旅のランチ記録",
     "travelBody": "47都道府県のランチを写真・評価・メモ付きで記録。全国制覇を目指しましょう。",
-    "remindTitle": "リマインド通知",
-    "remindBody": "登録したお店の近くを通ると通知でお知らせ。ベルアイコンで確認できます。",
     "favoriteTitle": "お気に入り・次回候補",
     "favoriteBody": "星マークでお気に入り登録。次に行きたいお店を「今日のおすすめ」に表示します。"
   },
   "geofence": {
     "nearTitle": "%{name}の近くです",
-    "nearBody": "近くに、行ったことのあるランチ候補があります"
+    "nearBody": "近くに、行ったことのあるお店があります"
   },
   "nearby": {
-    "title": "📍 近くのランチ候補（%{radius}m）",
+    "title": "📍 近くのお店（%{radius}m）",
     "empty": "近くの候補はまだありません。＋で登録してみよう",
     "walkMinutes": "徒歩%{minutes}分"
   },
   "stats": {
+    "premiumTitle": "統計はプレミアム機能です",
+    "premiumBody": "ランチの傾向やランキング、カレンダーなど\n詳しい統計を確認できます",
+    "unlockButton": "プレミアムを解除",
     "title": "統計ダッシュボード",
     "monthSuffix": "月",
     "totalLunches": "ランチ数",

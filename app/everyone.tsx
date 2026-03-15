@@ -27,11 +27,9 @@ import { useThemeColors } from '@/src/state/ThemeContext';
 import { useAuth } from '@/src/state/AuthContext';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { fonts } from '@/src/ui/fonts';
+import { SafeImage } from '@/src/ui/SafeImage';
 import { NeuCard } from '@/src/ui/NeuCard';
 import { EveryoneHeroLabel } from '@/src/ui/EveryoneHeroLabel';
-import { WeatherBackdrop } from '@/src/ui/WeatherBackdrop';
-import type { WeatherTone } from '@/src/weather';
-import { useEveryoneTone } from '@/src/weather/useEveryoneTone';
 import { listenMapStores, listenMyMaps, type SharedMap, type SharedStore } from '@/src/sharedMaps';
 
 /* ── Apricot color palette ── */
@@ -107,10 +105,6 @@ const TAG_EMOJI: Record<string, string> = {
   again: '🔄',
 };
 
-const WEATHER_SHADOW: Record<WeatherTone, number> = {
-  sunny: 0.06, cloudy: 0.05, rain: 0.045, default: 0.06,
-};
-
 type FilterMode = 'nearest' | 'newest' | 'popular';
 
 type CombinedStore = SharedStore & { mapName: string; distanceM?: number };
@@ -151,7 +145,7 @@ function FilterChip({
             {
               color: active
                 ? '#FFFFFF'
-                : colors.bg === '#0F172A' ? colors.text : '#3D2E1F',
+                : colors.text,
             },
           ]}>
           {label}
@@ -182,12 +176,6 @@ export default function EveryoneScreen() {
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>('nearest');
   const [scrollEnabled, setScrollEnabled] = useState(true);
-
-  const { resolvedTone, resolvedLabel } = useEveryoneTone({
-    isNavy,
-    lat: deviceLatLng?.latitude ?? null,
-    lon: deviceLatLng?.longitude ?? null,
-  });
 
   /* ── BottomSheet animation ── */
   const sheetHeight = useSharedValue(SNAP_PEEK);
@@ -386,8 +374,6 @@ export default function EveryoneScreen() {
 
       {/* Beige tone overlay */}
       <View pointerEvents="none" style={styles.overlay} />
-      {/* Weather gradient (everyone only) */}
-      <WeatherBackdrop tone={resolvedTone} />
 
       {/* iOS-style header bar */}
       <View
@@ -427,7 +413,6 @@ export default function EveryoneScreen() {
           {'🌍 ' + t('everyone.heroTitle')}
         </Text>
         <EveryoneHeroLabel
-          weatherText={resolvedLabel}
           postCount={combinedStores.length}
           color={colors.subText}
         />
@@ -515,7 +500,7 @@ export default function EveryoneScreen() {
                 style={{
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: WEATHER_SHADOW[resolvedTone],
+                  shadowOpacity: 0.06,
                   shadowRadius: 3,
                 }}>
                 <NeuCard
@@ -529,7 +514,7 @@ export default function EveryoneScreen() {
                     onLayout={(e) => { cardRefs.current[store.id] = e.nativeEvent.layout.y; }}>
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                       {store.photoUrl ? (
-                        <Image source={{ uri: store.photoUrl }} style={{ width: 60, height: 60, borderRadius: 10 }} />
+                        <SafeImage uri={store.photoUrl} style={{ width: 60, height: 60, borderRadius: 10 }} />
                       ) : null}
                       <View style={{ flex: 1 }}>
                         <Text

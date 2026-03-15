@@ -53,6 +53,13 @@ const WARM_COLORS = {
   chipBg: '#D5D0C6',
   inputBg: '#E9E4DA',
   dangerBg: '#FEF2F2',
+  // Accent colors
+  accent: '#F59E0B',
+  accentBg: '#FDE68A',
+  accentText: '#92400E',
+  primary: '#4F78FF',
+  pink: '#EC4899',
+  border: '#D5D0C6',
 };
 
 const NAVY_COLORS = {
@@ -65,6 +72,13 @@ const NAVY_COLORS = {
   chipBg: '#334155',
   inputBg: '#1E293B',
   dangerBg: '#450A0A',
+  // Accent colors
+  accent: '#FBBF24',
+  accentBg: '#78350F',
+  accentText: '#FDE68A',
+  primary: '#6B8AFF',
+  pink: '#F472B6',
+  border: '#334155',
 };
 
 export type ThemeColors = typeof WARM_COLORS;

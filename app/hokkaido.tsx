@@ -1,4 +1,5 @@
 import { ImageBackground, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeImageBackground } from '@/src/ui/SafeImage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,6 +8,7 @@ import { t } from '@/src/i18n';
 import { BottomAdBanner } from '@/src/ui/AdBanner';
 import { getPrefecturePhotos } from '@/src/storage';
 import { fonts } from '@/src/ui/fonts';
+import { useThemeColors } from '@/src/state/ThemeContext';
 
 const UI = {
   bg: {
@@ -27,7 +29,6 @@ const UI = {
   title: {
     fontSize: 18,
     fontFamily: fonts.extraBold,
-    color: '#111827',
     marginBottom: 10,
   } as const,
   grid: {
@@ -39,25 +40,20 @@ const UI = {
   card: {
     width: '48%',
     borderWidth: 1,
-    borderColor: '#E7E2D5',
     borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.95)',
   } as const,
   photo: {
     width: '100%',
     height: 90,
-    backgroundColor: '#F3F4F6',
   } as const,
   cardBody: {
     padding: 10,
   } as const,
   cardTitle: {
     fontFamily: fonts.extraBold,
-    color: '#111827',
   } as const,
   hint: {
-    color: '#6B7280',
     marginBottom: 12,
   } as const,
 } as const;
@@ -66,6 +62,7 @@ const HOKKAIDO_PREFS = [{ id: 'hokkaido', key: 'prefectures.hokkaido' }];
 
 export default function HokkaidoScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const [photosByPref, setPhotosByPref] = useState<Record<string, string>>({});
 
   const refresh = useCallback(async () => {
@@ -103,21 +100,21 @@ export default function HokkaidoScreen() {
       />
       <View style={UI.overlay} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 110 }}>
-        <Text style={UI.title}>{t('regions.hokkaido')}</Text>
-        <Text style={UI.hint}>{t('regions.hint')}</Text>
+        <Text style={[UI.title, { color: colors.text }]}>{t('regions.hokkaido')}</Text>
+        <Text style={[UI.hint, { color: colors.subText }]}>{t('regions.hint')}</Text>
         <View style={UI.grid}>
           {cards.map((pref) => (
             <Pressable
               key={pref.id}
               onPress={() => router.push({ pathname: '/collection/pref/[id]', params: { id: pref.id } })}
-              style={UI.card}>
-              <ImageBackground
-                source={pref.photoUri ? { uri: pref.photoUri } : undefined}
-                style={UI.photo}
+              style={[UI.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              <SafeImageBackground
+                uri={pref.photoUri}
+                style={[UI.photo, { backgroundColor: colors.inputBg }]}
                 resizeMode="cover"
               />
               <View style={UI.cardBody}>
-                <Text style={UI.cardTitle}>{t(pref.key)}</Text>
+                <Text style={[UI.cardTitle, { color: colors.text }]}>{t(pref.key)}</Text>
               </View>
             </Pressable>
           ))}

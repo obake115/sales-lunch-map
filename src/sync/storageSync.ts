@@ -7,7 +7,7 @@ import {
   ref,
   uploadBytes,
 } from 'firebase/storage';
-import { doc, getDocs, collection, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDocs, collection, setDoc } from 'firebase/firestore';
 
 import { firebaseDb, firebaseStorage } from '../firebase';
 import type { AlbumPhoto, Store, TravelLunchEntry } from '../models';
@@ -70,7 +70,7 @@ export async function uploadStorePhotos(uid: string, store: Store): Promise<void
   if (store.photoUri && localFileExists(store.photoUri)) {
     try {
       const url = await uploadImage(uid, `places/${store.id}/photo_0.jpg`, store.photoUri);
-      await updateDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrl: url });
+      await setDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrl: url }, { merge: true });
     } catch (e) {
       console.error(`Failed to upload store photo for ${store.id}:`, e);
     }
@@ -95,7 +95,7 @@ export async function uploadStorePhotos(uid: string, store: Store): Promise<void
     }
     const validUrls = urls.filter(Boolean);
     if (validUrls.length > 0) {
-      await updateDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrls: validUrls });
+      await setDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrls: validUrls }, { merge: true });
     }
   }
 }
@@ -134,7 +134,7 @@ export async function uploadTravelEntryPhoto(uid: string, entry: TravelLunchEntr
   if (!entry.imageUri || !localFileExists(entry.imageUri)) return;
   try {
     const url = await uploadImage(uid, `travel/${entry.id}.jpg`, entry.imageUri);
-    await updateDoc(doc(firebaseDb, 'users', uid, 'travelEntries', entry.id), { imageUrl: url });
+    await setDoc(doc(firebaseDb, 'users', uid, 'travelEntries', entry.id), { imageUrl: url }, { merge: true });
   } catch (e) {
     console.error(`Failed to upload travel entry photo ${entry.id}:`, e);
   }
@@ -197,7 +197,7 @@ export async function uploadAllPhotos(uid: string, onProgress?: ProgressCallback
       if (localFileExists(store.photoUri)) {
         try {
           const url = await uploadImage(uid, `places/${store.id}/photo_0.jpg`, store.photoUri);
-          await updateDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrl: url });
+          await setDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrl: url }, { merge: true });
         } catch (e) {
           console.error(`Failed to upload store photo for ${store.id}:`, e);
           failCount++;
@@ -224,7 +224,7 @@ export async function uploadAllPhotos(uid: string, onProgress?: ProgressCallback
       const validUrls = urls.filter(Boolean);
       if (validUrls.length > 0) {
         try {
-          await updateDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrls: validUrls });
+          await setDoc(doc(firebaseDb, 'users', uid, 'places', store.id), { photoUrls: validUrls }, { merge: true });
         } catch {
           // doc may not exist yet, ignore
         }
@@ -275,7 +275,7 @@ export async function uploadAllPhotos(uid: string, onProgress?: ProgressCallback
     if (entry.imageUri && localFileExists(entry.imageUri)) {
       try {
         const url = await uploadImage(uid, `travel/${entry.id}.jpg`, entry.imageUri);
-        await updateDoc(doc(firebaseDb, 'users', uid, 'travelEntries', entry.id), { imageUrl: url });
+        await setDoc(doc(firebaseDb, 'users', uid, 'travelEntries', entry.id), { imageUrl: url }, { merge: true });
       } catch (e) {
         console.error(`Failed to upload travel photo ${entry.id}:`, e);
         failCount++;
@@ -334,48 +334,65 @@ export async function downloadAllPhotos(uid: string, onProgress?: ProgressCallba
     onProgress?.({ phase: 'downloading', current, total });
   };
 
-  // Download store photos
+  // Download store photos (skip if local photo already exists)
   for (const d of placesSnap.docs) {
     const data = d.data();
     const storeId = data.id ?? d.id;
+    const existingStore = await storage.getStore(storeId);
 
     if (data.photoUrl) {
-      try {
-        const localUri = await downloadImage(data.photoUrl as string, `places_${storeId}_photo_0.jpg`);
-        await storage.updateStore(storeId, { photoUri: localUri });
-      } catch (e) {
-        console.error(`Failed to download store photo for ${storeId}:`, e);
-        failCount++;
+      if (!existingStore?.photoUri) {
+        try {
+          const localUri = await downloadImage(data.photoUrl as string, `places_${storeId}_photo_0.jpg`);
+          await storage.updateStore(storeId, { photoUri: localUri });
+        } catch (e) {
+          console.error(`Failed to download store photo for ${storeId}:`, e);
+          failCount++;
+        }
       }
       advance();
     }
 
     if (data.photoUrls?.length) {
-      const localUris: string[] = [];
-      for (let i = 0; i < (data.photoUrls as string[]).length; i++) {
-        const url = (data.photoUrls as string[])[i]!;
-        try {
-          const localUri = await downloadImage(url, `places_${storeId}_photo_${i + 1}.jpg`);
-          localUris.push(localUri);
-        } catch (e) {
-          console.error(`Failed to download store photo ${i} for ${storeId}:`, e);
-          failCount++;
+      if (!existingStore?.photoUris?.length) {
+        const localUris: string[] = [];
+        for (let i = 0; i < (data.photoUrls as string[]).length; i++) {
+          const url = (data.photoUrls as string[])[i]!;
+          try {
+            const localUri = await downloadImage(url, `places_${storeId}_photo_${i + 1}.jpg`);
+            localUris.push(localUri);
+          } catch (e) {
+            console.error(`Failed to download store photo ${i} for ${storeId}:`, e);
+            failCount++;
+          }
+          advance();
         }
-        advance();
-      }
-      if (localUris.length > 0) {
-        await storage.updateStore(storeId, { photoUris: localUris });
+        if (localUris.length > 0) {
+          await storage.updateStore(storeId, { photoUris: localUris });
+        }
+      } else {
+        current += (data.photoUrls as string[]).length;
+        onProgress?.({ phase: 'downloading', current, total });
       }
     }
   }
 
-  // Download album photos
+  // Download album photos (skip existing)
+  const existingAlbum = await storage.getAlbumPhotos();
+  const existingAlbumIds = new Set(existingAlbum.map((p) => p.id));
   for (const d of albumSnap.docs) {
     const data = d.data();
-    if (data.downloadUrl) {
+    const photoId = data.id ?? d.id;
+    if (data.downloadUrl && !existingAlbumIds.has(photoId)) {
       try {
-        const localUri = await downloadImage(data.downloadUrl as string, `album_${data.id ?? d.id}.jpg`);
-        await storage.addAlbumPhoto(localUri, data.storeId ?? undefined, data.takenAt ?? data.createdAt);
+        const localUri = await downloadImage(data.downloadUrl as string, `album_${photoId}.jpg`);
+        await storage.addAlbumPhotoWithId({
+          id: photoId,
+          uri: localUri,
+          storeId: data.storeId ?? undefined,
+          createdAt: data.createdAt ?? Date.now(),
+          takenAt: data.takenAt ?? data.createdAt ?? Date.now(),
+        });
       } catch (e) {
         console.error(`Failed to download album photo ${d.id}:`, e);
         failCount++;
@@ -384,13 +401,16 @@ export async function downloadAllPhotos(uid: string, onProgress?: ProgressCallba
     advance();
   }
 
-  // Download prefecture photos
+  // Download prefecture photos (skip existing)
+  const existingPrefPhotos = await storage.getPrefecturePhotos();
+  const existingPrefIds = new Set(existingPrefPhotos.map((p) => p.prefectureId));
   for (const d of prefSnap.docs) {
     const data = d.data();
-    if (data.downloadUrl) {
+    const prefId = data.prefectureId ?? d.id;
+    if (data.downloadUrl && !existingPrefIds.has(prefId)) {
       try {
-        const localUri = await downloadImage(data.downloadUrl as string, `pref_${data.prefectureId ?? d.id}.jpg`);
-        await storage.setPrefecturePhoto(data.prefectureId ?? d.id, localUri);
+        const localUri = await downloadImage(data.downloadUrl as string, `pref_${prefId}.jpg`);
+        await storage.setPrefecturePhoto(prefId, localUri);
       } catch (e) {
         console.error(`Failed to download prefecture photo ${d.id}:`, e);
         failCount++;
@@ -399,17 +419,21 @@ export async function downloadAllPhotos(uid: string, onProgress?: ProgressCallba
     advance();
   }
 
-  // Download travel entry photos
+  // Download travel entry photos (skip existing)
+  const existingTravel = await storage.getTravelLunchEntries();
+  const travelWithPhoto = new Set(existingTravel.filter((e) => e.imageUri).map((e) => e.id));
   for (const d of travelSnap.docs) {
     const data = d.data();
     if (data.imageUrl) {
-      try {
-        const entryId = data.id ?? d.id;
-        const localUri = await downloadImage(data.imageUrl as string, `travel_${entryId}.jpg`);
-        await storage.updateTravelLunchEntryImage(entryId, localUri);
-      } catch (e) {
-        console.error(`Failed to download travel photo ${d.id}:`, e);
-        failCount++;
+      const entryId = data.id ?? d.id;
+      if (!travelWithPhoto.has(entryId)) {
+        try {
+          const localUri = await downloadImage(data.imageUrl as string, `travel_${entryId}.jpg`);
+          await storage.updateTravelLunchEntryImage(entryId, localUri);
+        } catch (e) {
+          console.error(`Failed to download travel photo ${d.id}:`, e);
+          failCount++;
+        }
       }
       advance();
     }

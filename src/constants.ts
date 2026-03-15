@@ -36,6 +36,13 @@ export const SETTING_KEYS = {
   adImpressionCount: 'adImpressionCount',
   reviewPrompted: 'reviewPrompted',
   reviewPromptedCount: 'reviewPromptedCount',
+  foodBadgesEarned: 'foodBadgesEarned',
+  foodBadgePurchased: 'foodBadgePurchased',
+  mapBackground: 'mapBackground',
+  bgPurchased_sakura: 'bgPurchased_sakura',
+  bgPurchased_seasonal: 'bgPurchased_seasonal',
+  bgPurchased_navy: 'bgPurchased_navy',
+  hasSeenTutorial: 'hasSeenTutorial',
 };
 
 export const DEV_UID = 'rwczt6I126Zi5Lc2MrrVvrq5Slz1';

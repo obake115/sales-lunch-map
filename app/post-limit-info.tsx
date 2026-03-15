@@ -12,20 +12,16 @@ const UI = {
   card: {
     borderRadius: 20,
     padding: 16,
-    backgroundColor: '#E9E4DA',
   } as const,
   title: {
     fontFamily: fonts.extraBold,
     fontSize: 16,
     marginBottom: 8,
-    color: '#111827',
   } as const,
   body: {
-    color: '#6B7280',
     lineHeight: 20,
   } as const,
   purchaseBtn: {
-    backgroundColor: '#4F78FF',
     paddingVertical: 14,
     borderRadius: 28,
     alignItems: 'center',
@@ -74,7 +70,7 @@ export default function PostLimitInfoScreen() {
               <Text style={UI.premiumBadgeText}>{t('paywall.purchasedLabel')}</Text>
             </View>
           ) : (
-            <Pressable onPress={() => setPaywallVisible(true)} style={UI.purchaseBtn}>
+            <Pressable onPress={() => setPaywallVisible(true)} style={[UI.purchaseBtn, { backgroundColor: colors.primary }]}>
               <Text style={UI.purchaseBtnText}>{t('paywall.ctaButton')}</Text>
             </Pressable>
           )}

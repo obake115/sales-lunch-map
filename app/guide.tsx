@@ -20,7 +20,6 @@ const ITEMS: GuideItem[] = [
   { icon: 'globe', iconColor: '#10B981', titleKey: 'guide.everyoneTitle', bodyKey: 'guide.everyoneBody' },
   { icon: 'camera', iconColor: '#F59E0B', titleKey: 'guide.albumTitle', bodyKey: 'guide.albumBody' },
   { icon: 'plane', iconColor: '#06B6D4', titleKey: 'guide.travelTitle', bodyKey: 'guide.travelBody' },
-  { icon: 'bell', iconColor: '#F97316', titleKey: 'guide.remindTitle', bodyKey: 'guide.remindBody' },
   { icon: 'star', iconColor: '#EAB308', titleKey: 'guide.favoriteTitle', bodyKey: 'guide.favoriteBody' },
 ];
 

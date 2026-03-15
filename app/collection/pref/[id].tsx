@@ -4,26 +4,25 @@ import { Alert, Image, Pressable, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { t } from '@/src/i18n';
+import { useThemeColors } from '@/src/state/ThemeContext';
 import { fonts } from '@/src/ui/fonts';
+import { SafeImage } from '@/src/ui/SafeImage';
 import { getPrefecturePhotos, setPrefecturePhoto } from '@/src/storage';
 
 const UI = {
   title: {
     fontSize: 18,
     fontFamily: fonts.extraBold,
-    color: '#111827',
     marginBottom: 12,
   } as const,
   photo: {
     width: '100%',
     height: 240,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
   } as const,
   btn: {
     marginTop: 12,
     borderRadius: 14,
-    backgroundColor: '#F59E0B',
     paddingVertical: 10,
     alignItems: 'center',
   } as const,
@@ -34,7 +33,6 @@ const UI = {
   secondaryBtn: {
     marginTop: 12,
     borderRadius: 14,
-    backgroundColor: '#2E5CE6',
     paddingVertical: 10,
     alignItems: 'center',
   } as const,
@@ -53,6 +51,7 @@ const PREF_KEYS: Record<string, string> = {
 
 export default function PrefectureDetailScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const prefId = id ?? '';
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -87,18 +86,18 @@ export default function PrefectureDetailScreen() {
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
-      <Text style={UI.title}>{PREF_KEYS[prefId] ? t(PREF_KEYS[prefId]) : t('pref.fallback')}</Text>
+      <Text style={[UI.title, { color: colors.text }]}>{PREF_KEYS[prefId] ? t(PREF_KEYS[prefId]) : t('pref.fallback')}</Text>
       {photoUri ? (
-        <Image source={{ uri: photoUri }} style={UI.photo} />
+        <SafeImage uri={photoUri} style={[UI.photo, { backgroundColor: colors.inputBg }]} />
       ) : (
-        <View style={UI.photo} />
+        <View style={[UI.photo, { backgroundColor: colors.inputBg }]} />
       )}
-      <Pressable onPress={handlePick} style={UI.btn}>
+      <Pressable onPress={handlePick} style={[UI.btn, { backgroundColor: colors.accent }]}>
         <Text style={UI.btnText}>{t('pref.addPhoto')}</Text>
       </Pressable>
       <Pressable
         onPress={() => router.push(`/travel/new?prefecture=${prefId}`)}
-        style={UI.secondaryBtn}>
+        style={[UI.secondaryBtn, { backgroundColor: colors.primary }]}>
         <Text style={UI.btnText}>{t('pref.addTravel')}</Text>
       </Pressable>
     </View>
